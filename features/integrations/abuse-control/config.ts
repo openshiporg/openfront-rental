@@ -72,24 +72,10 @@ export function isAbuseControlBuildPhase(environment: NodeJS.ProcessEnv = proces
 }
 
 export function assertAbuseControlRuntimeReady(environment: NodeJS.ProcessEnv = process.env) {
-  if (isAbuseControlBuildPhase(environment)) {
-    return { deferredForBuild: true as const, configured: false as const };
-  }
-
-  if (environment.NODE_ENV === 'production') {
-    try {
-      resolveRequiredRemoteAbuseControlConfig(environment);
-      return { deferredForBuild: false as const, configured: true as const };
-    } catch {
-      // The storefront and dashboard may start without the external provider, but
-      // every protected operation still resolves the required remote config and
-      // fails closed. The readiness endpoint reports the missing capability.
-      return { deferredForBuild: false as const, configured: false as const };
-    }
-  }
-
-  const config = resolveAbuseControlConfig(environment);
-  return { deferredForBuild: false as const, configured: config.mode === 'remote' };
+  if (isAbuseControlBuildPhase(environment)) return { deferredForBuild: true as const };
+  if (environment.NODE_ENV === 'production') resolveRequiredRemoteAbuseControlConfig(environment);
+  else resolveAbuseControlConfig(environment);
+  return { deferredForBuild: false as const };
 }
 
 export function resolveRequiredRemoteAbuseControlConfig(environment: NodeJS.ProcessEnv = process.env) {
