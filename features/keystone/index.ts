@@ -5,13 +5,17 @@ import { models } from "./models";
 import { statelessSessions } from "@keystone-6/core/session";
 import { extendGraphqlSchema } from "./mutations";
 import { sendPasswordResetEmail } from "./lib/mail";
+import { createAbuseControlGraphqlPlugin } from '../integrations/abuse-control/graphqlPlugin';
+import { assertAbuseControlRuntimeReady } from '../integrations/abuse-control';
+import { resolveSessionSecret } from "./lib/runtimeSecrets";
 
 const databaseURL = process.env.DATABASE_URL || "file:./keystone.db";
 
+assertAbuseControlRuntimeReady();
+
 const sessionConfig = {
-  maxAge: 60 * 60 * 24 * 360, // How long they stay signed in?
-  secret:
-    process.env.SESSION_SECRET || "this secret should only be used in testing",
+  maxAge: 60 * 60 * 24,
+  secret: resolveSessionSecret(),
 };
 
 const {
@@ -32,13 +36,37 @@ const { withAuth } = createAuth({
       role: {
         create: {
           name: "Admin",
-          canCreateTodos: true,
-          canManageAllTodos: true,
+          canAccessDashboard: true,
+          canReadProperties: true,
+          canManageProperties: true,
+          canReadListings: true,
+          canManageListings: true,
+          canReadCalendar: true,
+          canManageCalendar: true,
+          canReadPricing: true,
+          canManagePricing: true,
+          canReadReservations: true,
+          canManageReservations: true,
+          canReadGuests: true,
+          canManageGuests: true,
+          canReadMessages: true,
+          canManageMessages: true,
+          canReadChannels: true,
+          canManageChannels: true,
+          canReadPayouts: true,
+          canManagePayouts: true,
+          canReadReviews: true,
+          canManageReviews: true,
+          canReadPayments: true,
+          canManagePayments: true,
+          canReadReports: true,
+          canManageReports: true,
           canSeeOtherPeople: true,
           canEditOtherPeople: true,
           canManagePeople: true,
           canManageRoles: true,
-          canAccessDashboard: true,
+          canManageOnboarding: true,
+          canManageSettings: true,
         },
       },
     },
@@ -52,16 +80,41 @@ const { withAuth } = createAuth({
   sessionData: `
     name
     email
+    isActive
     role {
       id
       name
-      canCreateTodos
-      canManageAllTodos
+      canAccessDashboard
+      canReadProperties
+      canManageProperties
+      canReadListings
+      canManageListings
+      canReadCalendar
+      canManageCalendar
+      canReadPricing
+      canManagePricing
+      canReadReservations
+      canManageReservations
+      canReadGuests
+      canManageGuests
+      canReadMessages
+      canManageMessages
+      canReadChannels
+      canManageChannels
+      canReadPayouts
+      canManagePayouts
+      canReadReviews
+      canManageReviews
+      canReadPayments
+      canManagePayments
+      canReadReports
+      canManageReports
       canSeeOtherPeople
       canEditOtherPeople
       canManagePeople
       canManageRoles
-      canAccessDashboard
+      canManageOnboarding
+      canManageSettings
     }
   `,
 });
@@ -92,6 +145,15 @@ export default withAuth(
     session: statelessSessions(sessionConfig),
     graphql: {
       extendGraphqlSchema,
+      bodyParser: { limit: '64kb' },
+      apolloConfig: { plugins: [createAbuseControlGraphqlPlugin() as any] },
+    },
+    server: {
+      maxFileSize: 5 * 1024 * 1024,
+      extendHttpServer(server) {
+        server.headersTimeout = 10_000;
+        server.requestTimeout = 15_000;
+      },
     },
   })
 );

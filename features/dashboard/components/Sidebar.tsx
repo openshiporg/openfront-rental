@@ -37,21 +37,28 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { AdminMeta } from '../hooks/useAdminMeta'
 import { Home, Database, ChevronRight, Package } from 'lucide-react'
+import { platformNavigation } from '@/features/platform/lib/navigation'
 import { Logo, LogoIcon } from '@/features/dashboard/components/Logo'
 import { UserProfileClient } from './UserProfileClient'
+import { OnboardingCards } from '@/features/platform/onboarding/components/OnboardingCards'
 
 interface User {
   id: string;
   email: string;
   name?: string;
+  onboardingStatus?: string | null;
+  role?: {
+    canManageOnboarding?: boolean;
+  } | null;
 }
 
 interface SidebarProps {
   adminMeta: AdminMeta | null
   user?: User | null
+  onOpenDialog?: () => void
 }
 
-export function Sidebar({ adminMeta, user }: SidebarProps) {
+export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
   const { isMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname()
 
@@ -83,6 +90,8 @@ export function Sidebar({ adminMeta, user }: SidebarProps) {
     title: list.label,
     href: `/dashboard/${list.path}`
   }))
+
+  const operationsLinks = platformNavigation.filter((link) => link.href !== '/dashboard')
 
   // Dashboard items for the collapsible menu
   const dashboardItems = [
@@ -121,6 +130,22 @@ export function Sidebar({ adminMeta, user }: SidebarProps) {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Operations</SidebarGroupLabel>
+          <SidebarMenu>
+            {operationsLinks.map((link) => (
+              <SidebarMenuItem key={link.href}>
+                <SidebarMenuButton asChild isActive={isLinkActive(link.href)}>
+                  <Link href={link.href} onClick={() => setOpenMobile(false)}>
+                    <link.icon className="h-4 w-4" />
+                    <span>{link.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarGroup>
 
@@ -220,6 +245,13 @@ export function Sidebar({ adminMeta, user }: SidebarProps) {
       </SidebarContent>
       
       <SidebarFooter>
+        {onOpenDialog ? (
+          <OnboardingCards
+            onboardingStatus={user?.onboardingStatus}
+            canManageOnboarding={user?.role?.canManageOnboarding}
+            onOpenDialog={onOpenDialog}
+          />
+        ) : null}
         {user && <UserProfileClient user={user} />}
       </SidebarFooter>
       

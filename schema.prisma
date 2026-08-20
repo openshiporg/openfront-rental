@@ -12,69 +12,1333 @@ generator client {
 }
 
 model User {
-  id                      String    @id @default(cuid())
-  name                    String    @default("")
-  email                   String    @unique @default("")
-  password                String
-  role                    Role?     @relation("User_role", fields: [roleId], references: [id])
-  roleId                  String?   @map("role")
-  tasks                   Todo[]    @relation("Todo_assignedTo")
-  passwordResetToken      String?
-  passwordResetIssuedAt   DateTime?
-  passwordResetRedeemedAt DateTime?
+  id                            String           @id @default(cuid())
+  name                          String           @default("")
+  email                         String           @unique @default("")
+  password                      String
+  role                          Role?            @relation("User_role", fields: [roleId], references: [id])
+  roleId                        String?          @map("role")
+  phone                         String           @default("")
+  isActive                      Boolean          @default(true)
+  onboardingStatus              String?          @default("not_started")
+  hostMemberships               HostMembership[] @relation("HostMembership_user")
+  guestProfile                  GuestProfile?    @relation("GuestProfile_user")
+  sentMessages                  Message[]        @relation("Message_senderUser")
+  authoredReviews               Review[]         @relation("Review_authorUser")
+  assignedPropertyTasks         PropertyTask[]   @relation("PropertyTask_assignee")
+  createdAt                     DateTime         @default(now())
+  updatedAt                     DateTime         @default(now()) @updatedAt
+  passwordResetToken            String?
+  passwordResetIssuedAt         DateTime?
+  passwordResetRedeemedAt       DateTime?
+  from_PropertyOwner_user       PropertyOwner[]  @relation("PropertyOwner_user")
+  from_Payment_processedBy      Payment[]        @relation("Payment_processedBy")
+  from_TaskRule_defaultAssignee TaskRule[]       @relation("TaskRule_defaultAssignee")
 
   @@index([roleId])
 }
 
 model Role {
-  id                 String  @id @default(cuid())
-  name               String  @default("")
-  canCreateTodos     Boolean @default(false)
-  canManageAllTodos  Boolean @default(false)
-  canSeeOtherPeople  Boolean @default(false)
-  canEditOtherPeople Boolean @default(false)
-  canManagePeople    Boolean @default(false)
-  canManageRoles     Boolean @default(false)
-  canAccessDashboard Boolean @default(false)
-  assignedTo         User[]  @relation("User_role")
+  id                    String   @id @default(cuid())
+  name                  String   @default("")
+  canAccessDashboard    Boolean  @default(false)
+  canReadProperties     Boolean  @default(false)
+  canManageProperties   Boolean  @default(false)
+  canReadListings       Boolean  @default(false)
+  canManageListings     Boolean  @default(false)
+  canReadCalendar       Boolean  @default(false)
+  canManageCalendar     Boolean  @default(false)
+  canReadPricing        Boolean  @default(false)
+  canManagePricing      Boolean  @default(false)
+  canReadReservations   Boolean  @default(false)
+  canManageReservations Boolean  @default(false)
+  canReadGuests         Boolean  @default(false)
+  canManageGuests       Boolean  @default(false)
+  canReadMessages       Boolean  @default(false)
+  canManageMessages     Boolean  @default(false)
+  canReadChannels       Boolean  @default(false)
+  canManageChannels     Boolean  @default(false)
+  canReadPayouts        Boolean  @default(false)
+  canManagePayouts      Boolean  @default(false)
+  canReadReviews        Boolean  @default(false)
+  canManageReviews      Boolean  @default(false)
+  canReadPayments       Boolean  @default(false)
+  canManagePayments     Boolean  @default(false)
+  canReadReports        Boolean  @default(false)
+  canManageReports      Boolean  @default(false)
+  canSeeOtherPeople     Boolean  @default(false)
+  canEditOtherPeople    Boolean  @default(false)
+  canManagePeople       Boolean  @default(false)
+  canManageRoles        Boolean  @default(false)
+  canManageOnboarding   Boolean  @default(false)
+  canManageSettings     Boolean  @default(false)
+  assignedTo            User[]   @relation("User_role")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @default(now()) @updatedAt
 }
 
-model Todo {
-  id                   String      @id @default(cuid())
-  label                String      @default("")
-  description          Json        @default("[{\"type\":\"paragraph\",\"children\":[{\"text\":\"\"}]}]")
-  isComplete           Boolean     @default(false)
-  status               String?     @default("todo")
-  priority             Int?        @default(1)
-  tags                 Json        @default("[]")
-  dueDate              DateTime?
-  weight               Float?      @default(1)
-  budget               Decimal?    @default("0.00") @postgresql.Decimal(10, 2)
-  isPrivate            Boolean     @default(false)
-  largeNumber          BigInt?
-  metadata             Json?
-  secretNote           String?
-  coverImage_id        String?
-  coverImage_filesize  Int?
-  coverImage_width     Int?
-  coverImage_height    Int?
-  coverImage_extension String?
-  todoImages           TodoImage[] @relation("Todo_todoImages")
-  assignedTo           User?       @relation("Todo_assignedTo", fields: [assignedToId], references: [id])
-  assignedToId         String?     @map("assignedTo")
-
-  @@index([assignedToId])
+model MarketplaceSettings {
+  id                  Int      @id
+  name                String   @default("")
+  tagline             String   @default("")
+  homepageHeadline    String   @default("Stay somewhere considered.")
+  publicDescription   String   @default("")
+  supportEmail        String   @default("")
+  supportPhone        String   @default("")
+  currencyCode        String   @default("USD")
+  locale              String   @default("en-US")
+  timezone            String   @default("America/New_York")
+  defaultMapLatitude  Float?
+  defaultMapLongitude Float?
+  accentHue           Int      @default(155)
+  isPublished         Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @default(now()) @updatedAt
 }
 
-model TodoImage {
-  id              String  @id @default(cuid())
-  image_id        String?
-  image_filesize  Int?
-  image_width     Int?
-  image_height    Int?
-  image_extension String?
-  imagePath       String  @default("")
-  altText         String  @default("")
-  todos           Todo[]  @relation("Todo_todoImages")
-  metadata        Json?
+model HostOrganization {
+  id                                        String                    @id @default(cuid())
+  name                                      String                    @default("")
+  slug                                      String                    @unique @default("")
+  organizationType                          String?                   @default("individual_host")
+  status                                    String?                   @default("onboarding")
+  publicBio                                 String                    @default("")
+  publicEmail                               String                    @default("")
+  publicPhone                               String                    @default("")
+  website                                   String                    @default("")
+  canonicalUrl                              String                    @default("")
+  federationId                              String                    @unique @default("")
+  dataCustody                               String?                   @default("self_hosted")
+  isPublic                                  Boolean                   @default(true)
+  memberships                               HostMembership[]          @relation("HostMembership_hostOrganization")
+  properties                                Property[]                @relation("Property_hostOrganization")
+  listings                                  Listing[]                 @relation("Listing_hostOrganization")
+  guests                                    GuestProfile[]            @relation("GuestProfile_hostOrganization")
+  reservations                              Reservation[]             @relation("Reservation_hostOrganization")
+  payments                                  Payment[]                 @relation("Payment_hostOrganization")
+  paymentProviders                          PaymentProvider[]         @relation("PaymentProvider_hostOrganization")
+  paymentWebhookEvents                      PaymentWebhookEvent[]     @relation("PaymentWebhookEvent_hostOrganization")
+  payouts                                   Payout[]                  @relation("Payout_hostOrganization")
+  propertyOwners                            PropertyOwner[]           @relation("PropertyOwner_hostOrganization")
+  propertyOwnerAssignments                  PropertyOwnerAssignment[] @relation("PropertyOwnerAssignment_hostOrganization")
+  ownerStatements                           OwnerStatement[]          @relation("OwnerStatement_hostOrganization")
+  ownerStatementLines                       OwnerStatementLine[]      @relation("OwnerStatementLine_hostOrganization")
+  cancellationPolicies                      CancellationPolicy[]      @relation("CancellationPolicy_hostOrganization")
+  conversations                             Conversation[]            @relation("Conversation_hostOrganization")
+  reviews                                   Review[]                  @relation("Review_hostOrganization")
+  tasks                                     PropertyTask[]            @relation("PropertyTask_hostOrganization")
+  taskRules                                 TaskRule[]                @relation("TaskRule_hostOrganization")
+  channelConnections                        ChannelConnection[]       @relation("ChannelConnection_hostOrganization")
+  dataExchangeJobs                          DataExchangeJob[]         @relation("DataExchangeJob_hostOrganization")
+  outboxEvents                              OutboxEvent[]             @relation("OutboxEvent_hostOrganization")
+  createdAt                                 DateTime                  @default(now())
+  updatedAt                                 DateTime                  @default(now()) @updatedAt
+  from_PropertyAddress_hostOrganization     PropertyAddress[]         @relation("PropertyAddress_hostOrganization")
+  from_AccommodationUnit_hostOrganization   AccommodationUnit[]       @relation("AccommodationUnit_hostOrganization")
+  from_Bedroom_hostOrganization             Bedroom[]                 @relation("Bedroom_hostOrganization")
+  from_Bed_hostOrganization                 Bed[]                     @relation("Bed_hostOrganization")
+  from_ListingMedia_hostOrganization        ListingMedia[]            @relation("ListingMedia_hostOrganization")
+  from_HouseRule_hostOrganization           HouseRule[]               @relation("HouseRule_hostOrganization")
+  from_CalendarBlock_hostOrganization       CalendarBlock[]           @relation("CalendarBlock_hostOrganization")
+  from_RatePlan_hostOrganization            RatePlan[]                @relation("RatePlan_hostOrganization")
+  from_SeasonalRate_hostOrganization        SeasonalRate[]            @relation("SeasonalRate_hostOrganization")
+  from_FeeDefinition_hostOrganization       FeeDefinition[]           @relation("FeeDefinition_hostOrganization")
+  from_TaxRule_hostOrganization             TaxRule[]                 @relation("TaxRule_hostOrganization")
+  from_StayQuote_hostOrganization           StayQuote[]               @relation("StayQuote_hostOrganization")
+  from_GuestParty_hostOrganization          GuestParty[]              @relation("GuestParty_hostOrganization")
+  from_ReservationLineItem_hostOrganization ReservationLineItem[]     @relation("ReservationLineItem_hostOrganization")
+  from_StayAgreement_hostOrganization       StayAgreement[]           @relation("StayAgreement_hostOrganization")
+  from_SecurityDeposit_hostOrganization     SecurityDeposit[]         @relation("SecurityDeposit_hostOrganization")
+  from_DamageClaim_hostOrganization         DamageClaim[]             @relation("DamageClaim_hostOrganization")
+  from_Refund_hostOrganization              Refund[]                  @relation("Refund_hostOrganization")
+  from_Message_hostOrganization             Message[]                 @relation("Message_hostOrganization")
+  from_ChannelListing_hostOrganization      ChannelListing[]          @relation("ChannelListing_hostOrganization")
+  from_ChannelReservation_hostOrganization  ChannelReservation[]      @relation("ChannelReservation_hostOrganization")
+  from_ChannelSyncEvent_hostOrganization    ChannelSyncEvent[]        @relation("ChannelSyncEvent_hostOrganization")
+}
+
+model HostMembership {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("HostMembership_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  user               User?             @relation("HostMembership_user", fields: [userId], references: [id])
+  userId             String?           @map("user")
+  membershipRole     String?           @default("manager")
+  status             String?           @default("invited")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@unique([hostOrganizationId, userId])
+  @@index([hostOrganizationId])
+  @@index([userId])
+}
+
+model Property {
+  id                 String                    @id @default(cuid())
+  hostOrganization   HostOrganization?         @relation("Property_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?                   @map("hostOrganization")
+  name               String                    @default("")
+  internalCode       String                    @unique @default("")
+  propertyType       String?                   @default("house")
+  status             String?                   @default("onboarding")
+  timezone           String                    @default("America/New_York")
+  checkInFrom        String                    @default("16:00")
+  checkInUntil       String                    @default("22:00")
+  checkOutBy         String                    @default("11:00")
+  registrationNumber String                    @default("")
+  internalNotes      String                    @default("")
+  address            PropertyAddress?          @relation("Property_address", fields: [addressId], references: [id])
+  addressId          String?                   @unique @map("address")
+  units              AccommodationUnit[]       @relation("AccommodationUnit_property")
+  listings           Listing[]                 @relation("Listing_property")
+  ownerAssignments   PropertyOwnerAssignment[] @relation("PropertyOwnerAssignment_property")
+  tasks              PropertyTask[]            @relation("PropertyTask_property")
+  taskRules          TaskRule[]                @relation("TaskRule_property")
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+}
+
+model PropertyAddress {
+  id                       String            @id @default(cuid())
+  hostOrganization         HostOrganization? @relation("PropertyAddress_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId       String?           @map("hostOrganization")
+  property                 Property?         @relation("Property_address")
+  addressLine1             String            @default("")
+  addressLine2             String            @default("")
+  city                     String            @default("")
+  region                   String            @default("")
+  postalCode               String            @default("")
+  countryCode              String            @default("US")
+  latitude                 Float?
+  longitude                Float?
+  publicLocationLabel      String            @default("")
+  showExactAddressPublicly Boolean           @default(false)
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+}
+
+model PropertyOwner {
+  id                                  String                    @id @default(cuid())
+  hostOrganization                    HostOrganization?         @relation("PropertyOwner_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId                  String?                   @map("hostOrganization")
+  user                                User?                     @relation("PropertyOwner_user", fields: [userId], references: [id])
+  userId                              String?                   @map("user")
+  ownerNumber                         String                    @unique @default("")
+  displayName                         String                    @default("")
+  companyName                         String                    @default("")
+  email                               String                    @default("")
+  phone                               String                    @default("")
+  status                              String?                   @default("invited")
+  payoutSchedule                      String?                   @default("monthly")
+  defaultManagerCommissionBasisPoints Int?                      @default(1500)
+  payoutMethod                        String?                   @default("manual")
+  payoutReference                     String                    @default("")
+  taxProfile                          Json?                     @default("{}")
+  assignments                         PropertyOwnerAssignment[] @relation("PropertyOwnerAssignment_owner")
+  statements                          OwnerStatement[]          @relation("OwnerStatement_owner")
+  payouts                             Payout[]                  @relation("Payout_propertyOwner")
+  createdAt                           DateTime                  @default(now())
+  updatedAt                           DateTime                  @default(now()) @updatedAt
+  from_OwnerStatementLine_owner       OwnerStatementLine[]      @relation("OwnerStatementLine_owner")
+
+  @@index([hostOrganizationId])
+  @@index([userId])
+}
+
+model PropertyOwnerAssignment {
+  id                           String            @id @default(cuid())
+  hostOrganization             HostOrganization? @relation("PropertyOwnerAssignment_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId           String?           @map("hostOrganization")
+  owner                        PropertyOwner?    @relation("PropertyOwnerAssignment_owner", fields: [ownerId], references: [id])
+  ownerId                      String?           @map("owner")
+  property                     Property?         @relation("PropertyOwnerAssignment_property", fields: [propertyId], references: [id])
+  propertyId                   String?           @map("property")
+  status                       String?           @default("active")
+  isPrimary                    Boolean           @default(true)
+  ownershipBasisPoints         Int?              @default(10000)
+  managerCommissionBasisPoints Int?              @default(1500)
+  effectiveFrom                String            @default("")
+  effectiveTo                  String            @default("")
+  notes                        String            @default("")
+  createdAt                    DateTime          @default(now())
+  updatedAt                    DateTime          @default(now()) @updatedAt
+
+  @@unique([propertyId, ownerId, effectiveFrom])
+  @@index([hostOrganizationId])
+  @@index([ownerId])
+  @@index([propertyId])
+}
+
+model AccommodationUnit {
+  id                     String            @id @default(cuid())
+  hostOrganization       HostOrganization? @relation("AccommodationUnit_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId     String?           @map("hostOrganization")
+  property               Property?         @relation("AccommodationUnit_property", fields: [propertyId], references: [id])
+  propertyId             String?           @map("property")
+  name                   String            @default("")
+  accommodationType      String?           @default("entire_home")
+  status                 String?           @default("available")
+  maxGuests              Int?              @default(2)
+  bedroomCount           Int?              @default(1)
+  bedCount               Int?              @default(1)
+  bathroomCountHalfUnits Int?              @default(2)
+  squareFeet             Int?
+  floorLabel             String            @default("")
+  listings               Listing[]         @relation("Listing_accommodationUnit")
+  bedrooms               Bedroom[]         @relation("Bedroom_accommodationUnit")
+  reservations           Reservation[]     @relation("Reservation_accommodationUnit")
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([propertyId])
+}
+
+model Bedroom {
+  id                  String             @id @default(cuid())
+  hostOrganization    HostOrganization?  @relation("Bedroom_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId  String?            @map("hostOrganization")
+  accommodationUnit   AccommodationUnit? @relation("Bedroom_accommodationUnit", fields: [accommodationUnitId], references: [id])
+  accommodationUnitId String?            @map("accommodationUnit")
+  name                String             @default("")
+  order               Int?               @default(0)
+  beds                Bed[]              @relation("Bed_bedroom")
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([accommodationUnitId])
+}
+
+model Bed {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("Bed_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  bedroom            Bedroom?          @relation("Bed_bedroom", fields: [bedroomId], references: [id])
+  bedroomId          String?           @map("bedroom")
+  bedType            String?           @default("queen")
+  quantity           Int?              @default(1)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([bedroomId])
+}
+
+model Amenity {
+  id        String    @id @default(cuid())
+  name      String    @unique @default("")
+  slug      String    @unique @default("")
+  category  String?   @default("essentials")
+  iconKey   String    @default("")
+  listings  Listing[] @relation("Amenity_listings")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+}
+
+model Listing {
+  id                           String             @id @default(cuid())
+  hostOrganization             HostOrganization?  @relation("Listing_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId           String?            @map("hostOrganization")
+  property                     Property?          @relation("Listing_property", fields: [propertyId], references: [id])
+  propertyId                   String?            @map("property")
+  accommodationUnit            AccommodationUnit? @relation("Listing_accommodationUnit", fields: [accommodationUnitId], references: [id])
+  accommodationUnitId          String?            @map("accommodationUnit")
+  title                        String             @default("")
+  slug                         String             @unique @default("")
+  subtitle                     String             @default("")
+  description                  String             @default("")
+  status                       String?            @default("draft")
+  bookingMode                  String?            @default("request")
+  instantBook                  Boolean            @default(false)
+  isFeatured                   Boolean            @default(false)
+  currencyCode                 String             @default("USD")
+  baseNightlyRateCents         Int?               @default(0)
+  securityDepositCents         Int?               @default(0)
+  minimumStay                  Int?               @default(1)
+  maximumStay                  Int?
+  advanceNoticeHours           Int?               @default(24)
+  bookingWindowDays            Int?               @default(365)
+  reviewAverageHundredths      Int?               @default(0)
+  reviewCount                  Int?               @default(0)
+  media                        ListingMedia[]     @relation("ListingMedia_listing")
+  amenities                    Amenity[]          @relation("Amenity_listings")
+  collections                  StayCollection[]   @relation("Listing_collections")
+  houseRules                   HouseRule[]        @relation("HouseRule_listing")
+  calendarBlocks               CalendarBlock[]    @relation("CalendarBlock_listing")
+  ratePlans                    RatePlan[]         @relation("RatePlan_listing")
+  feeDefinitions               FeeDefinition[]    @relation("FeeDefinition_listing")
+  taxRules                     TaxRule[]          @relation("TaxRule_listing")
+  quotes                       StayQuote[]        @relation("StayQuote_listing")
+  reservations                 Reservation[]      @relation("Reservation_listing")
+  conversations                Conversation[]     @relation("Conversation_listing")
+  reviews                      Review[]           @relation("Review_listing")
+  tasks                        PropertyTask[]     @relation("PropertyTask_listing")
+  channelListings              ChannelListing[]   @relation("ChannelListing_listing")
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @default(now()) @updatedAt
+  from_DamageClaim_listing     DamageClaim[]      @relation("DamageClaim_listing")
+  from_TaskRule_listing        TaskRule[]         @relation("TaskRule_listing")
+  from_DataExchangeJob_listing DataExchangeJob[]  @relation("DataExchangeJob_listing")
+
+  @@index([hostOrganizationId])
+  @@index([propertyId])
+  @@index([accommodationUnitId])
+}
+
+model ListingMedia {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("ListingMedia_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  listing            Listing?          @relation("ListingMedia_listing", fields: [listingId], references: [id])
+  listingId          String?           @map("listing")
+  image_id           String?
+  image_filesize     Int?
+  image_width        Int?
+  image_height       Int?
+  image_extension    String?
+  imagePath          String            @unique @default("")
+  altText            String            @default("")
+  caption            String            @default("")
+  order              Int?              @default(0)
+  metadata           Json?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([listingId])
+}
+
+model StayCollection {
+  id          String    @id @default(cuid())
+  name        String    @default("")
+  slug        String    @unique @default("")
+  description String    @default("")
+  isActive    Boolean   @default(true)
+  listings    Listing[] @relation("Listing_collections")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+}
+
+model HouseRule {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("HouseRule_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  listing            Listing?          @relation("HouseRule_listing", fields: [listingId], references: [id])
+  listingId          String?           @map("listing")
+  ruleType           String?           @default("custom")
+  title              String            @default("")
+  description        String            @default("")
+  isAllowed          Boolean           @default(false)
+  isRequired         Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([listingId])
+}
+
+model CalendarBlock {
+  id                   String              @id @default(cuid())
+  hostOrganization     HostOrganization?   @relation("CalendarBlock_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId   String?             @map("hostOrganization")
+  listing              Listing?            @relation("CalendarBlock_listing", fields: [listingId], references: [id])
+  listingId            String?             @map("listing")
+  reservation          Reservation?        @relation("CalendarBlock_reservation", fields: [reservationId], references: [id])
+  reservationId        String?             @map("reservation")
+  channelReservation   ChannelReservation? @relation("CalendarBlock_channelReservation", fields: [channelReservationId], references: [id])
+  channelReservationId String?             @map("channelReservation")
+  startDate            String              @default("")
+  endDate              String              @default("")
+  reason               String?             @default("owner_block")
+  status               String?             @default("active")
+  source               String?             @default("operator")
+  externalUid          String              @default("")
+  notes                String              @default("")
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([listingId])
+  @@index([reservationId])
+  @@index([channelReservationId])
+  @@index([externalUid])
+}
+
+model RatePlan {
+  id                   String              @id @default(cuid())
+  hostOrganization     HostOrganization?   @relation("RatePlan_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId   String?             @map("hostOrganization")
+  listing              Listing?            @relation("RatePlan_listing", fields: [listingId], references: [id])
+  listingId            String?             @map("listing")
+  cancellationPolicy   CancellationPolicy? @relation("RatePlan_cancellationPolicy", fields: [cancellationPolicyId], references: [id])
+  cancellationPolicyId String?             @map("cancellationPolicy")
+  name                 String              @default("")
+  description          String              @default("")
+  status               String?             @default("draft")
+  currencyCode         String              @default("USD")
+  baseNightlyRateCents Int?                @default(0)
+  minimumStay          Int?                @default(1)
+  maximumStay          Int?
+  advanceNoticeHours   Int?                @default(24)
+  bookingWindowDays    Int?                @default(365)
+  isDefault            Boolean             @default(false)
+  seasonalRates        SeasonalRate[]      @relation("SeasonalRate_ratePlan")
+  quotes               StayQuote[]         @relation("StayQuote_ratePlan")
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([listingId])
+  @@index([cancellationPolicyId])
+}
+
+model SeasonalRate {
+  id                    String            @id @default(cuid())
+  hostOrganization      HostOrganization? @relation("SeasonalRate_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId    String?           @map("hostOrganization")
+  ratePlan              RatePlan?         @relation("SeasonalRate_ratePlan", fields: [ratePlanId], references: [id])
+  ratePlanId            String?           @map("ratePlan")
+  name                  String            @default("")
+  startDate             String            @default("")
+  endDate               String            @default("")
+  nightlyRateCents      Int?
+  adjustmentBasisPoints Int?
+  minimumStay           Int?
+  priority              Int?              @default(0)
+  isActive              Boolean           @default(true)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([ratePlanId])
+}
+
+model FeeDefinition {
+  id                    String            @id @default(cuid())
+  hostOrganization      HostOrganization? @relation("FeeDefinition_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId    String?           @map("hostOrganization")
+  listing               Listing?          @relation("FeeDefinition_listing", fields: [listingId], references: [id])
+  listingId             String?           @map("listing")
+  name                  String            @default("")
+  feeType               String?           @default("cleaning")
+  calculation           String?           @default("fixed")
+  amountCents           Int?              @default(0)
+  percentageBasisPoints Int?              @default(0)
+  taxable               Boolean           @default(true)
+  required              Boolean           @default(true)
+  isActive              Boolean           @default(true)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([listingId])
+}
+
+model TaxRule {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("TaxRule_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  listing            Listing?          @relation("TaxRule_listing", fields: [listingId], references: [id])
+  listingId          String?           @map("listing")
+  name               String            @default("")
+  jurisdiction       String            @default("")
+  registrationNumber String            @default("")
+  rateBasisPoints    Int
+  isInclusive        Boolean           @default(false)
+  isActive           Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([listingId])
+}
+
+model CancellationPolicy {
+  id                    String            @id @default(cuid())
+  hostOrganization      HostOrganization? @relation("CancellationPolicy_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId    String?           @map("hostOrganization")
+  name                  String            @default("")
+  version               String            @default("")
+  policyType            String?           @default("moderate")
+  summary               String            @default("")
+  fullTerms             String            @default("")
+  freeCancellationHours Int?              @default(24)
+  rules                 Json?
+  ratePlans             RatePlan[]        @relation("RatePlan_cancellationPolicy")
+  agreements            StayAgreement[]   @relation("StayAgreement_cancellationPolicy")
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+}
+
+model StayQuote {
+  id                   String            @id @default(cuid())
+  hostOrganization     HostOrganization? @relation("StayQuote_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId   String?           @map("hostOrganization")
+  listing              Listing?          @relation("StayQuote_listing", fields: [listingId], references: [id])
+  listingId            String?           @map("listing")
+  ratePlan             RatePlan?         @relation("StayQuote_ratePlan", fields: [ratePlanId], references: [id])
+  ratePlanId           String?           @map("ratePlan")
+  reservation          Reservation?      @relation("Reservation_quote")
+  quoteNumber          String            @unique @default("")
+  tokenHash            String            @unique @default("")
+  status               String?           @default("active")
+  checkInDate          String            @default("")
+  checkOutDate         String            @default("")
+  adults               Int?              @default(1)
+  children             Int?              @default(0)
+  infants              Int?              @default(0)
+  pets                 Int?              @default(0)
+  currencyCode         String            @default("USD")
+  lodgingSubtotalCents Int?              @default(0)
+  feeTotalCents        Int?              @default(0)
+  taxTotalCents        Int?              @default(0)
+  securityDepositCents Int?              @default(0)
+  totalAmountCents     Int?              @default(0)
+  quoteSnapshot        Json?
+  expiresAt            DateTime
+  consumedAt           DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([listingId])
+  @@index([ratePlanId])
+}
+
+model GuestProfile {
+  id                           String            @id @default(cuid())
+  hostOrganization             HostOrganization? @relation("GuestProfile_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId           String?           @map("hostOrganization")
+  user                         User?             @relation("GuestProfile_user", fields: [userId], references: [id])
+  userId                       String?           @unique @map("user")
+  name                         String            @default("")
+  email                        String            @default("")
+  phone                        String            @default("")
+  verificationStatus           String?           @default("unverified")
+  preferredLanguage            String            @default("en")
+  marketingConsent             Boolean           @default(false)
+  internalNotes                String            @default("")
+  reservations                 Reservation[]     @relation("Reservation_guest")
+  conversations                Conversation[]    @relation("Conversation_guest")
+  reviews                      Review[]          @relation("Review_guest")
+  payments                     Payment[]         @relation("Payment_guest")
+  createdAt                    DateTime          @default(now())
+  updatedAt                    DateTime          @default(now()) @updatedAt
+  from_GuestParty_primaryGuest GuestParty[]      @relation("GuestParty_primaryGuest")
+  from_StayAgreement_guest     StayAgreement[]   @relation("StayAgreement_guest")
+  from_DamageClaim_guest       DamageClaim[]     @relation("DamageClaim_guest")
+
+  @@index([hostOrganizationId])
+}
+
+model GuestParty {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("GuestParty_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  reservation        Reservation?      @relation("GuestParty_reservation", fields: [reservationId], references: [id])
+  reservationId      String?           @unique @map("reservation")
+  primaryGuest       GuestProfile?     @relation("GuestParty_primaryGuest", fields: [primaryGuestId], references: [id])
+  primaryGuestId     String?           @map("primaryGuest")
+  adults             Int?              @default(1)
+  children           Int?              @default(0)
+  infants            Int?              @default(0)
+  pets               Int?              @default(0)
+  invitedGuests      Json?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([primaryGuestId])
+}
+
+model Reservation {
+  id                                  String                @id @default(cuid())
+  hostOrganization                    HostOrganization?     @relation("Reservation_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId                  String?               @map("hostOrganization")
+  listing                             Listing?              @relation("Reservation_listing", fields: [listingId], references: [id])
+  listingId                           String?               @map("listing")
+  accommodationUnit                   AccommodationUnit?    @relation("Reservation_accommodationUnit", fields: [accommodationUnitId], references: [id])
+  accommodationUnitId                 String?               @map("accommodationUnit")
+  guest                               GuestProfile?         @relation("Reservation_guest", fields: [guestId], references: [id])
+  guestId                             String?               @map("guest")
+  guestParty                          GuestParty?           @relation("GuestParty_reservation")
+  quote                               StayQuote?            @relation("Reservation_quote", fields: [quoteId], references: [id])
+  quoteId                             String?               @unique @map("quote")
+  confirmationCode                    String                @unique @default("")
+  tripTokenHash                       String                @unique @default("")
+  tripTokenExpiresAt                  DateTime
+  tripTokenRevokedAt                  DateTime?
+  status                              String?               @default("pending")
+  paymentStatus                       String?               @default("unpaid")
+  source                              String?               @default("direct")
+  checkInDate                         String                @default("")
+  checkOutDate                        String                @default("")
+  scheduledCheckInTime                String                @default("")
+  scheduledCheckOutTime               String                @default("")
+  checkedInAt                         DateTime?
+  checkedOutAt                        DateTime?
+  cancelledAt                         DateTime?
+  cancellationReason                  String                @default("")
+  cancelledBy                         String?
+  currencyCode                        String                @default("USD")
+  lodgingSubtotalCents                Int?                  @default(0)
+  feeTotalCents                       Int?                  @default(0)
+  taxTotalCents                       Int?                  @default(0)
+  discountTotalCents                  Int?                  @default(0)
+  securityDepositCents                Int?                  @default(0)
+  totalAmountCents                    Int?                  @default(0)
+  amountPaidCents                     Int?                  @default(0)
+  bookingSnapshot                     Json?
+  guestNotes                          String                @default("")
+  internalNotes                       String                @default("")
+  lineItems                           ReservationLineItem[] @relation("ReservationLineItem_reservation")
+  calendarBlocks                      CalendarBlock[]       @relation("CalendarBlock_reservation")
+  agreement                           StayAgreement?        @relation("Reservation_agreement", fields: [agreementId], references: [id])
+  agreementId                         String?               @unique @map("agreement")
+  securityDeposit                     SecurityDeposit?      @relation("Reservation_securityDeposit", fields: [securityDepositId], references: [id])
+  securityDepositId                   String?               @unique @map("securityDeposit")
+  damageClaims                        DamageClaim[]         @relation("DamageClaim_reservation")
+  payments                            Payment[]             @relation("Payment_reservation")
+  refunds                             Refund[]              @relation("Refund_reservation")
+  payout                              Payout?               @relation("Payout_reservation")
+  conversation                        Conversation?         @relation("Conversation_reservation")
+  reviews                             Review[]              @relation("Review_reservation")
+  channelReservation                  ChannelReservation?   @relation("ChannelReservation_reservation")
+  tasks                               PropertyTask[]        @relation("PropertyTask_reservation")
+  createdAt                           DateTime              @default(now())
+  updatedAt                           DateTime              @default(now()) @updatedAt
+  from_OwnerStatementLine_reservation OwnerStatementLine[]  @relation("OwnerStatementLine_reservation")
+
+  @@index([hostOrganizationId])
+  @@index([listingId])
+  @@index([accommodationUnitId])
+  @@index([guestId])
+}
+
+model ReservationLineItem {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("ReservationLineItem_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  reservation        Reservation?      @relation("ReservationLineItem_reservation", fields: [reservationId], references: [id])
+  reservationId      String?           @map("reservation")
+  snapshotKey        String            @unique @default("")
+  lineType           String?           @default("night")
+  description        String            @default("")
+  serviceDate        String            @default("")
+  quantity           Int?              @default(1)
+  unitAmountCents    Int
+  totalAmountCents   Int
+  currencyCode       String            @default("USD")
+  metadataSnapshot   Json?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([reservationId])
+}
+
+model StayAgreement {
+  id                    String              @id @default(cuid())
+  hostOrganization      HostOrganization?   @relation("StayAgreement_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId    String?             @map("hostOrganization")
+  reservation           Reservation?        @relation("Reservation_agreement")
+  guest                 GuestProfile?       @relation("StayAgreement_guest", fields: [guestId], references: [id])
+  guestId               String?             @map("guest")
+  cancellationPolicy    CancellationPolicy? @relation("StayAgreement_cancellationPolicy", fields: [cancellationPolicyId], references: [id])
+  cancellationPolicyId  String?             @map("cancellationPolicy")
+  agreementNumber       String              @unique @default("")
+  signingTokenHash      String              @unique @default("")
+  signingTokenExpiresAt DateTime?
+  signingTokenRevokedAt DateTime?
+  status                String?             @default("draft")
+  title                 String              @default("")
+  signerEmail           String              @default("")
+  signatureName         String              @default("")
+  signedAt              DateTime?
+  termsSnapshot         Json?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([guestId])
+  @@index([cancellationPolicyId])
+}
+
+model SecurityDeposit {
+  id                  String            @id @default(cuid())
+  hostOrganization    HostOrganization? @relation("SecurityDeposit_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId  String?           @map("hostOrganization")
+  reservation         Reservation?      @relation("Reservation_securityDeposit")
+  payment             Payment?          @relation("SecurityDeposit_payment", fields: [paymentId], references: [id])
+  paymentId           String?           @map("payment")
+  depositNumber       String            @unique @default("")
+  status              String?           @default("required")
+  amountCents         Int?              @default(0)
+  capturedAmountCents Int?              @default(0)
+  currencyCode        String            @default("USD")
+  heldAt              DateTime?
+  releasedAt          DateTime?
+  providerReference   String            @default("")
+  metadata            Json?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([paymentId])
+}
+
+model DamageClaim {
+  id                  String            @id @default(cuid())
+  hostOrganization    HostOrganization? @relation("DamageClaim_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId  String?           @map("hostOrganization")
+  reservation         Reservation?      @relation("DamageClaim_reservation", fields: [reservationId], references: [id])
+  reservationId       String?           @map("reservation")
+  listing             Listing?          @relation("DamageClaim_listing", fields: [listingId], references: [id])
+  listingId           String?           @map("listing")
+  guest               GuestProfile?     @relation("DamageClaim_guest", fields: [guestId], references: [id])
+  guestId             String?           @map("guest")
+  claimNumber         String            @unique @default("")
+  status              String?           @default("draft")
+  description         String            @default("")
+  claimedAmountCents  Int?              @default(0)
+  approvedAmountCents Int?              @default(0)
+  currencyCode        String            @default("USD")
+  evidence            Json?
+  submittedAt         DateTime?
+  resolvedAt          DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([reservationId])
+  @@index([listingId])
+  @@index([guestId])
+}
+
+model Payment {
+  id                  String                @id @default(cuid())
+  hostOrganization    HostOrganization?     @relation("Payment_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId  String?               @map("hostOrganization")
+  reservation         Reservation?          @relation("Payment_reservation", fields: [reservationId], references: [id])
+  reservationId       String?               @map("reservation")
+  guest               GuestProfile?         @relation("Payment_guest", fields: [guestId], references: [id])
+  guestId             String?               @map("guest")
+  paymentProvider     PaymentProvider?      @relation("Payment_paymentProvider", fields: [paymentProviderId], references: [id])
+  paymentProviderId   String?               @map("paymentProvider")
+  amountCents         Int
+  refundedAmountCents Int?                  @default(0)
+  currencyCode        String                @default("USD")
+  status              String?               @default("pending")
+  paymentMethod       String?               @default("manual")
+  provider            String                @default("manual")
+  providerPaymentId   String                @unique @default("")
+  idempotencyKey      String                @unique @default("")
+  data                Json?
+  processedAt         DateTime?
+  errorMessage        String                @default("")
+  processedBy         User?                 @relation("Payment_processedBy", fields: [processedById], references: [id])
+  processedById       String?               @map("processedBy")
+  refunds             Refund[]              @relation("Refund_payment")
+  securityDeposits    SecurityDeposit[]     @relation("SecurityDeposit_payment")
+  webhookEvents       PaymentWebhookEvent[] @relation("PaymentWebhookEvent_payment")
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([reservationId])
+  @@index([guestId])
+  @@index([paymentProviderId])
+  @@index([processedById])
+}
+
+model PaymentProvider {
+  id                 String                @id @default(cuid())
+  hostOrganization   HostOrganization?     @relation("PaymentProvider_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?               @map("hostOrganization")
+  name               String                @default("")
+  code               String                @default("")
+  isInstalled        Boolean               @default(false)
+  metadata           Json?                 @default("{}")
+  payments           Payment[]             @relation("Payment_paymentProvider")
+  webhookEvents      PaymentWebhookEvent[] @relation("PaymentWebhookEvent_paymentProvider")
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @default(now()) @updatedAt
+
+  @@unique([hostOrganizationId, code])
+  @@index([hostOrganizationId])
+  @@index([code])
+}
+
+model PaymentWebhookEvent {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("PaymentWebhookEvent_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  paymentProvider    PaymentProvider?  @relation("PaymentWebhookEvent_paymentProvider", fields: [paymentProviderId], references: [id])
+  paymentProviderId  String?           @map("paymentProvider")
+  payment            Payment?          @relation("PaymentWebhookEvent_payment", fields: [paymentId], references: [id])
+  paymentId          String?           @map("payment")
+  replayKey          String            @unique @default("")
+  providerCode       String            @default("")
+  providerEventId    String            @default("")
+  eventType          String            @default("")
+  payloadSha256      String            @default("")
+  status             String?           @default("processed")
+  processedAt        DateTime
+  errorMessage       String            @default("")
+  evidence           Json?             @default("{}")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([paymentProviderId])
+  @@index([paymentId])
+}
+
+model Refund {
+  id                             String               @id @default(cuid())
+  hostOrganization               HostOrganization?    @relation("Refund_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId             String?              @map("hostOrganization")
+  reservation                    Reservation?         @relation("Refund_reservation", fields: [reservationId], references: [id])
+  reservationId                  String?              @map("reservation")
+  payment                        Payment?             @relation("Refund_payment", fields: [paymentId], references: [id])
+  paymentId                      String?              @map("payment")
+  refundNumber                   String               @unique @default("")
+  idempotencyKey                 String               @unique @default("")
+  status                         String?              @default("pending")
+  reason                         String?              @default("other")
+  amountCents                    Int
+  currencyCode                   String               @default("USD")
+  providerRefundId               String               @unique @default("")
+  processedAt                    DateTime?
+  data                           Json?
+  createdAt                      DateTime             @default(now())
+  updatedAt                      DateTime             @default(now()) @updatedAt
+  from_OwnerStatementLine_refund OwnerStatementLine[] @relation("OwnerStatementLine_refund")
+
+  @@index([hostOrganizationId])
+  @@index([reservationId])
+  @@index([paymentId])
+}
+
+model Payout {
+  id                             String               @id @default(cuid())
+  hostOrganization               HostOrganization?    @relation("Payout_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId             String?              @map("hostOrganization")
+  reservation                    Reservation?         @relation("Payout_reservation", fields: [reservationId], references: [id])
+  reservationId                  String?              @unique @map("reservation")
+  propertyOwner                  PropertyOwner?       @relation("Payout_propertyOwner", fields: [propertyOwnerId], references: [id])
+  propertyOwnerId                String?              @map("propertyOwner")
+  ownerStatement                 OwnerStatement?      @relation("Payout_ownerStatement", fields: [ownerStatementId], references: [id])
+  ownerStatementId               String?              @map("ownerStatement")
+  payoutNumber                   String               @unique @default("")
+  status                         String?              @default("scheduled")
+  currencyCode                   String               @default("USD")
+  grossAmountCents               Int?                 @default(0)
+  platformFeeCents               Int?                 @default(0)
+  managerFeeCents                Int?                 @default(0)
+  refundAmountCents              Int?                 @default(0)
+  netAmountCents                 Int?                 @default(0)
+  providerPayoutId               String               @unique @default("")
+  scheduledAt                    DateTime?
+  paidAt                         DateTime?
+  data                           Json?
+  createdAt                      DateTime             @default(now())
+  updatedAt                      DateTime             @default(now()) @updatedAt
+  from_OwnerStatementLine_payout OwnerStatementLine[] @relation("OwnerStatementLine_payout")
+
+  @@index([hostOrganizationId])
+  @@index([propertyOwnerId])
+  @@index([ownerStatementId])
+}
+
+model OwnerStatement {
+  id                     String               @id @default(cuid())
+  hostOrganization       HostOrganization?    @relation("OwnerStatement_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId     String?              @map("hostOrganization")
+  owner                  PropertyOwner?       @relation("OwnerStatement_owner", fields: [ownerId], references: [id])
+  ownerId                String?              @map("owner")
+  statementNumber        String               @unique @default("")
+  idempotencyKey         String               @unique @default("")
+  status                 String?              @default("draft")
+  periodStart            String               @default("")
+  periodEnd              String               @default("")
+  currencyCode           String               @default("USD")
+  grossRevenueCents      Int?                 @default(0)
+  taxAmountCents         Int?                 @default(0)
+  refundAmountCents      Int?                 @default(0)
+  expenseAmountCents     Int?                 @default(0)
+  adjustmentAmountCents  Int?                 @default(0)
+  managerCommissionCents Int?                 @default(0)
+  ownerEarningsCents     Int?                 @default(0)
+  paidOutCents           Int?                 @default(0)
+  balanceDueCents        Int?                 @default(0)
+  statementSnapshot      Json?
+  generatedAt            DateTime?            @default(now())
+  approvedAt             DateTime?
+  sentAt                 DateTime?
+  paidAt                 DateTime?
+  paidReference          String               @default("")
+  lines                  OwnerStatementLine[] @relation("OwnerStatementLine_statement")
+  payouts                Payout[]             @relation("Payout_ownerStatement")
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([ownerId])
+}
+
+model OwnerStatementLine {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("OwnerStatementLine_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  statement          OwnerStatement?   @relation("OwnerStatementLine_statement", fields: [statementId], references: [id])
+  statementId        String?           @map("statement")
+  owner              PropertyOwner?    @relation("OwnerStatementLine_owner", fields: [ownerId], references: [id])
+  ownerId            String?           @map("owner")
+  reservation        Reservation?      @relation("OwnerStatementLine_reservation", fields: [reservationId], references: [id])
+  reservationId      String?           @map("reservation")
+  refund             Refund?           @relation("OwnerStatementLine_refund", fields: [refundId], references: [id])
+  refundId           String?           @map("refund")
+  payout             Payout?           @relation("OwnerStatementLine_payout", fields: [payoutId], references: [id])
+  payoutId           String?           @map("payout")
+  lineKey            String            @unique @default("")
+  lineType           String?           @default("reservation_revenue")
+  description        String            @default("")
+  serviceDate        String            @default("")
+  amountCents        Int
+  sourceId           String            @default("")
+  metadata           Json?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([statementId])
+  @@index([ownerId])
+  @@index([reservationId])
+  @@index([refundId])
+  @@index([payoutId])
+}
+
+model Conversation {
+  id                  String             @id @default(cuid())
+  hostOrganization    HostOrganization?  @relation("Conversation_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId  String?            @map("hostOrganization")
+  reservation         Reservation?       @relation("Conversation_reservation", fields: [reservationId], references: [id])
+  reservationId       String?            @unique @map("reservation")
+  listing             Listing?           @relation("Conversation_listing", fields: [listingId], references: [id])
+  listingId           String?            @map("listing")
+  guest               GuestProfile?      @relation("Conversation_guest", fields: [guestId], references: [id])
+  guestId             String?            @map("guest")
+  channelConnection   ChannelConnection? @relation("Conversation_channelConnection", fields: [channelConnectionId], references: [id])
+  channelConnectionId String?            @map("channelConnection")
+  subject             String             @default("")
+  status              String?            @default("open")
+  externalThreadId    String             @default("")
+  lastMessageAt       DateTime?
+  messages            Message[]          @relation("Message_conversation")
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([listingId])
+  @@index([guestId])
+  @@index([channelConnectionId])
+  @@index([externalThreadId])
+}
+
+model Message {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("Message_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  conversation       Conversation?     @relation("Message_conversation", fields: [conversationId], references: [id])
+  conversationId     String?           @map("conversation")
+  senderUser         User?             @relation("Message_senderUser", fields: [senderUserId], references: [id])
+  senderUserId       String?           @map("senderUser")
+  direction          String?           @default("outbound")
+  senderType         String?           @default("host")
+  body               String            @default("")
+  status             String?           @default("draft")
+  externalMessageId  String            @default("")
+  attachments        Json?
+  sentAt             DateTime?
+  receivedAt         DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([conversationId])
+  @@index([senderUserId])
+  @@index([externalMessageId])
+}
+
+model Review {
+  id                  String            @id @default(cuid())
+  hostOrganization    HostOrganization? @relation("Review_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId  String?           @map("hostOrganization")
+  reservation         Reservation?      @relation("Review_reservation", fields: [reservationId], references: [id])
+  reservationId       String?           @map("reservation")
+  listing             Listing?          @relation("Review_listing", fields: [listingId], references: [id])
+  listingId           String?           @map("listing")
+  guest               GuestProfile?     @relation("Review_guest", fields: [guestId], references: [id])
+  guestId             String?           @map("guest")
+  authorUser          User?             @relation("Review_authorUser", fields: [authorUserId], references: [id])
+  authorUserId        String?           @map("authorUser")
+  direction           String?           @default("guest_to_host")
+  status              String?           @default("draft")
+  overallRating       Int?
+  cleanlinessRating   Int?
+  accuracyRating      Int?
+  communicationRating Int?
+  locationRating      Int?
+  valueRating         Int?
+  body                String            @default("")
+  privateFeedback     String            @default("")
+  submittedAt         DateTime?
+  publishAfter        DateTime?
+  publishedAt         DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([reservationId])
+  @@index([listingId])
+  @@index([guestId])
+  @@index([authorUserId])
+}
+
+model TaskRule {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("TaskRule_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  property           Property?         @relation("TaskRule_property", fields: [propertyId], references: [id])
+  propertyId         String?           @map("property")
+  listing            Listing?          @relation("TaskRule_listing", fields: [listingId], references: [id])
+  listingId          String?           @map("listing")
+  defaultAssignee    User?             @relation("TaskRule_defaultAssignee", fields: [defaultAssigneeId], references: [id])
+  defaultAssigneeId  String?           @map("defaultAssignee")
+  code               String            @unique @default("")
+  name               String            @default("")
+  trigger            String?           @default("after_check_out")
+  offsetMinutes      Int?              @default(0)
+  taskType           String?           @default("turnover_cleaning")
+  titleTemplate      String            @default("")
+  priority           String?           @default("normal")
+  checklistTemplate  Json?             @default("[]")
+  isActive           Boolean           @default(true)
+  tasks              PropertyTask[]    @relation("PropertyTask_taskRule")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([propertyId])
+  @@index([listingId])
+  @@index([defaultAssigneeId])
+}
+
+model PropertyTask {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("PropertyTask_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  property           Property?         @relation("PropertyTask_property", fields: [propertyId], references: [id])
+  propertyId         String?           @map("property")
+  listing            Listing?          @relation("PropertyTask_listing", fields: [listingId], references: [id])
+  listingId          String?           @map("listing")
+  reservation        Reservation?      @relation("PropertyTask_reservation", fields: [reservationId], references: [id])
+  reservationId      String?           @map("reservation")
+  taskRule           TaskRule?         @relation("PropertyTask_taskRule", fields: [taskRuleId], references: [id])
+  taskRuleId         String?           @map("taskRule")
+  assignee           User?             @relation("PropertyTask_assignee", fields: [assigneeId], references: [id])
+  assigneeId         String?           @map("assignee")
+  idempotencyKey     String            @unique @default("")
+  source             String?           @default("manual")
+  title              String            @default("")
+  taskType           String?           @default("turnover_cleaning")
+  status             String?           @default("queued")
+  priority           String?           @default("normal")
+  dueAt              DateTime?
+  claimedAt          DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  cancelledAt        DateTime?
+  checklist          Json?
+  completionEvidence Json?
+  completionNotes    String            @default("")
+  notes              String            @default("")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([propertyId])
+  @@index([listingId])
+  @@index([reservationId])
+  @@index([taskRuleId])
+  @@index([assigneeId])
+}
+
+model ChannelConnection {
+  id                  String               @id @default(cuid())
+  hostOrganization    HostOrganization?    @relation("ChannelConnection_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId  String?              @map("hostOrganization")
+  name                String               @default("")
+  provider            String?              @default("ical")
+  connectionType      String?              @default("ical")
+  status              String?              @default("pending")
+  settings            Json?                @default("{}")
+  syncAvailability    Boolean              @default(true)
+  syncRates           Boolean              @default(false)
+  syncReservations    Boolean              @default(false)
+  syncMessages        Boolean              @default(false)
+  lastSyncedAt        DateTime?
+  lastError           String               @default("")
+  channelListings     ChannelListing[]     @relation("ChannelListing_channelConnection")
+  channelReservations ChannelReservation[] @relation("ChannelReservation_channelConnection")
+  syncEvents          ChannelSyncEvent[]   @relation("ChannelSyncEvent_channelConnection")
+  dataExchangeJobs    DataExchangeJob[]    @relation("DataExchangeJob_channelConnection")
+  conversations       Conversation[]       @relation("Conversation_channelConnection")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+}
+
+model ChannelListing {
+  id                  String               @id @default(cuid())
+  hostOrganization    HostOrganization?    @relation("ChannelListing_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId  String?              @map("hostOrganization")
+  listing             Listing?             @relation("ChannelListing_listing", fields: [listingId], references: [id])
+  listingId           String?              @map("listing")
+  channelConnection   ChannelConnection?   @relation("ChannelListing_channelConnection", fields: [channelConnectionId], references: [id])
+  channelConnectionId String?              @map("channelConnection")
+  externalListingId   String               @default("")
+  externalUrl         String               @default("")
+  status              String?              @default("pending")
+  mapping             Json?                @default("{}")
+  lastSyncedAt        DateTime?
+  channelReservations ChannelReservation[] @relation("ChannelReservation_channelListing")
+  syncEvents          ChannelSyncEvent[]   @relation("ChannelSyncEvent_channelListing")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([listingId])
+  @@index([channelConnectionId])
+  @@index([externalListingId])
+}
+
+model ChannelReservation {
+  id                    String             @id @default(cuid())
+  hostOrganization      HostOrganization?  @relation("ChannelReservation_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId    String?            @map("hostOrganization")
+  channelConnection     ChannelConnection? @relation("ChannelReservation_channelConnection", fields: [channelConnectionId], references: [id])
+  channelConnectionId   String?            @map("channelConnection")
+  channelListing        ChannelListing?    @relation("ChannelReservation_channelListing", fields: [channelListingId], references: [id])
+  channelListingId      String?            @map("channelListing")
+  reservation           Reservation?       @relation("ChannelReservation_reservation", fields: [reservationId], references: [id])
+  reservationId         String?            @unique @map("reservation")
+  externalReservationId String             @default("")
+  status                String?            @default("imported")
+  guestName             String             @default("")
+  guestEmail            String             @default("")
+  checkInDate           String             @default("")
+  checkOutDate          String             @default("")
+  totalAmountCents      Int?
+  commissionAmountCents Int?
+  currencyCode          String             @default("USD")
+  rawData               Json?              @default("{}")
+  lastSyncedAt          DateTime?
+  calendarBlocks        CalendarBlock[]    @relation("CalendarBlock_channelReservation")
+  syncEvents            ChannelSyncEvent[] @relation("ChannelSyncEvent_channelReservation")
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([channelConnectionId])
+  @@index([channelListingId])
+  @@index([externalReservationId])
+}
+
+model ChannelSyncEvent {
+  id                   String              @id @default(cuid())
+  hostOrganization     HostOrganization?   @relation("ChannelSyncEvent_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId   String?             @map("hostOrganization")
+  channelConnection    ChannelConnection?  @relation("ChannelSyncEvent_channelConnection", fields: [channelConnectionId], references: [id])
+  channelConnectionId  String?             @map("channelConnection")
+  channelListing       ChannelListing?     @relation("ChannelSyncEvent_channelListing", fields: [channelListingId], references: [id])
+  channelListingId     String?             @map("channelListing")
+  channelReservation   ChannelReservation? @relation("ChannelSyncEvent_channelReservation", fields: [channelReservationId], references: [id])
+  channelReservationId String?             @map("channelReservation")
+  action               String?             @default("availability_import")
+  status               String?             @default("processing")
+  message              String              @default("")
+  payload              Json?
+  errorMessage         String              @default("")
+  attempts             Int?                @default(0)
+  nextAttemptAt        DateTime?
+  occurredAt           DateTime?           @default(now())
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([channelConnectionId])
+  @@index([channelListingId])
+  @@index([channelReservationId])
+}
+
+model DataExchangeJob {
+  id                  String             @id @default(cuid())
+  hostOrganization    HostOrganization?  @relation("DataExchangeJob_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId  String?            @map("hostOrganization")
+  channelConnection   ChannelConnection? @relation("DataExchangeJob_channelConnection", fields: [channelConnectionId], references: [id])
+  channelConnectionId String?            @map("channelConnection")
+  listing             Listing?           @relation("DataExchangeJob_listing", fields: [listingId], references: [id])
+  listingId           String?            @map("listing")
+  direction           String?            @default("import")
+  domain              String?            @default("availability")
+  format              String?            @default("json")
+  status              String?            @default("pending")
+  idempotencyKey      String             @unique @default("")
+  payloadSha256       String             @default("")
+  sourceLabel         String             @default("")
+  processedCount      Int?               @default(0)
+  createdCount        Int?               @default(0)
+  updatedCount        Int?               @default(0)
+  skippedCount        Int?               @default(0)
+  conflictCount       Int?               @default(0)
+  resultSummary       Json?
+  errorMessage        String             @default("")
+  startedAt           DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([channelConnectionId])
+  @@index([listingId])
+}
+
+model OutboxEvent {
+  id                 String            @id @default(cuid())
+  hostOrganization   HostOrganization? @relation("OutboxEvent_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId String?           @map("hostOrganization")
+  eventType          String            @default("")
+  aggregateType      String            @default("")
+  aggregateId        String            @default("")
+  idempotencyKey     String            @unique @default("")
+  payload            Json?
+  status             String?           @default("pending")
+  attempts           Int?              @default(0)
+  availableAt        DateTime?         @default(now())
+  processedAt        DateTime?
+  lastError          String            @default("")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
 }

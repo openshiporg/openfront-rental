@@ -4,11 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "keystone build --no-ui && npm run migrate && next dev",
-    "build": "keystone build --no-ui && npm run migrate && next build",
+    "build": "keystone build --no-ui && next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "migrate:gen": "keystone build --no-ui && tsx features/keystone/view-order/generate-view-order.ts && keystone prisma migrate dev",
-    "migrate": "prisma migrate deploy"
+    "migrate": "prisma migrate deploy",
+    "release:migrate": "prisma migrate deploy",
+    "seed:runtime": "tsx features/platform/onboarding/scripts/seed-runtime.ts"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.13",

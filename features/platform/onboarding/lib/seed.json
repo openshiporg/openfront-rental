@@ -1,0 +1,169 @@
+{
+  "settings": {
+    "name": "Commonstay",
+    "tagline": "Remarkable homes, locally hosted",
+    "homepageHeadline": "Stay somewhere considered.",
+    "publicDescription": "Independent stays with thoughtful details, clear total pricing, and direct relationships with the people who care for each home.",
+    "supportEmail": "hello@commonstay.local",
+    "supportPhone": "+1 (518) 555-0142",
+    "currencyCode": "USD",
+    "locale": "en-US",
+    "timezone": "America/New_York",
+    "defaultMapLatitude": 41.6,
+    "defaultMapLongitude": -78.4,
+    "accentHue": 155,
+    "isPublished": true
+  },
+  "hostOrganization": {
+    "id": "host_commonstay_collective",
+    "name": "Commonstay Collective",
+    "slug": "commonstay-collective",
+    "organizationType": "property_manager",
+    "status": "active",
+    "publicBio": "A small team partnering with independent owners to host design-led homes across the Northeast and California.",
+    "publicEmail": "hosts@commonstay.local",
+    "publicPhone": "+1 (518) 555-0142",
+    "website": "https://rental.local",
+    "canonicalUrl": "https://rental.local/hosts/commonstay-collective",
+    "federationId": "urn:openfront:host:commonstay-collective",
+    "dataCustody": "self_hosted",
+    "isPublic": true
+  },
+  "cancellationPolicy": {
+    "id": "policy_commonstay_moderate_2026",
+    "name": "Moderate",
+    "version": "moderate-2026-01",
+    "policyType": "moderate",
+    "summary": "Cancel within 24 hours of booking for a full refund. After that, receive a full refund until five days before check-in and 50% until 24 hours before check-in.",
+    "fullTerms": "Refund calculations use the policy version captured with the reservation. Cleaning fees are refundable when the stay has not begun.",
+    "freeCancellationHours": 24,
+    "rules": [
+      { "hoursBeforeCheckIn": 120, "refundBasisPoints": 10000 },
+      { "hoursBeforeCheckIn": 24, "refundBasisPoints": 5000 },
+      { "hoursBeforeCheckIn": 0, "refundBasisPoints": 0 }
+    ]
+  },
+  "paymentProvider": {
+    "id": "provider_commonstay_manual",
+    "name": "Manual direct-booking payments",
+    "code": "pp_system_default",
+    "isInstalled": true,
+    "metadata": { "mode": "local_runtime", "externalProvidersEnabled": false, "secrets": "environment-only" }
+  },
+  "amenities": [
+    { "id": "amenity_wifi", "name": "Fast Wi-Fi", "slug": "wifi", "category": "essentials", "iconKey": "wifi" },
+    { "id": "amenity_kitchen", "name": "Full kitchen", "slug": "full-kitchen", "category": "kitchen", "iconKey": "cooking-pot" },
+    { "id": "amenity_parking", "name": "Free parking", "slug": "free-parking", "category": "parking", "iconKey": "car" },
+    { "id": "amenity_hot_tub", "name": "Private hot tub", "slug": "hot-tub", "category": "outdoor", "iconKey": "waves" },
+    { "id": "amenity_fireplace", "name": "Indoor fireplace", "slug": "fireplace", "category": "essentials", "iconKey": "flame" },
+    { "id": "amenity_lake", "name": "Lake access", "slug": "lake-access", "category": "outdoor", "iconKey": "sailboat" },
+    { "id": "amenity_ocean", "name": "Ocean view", "slug": "ocean-view", "category": "outdoor", "iconKey": "sunset" },
+    { "id": "amenity_workspace", "name": "Dedicated workspace", "slug": "workspace", "category": "workspace", "iconKey": "laptop" },
+    { "id": "amenity_ac", "name": "Air conditioning", "slug": "air-conditioning", "category": "essentials", "iconKey": "snowflake" },
+    { "id": "amenity_washer", "name": "Washer and dryer", "slug": "washer-dryer", "category": "essentials", "iconKey": "washing-machine" },
+    { "id": "amenity_pets", "name": "Pets welcome", "slug": "pets-welcome", "category": "family", "iconKey": "paw-print" },
+    { "id": "amenity_ski", "name": "Near ski lifts", "slug": "ski-access", "category": "outdoor", "iconKey": "mountain-snow" }
+  ],
+  "collections": [
+    { "id": "collection_cabins", "name": "Cabin escapes", "slug": "cabin-escapes", "description": "Quiet homes near water and woods.", "isActive": true },
+    { "id": "collection_coast", "name": "Coastal stays", "slug": "coastal-stays", "description": "Homes shaped by the Pacific edge.", "isActive": true },
+    { "id": "collection_city", "name": "City weekends", "slug": "city-weekends", "description": "Walkable apartments with character.", "isActive": true },
+    { "id": "collection_desert", "name": "Desert design", "slug": "desert-design", "description": "Low-slung homes under wide skies.", "isActive": true },
+    { "id": "collection_mountain", "name": "Mountain houses", "slug": "mountain-houses", "description": "Generous homes for snow days and trail weekends.", "isActive": true }
+  ],
+  "properties": [
+    {
+      "id": "property_pineglass",
+      "name": "Pineglass Lake House",
+      "internalCode": "CS-PINEGLASS",
+      "propertyType": "cabin",
+      "timezone": "America/New_York",
+      "checkInFrom": "16:00",
+      "checkInUntil": "22:00",
+      "checkOutBy": "11:00",
+      "address": { "id": "address_pineglass", "addressLine1": "88 Lake Flower Avenue", "city": "Saranac Lake", "region": "New York", "postalCode": "12983", "countryCode": "US", "latitude": 44.3295, "longitude": -74.1313, "publicLocationLabel": "Saranac Lake, New York" },
+      "unit": { "id": "unit_pineglass", "name": "Entire lake cabin", "accommodationType": "cabin", "maxGuests": 6, "bedroomCount": 3, "bedCount": 4, "bathroomCountHalfUnits": 4, "squareFeet": 1800, "bedrooms": [ { "name": "Lake room", "beds": [{ "bedType": "king", "quantity": 1 }] }, { "name": "Pine room", "beds": [{ "bedType": "queen", "quantity": 1 }] }, { "name": "Bunk room", "beds": [{ "bedType": "single", "quantity": 2 }] } ] },
+      "listing": { "id": "listing_pineglass", "title": "Pineglass Cabin", "slug": "pineglass-cabin", "subtitle": "A glass-fronted lake cabin among the white pines", "description": "Wake to mist lifting from Lake Flower, make breakfast in the cedar kitchen, and step from the deck to a quiet private shoreline. Pineglass is an all-season Adirondack base for paddling, long dinners, and snow-covered weekends.", "bookingMode": "instant", "instantBook": true, "isFeatured": true, "baseNightlyRateCents": 32500, "securityDepositCents": 50000, "minimumStay": 2, "maximumStay": 14, "reviewAverageHundredths": 493, "reviewCount": 38, "amenities": ["wifi", "full-kitchen", "free-parking", "fireplace", "lake-access", "washer-dryer", "pets-welcome"], "collections": ["cabin-escapes"], "media": [ { "imagePath": "/images/stays/pineglass-cabin-01.jpg", "altText": "Timber cabin beside a calm Adirondack lake", "caption": "Private shoreline at first light" }, { "imagePath": "/images/stays/pineglass-cabin-02.jpg", "altText": "Warm cabin living room with broad windows", "caption": "The lake room" } ], "houseRules": [ { "ruleType": "pets", "title": "Pets are welcome", "description": "Up to two house-trained dogs; add them to the guest party.", "isAllowed": true }, { "ruleType": "quiet_hours", "title": "Quiet shoreline after 10pm", "description": "Keep outdoor sound low from 10pm to 8am.", "isRequired": true }, { "ruleType": "events", "title": "No parties or events", "description": "Registered guests only.", "isAllowed": false } ], "cleaningFeeCents": 14500, "serviceFeeBasisPoints": 800, "taxBasisPoints": 800 }
+    },
+    {
+      "id": "property_tidehouse",
+      "name": "Tidehouse Mendocino",
+      "internalCode": "CS-TIDEHOUSE",
+      "propertyType": "villa",
+      "timezone": "America/Los_Angeles",
+      "checkInFrom": "15:00",
+      "checkInUntil": "21:00",
+      "checkOutBy": "10:00",
+      "address": { "id": "address_tidehouse", "addressLine1": "12 Headlands Lane", "city": "Mendocino", "region": "California", "postalCode": "95460", "countryCode": "US", "latitude": 39.3077, "longitude": -123.7995, "publicLocationLabel": "Mendocino, California" },
+      "unit": { "id": "unit_tidehouse", "name": "Entire coastal villa", "accommodationType": "villa", "maxGuests": 8, "bedroomCount": 4, "bedCount": 5, "bathroomCountHalfUnits": 7, "squareFeet": 3200, "bedrooms": [ { "name": "Ocean suite", "beds": [{ "bedType": "king", "quantity": 1 }] }, { "name": "Garden suite", "beds": [{ "bedType": "queen", "quantity": 1 }] }, { "name": "Cypress room", "beds": [{ "bedType": "queen", "quantity": 1 }] }, { "name": "Kids room", "beds": [{ "bedType": "single", "quantity": 2 }] } ] },
+      "listing": { "id": "listing_tidehouse", "title": "Tidehouse Villa", "slug": "tidehouse-villa", "subtitle": "Cliff-edge calm above the Mendocino headlands", "description": "An oak-and-stone home with Pacific views from nearly every room. Gather around the long table, soak in the sheltered hot tub, then follow the headlands path into the village.", "bookingMode": "request", "instantBook": false, "isFeatured": true, "baseNightlyRateCents": 62000, "securityDepositCents": 100000, "minimumStay": 3, "maximumStay": 21, "reviewAverageHundredths": 489, "reviewCount": 64, "amenities": ["wifi", "full-kitchen", "free-parking", "hot-tub", "ocean-view", "fireplace", "washer-dryer", "workspace"], "collections": ["coastal-stays"], "media": [ { "imagePath": "/images/stays/tidehouse-villa-01.jpg", "altText": "Coastal villa looking across the Pacific", "caption": "The headlands terrace" }, { "imagePath": "/images/stays/tidehouse-villa-02.jpg", "altText": "Airy villa interior with ocean-facing windows", "caption": "Pacific room" } ], "houseRules": [ { "ruleType": "pets", "title": "No pets", "description": "The home is kept allergy-aware.", "isAllowed": false }, { "ruleType": "quiet_hours", "title": "Quiet hours from 9pm", "description": "Sound carries across the headlands.", "isRequired": true }, { "ruleType": "events", "title": "No commercial events", "description": "Small family gatherings within occupancy are welcome.", "isAllowed": false } ], "cleaningFeeCents": 24000, "serviceFeeBasisPoints": 700, "taxBasisPoints": 1200 }
+    },
+    {
+      "id": "property_foundry",
+      "name": "Foundry Row",
+      "internalCode": "CS-FOUNDRY",
+      "propertyType": "apartment_building",
+      "timezone": "America/New_York",
+      "checkInFrom": "15:00",
+      "checkInUntil": "23:00",
+      "checkOutBy": "11:00",
+      "address": { "id": "address_foundry", "addressLine1": "214 West Broughton Street", "city": "Savannah", "region": "Georgia", "postalCode": "31401", "countryCode": "US", "latitude": 32.0809, "longitude": -81.0952, "publicLocationLabel": "Historic District, Savannah" },
+      "unit": { "id": "unit_foundry", "name": "Second-floor loft", "accommodationType": "apartment", "maxGuests": 4, "bedroomCount": 2, "bedCount": 2, "bathroomCountHalfUnits": 3, "squareFeet": 1250, "floorLabel": "2", "bedrooms": [ { "name": "Brick room", "beds": [{ "bedType": "king", "quantity": 1 }] }, { "name": "Courtyard room", "beds": [{ "bedType": "queen", "quantity": 1 }] } ] },
+      "listing": { "id": "listing_foundry", "title": "Foundry Loft", "slug": "foundry-loft", "subtitle": "Brick, linen, and tall windows in Savannah's Historic District", "description": "A restored warehouse loft two blocks from City Market. Original beams frame a quiet, contemporary apartment with a chef's kitchen and a shaded balcony above the lane.", "bookingMode": "instant", "instantBook": true, "isFeatured": true, "baseNightlyRateCents": 24500, "securityDepositCents": 30000, "minimumStay": 2, "maximumStay": 10, "reviewAverageHundredths": 497, "reviewCount": 51, "amenities": ["wifi", "full-kitchen", "workspace", "air-conditioning", "washer-dryer"], "collections": ["city-weekends"], "media": [ { "imagePath": "/images/stays/foundry-loft-01.jpg", "altText": "Brick loft living room with tall windows", "caption": "Original foundry windows" }, { "imagePath": "/images/stays/foundry-loft-02.jpg", "altText": "Calm loft bedroom with linen bedding", "caption": "The brick room" } ], "houseRules": [ { "ruleType": "pets", "title": "No pets", "description": "Service animals are accommodated as required.", "isAllowed": false }, { "ruleType": "quiet_hours", "title": "Quiet common hall", "description": "Please keep the shared stair quiet after 10pm.", "isRequired": true }, { "ruleType": "smoking", "title": "No smoking", "description": "Smoking and vaping are not permitted indoors or on the balcony.", "isAllowed": false } ], "cleaningFeeCents": 9500, "serviceFeeBasisPoints": 800, "taxBasisPoints": 1300 }
+    },
+    {
+      "id": "property_juniper",
+      "name": "Juniper House",
+      "internalCode": "CS-JUNIPER",
+      "propertyType": "house",
+      "timezone": "America/Los_Angeles",
+      "checkInFrom": "16:00",
+      "checkInUntil": "22:00",
+      "checkOutBy": "11:00",
+      "address": { "id": "address_juniper", "addressLine1": "6040 Sunset Road", "city": "Joshua Tree", "region": "California", "postalCode": "92252", "countryCode": "US", "latitude": 34.1347, "longitude": -116.319, "publicLocationLabel": "Joshua Tree, California" },
+      "unit": { "id": "unit_juniper", "name": "Entire desert home", "accommodationType": "entire_home", "maxGuests": 6, "bedroomCount": 3, "bedCount": 3, "bathroomCountHalfUnits": 4, "squareFeet": 1700, "bedrooms": [ { "name": "Sunrise room", "beds": [{ "bedType": "king", "quantity": 1 }] }, { "name": "Juniper room", "beds": [{ "bedType": "queen", "quantity": 1 }] }, { "name": "Studio room", "beds": [{ "bedType": "queen", "quantity": 1 }] } ] },
+      "listing": { "id": "listing_juniper", "title": "Juniper Desert House", "slug": "juniper-desert-house", "subtitle": "Low desert architecture, stargazing court, and room to exhale", "description": "A quiet modern home at the edge of town with a shaded courtyard, outdoor shower, and uninterrupted views toward the national park. Designed for slow mornings and long evenings under the stars.", "bookingMode": "instant", "instantBook": true, "isFeatured": true, "baseNightlyRateCents": 41000, "securityDepositCents": 75000, "minimumStay": 2, "maximumStay": 14, "reviewAverageHundredths": 491, "reviewCount": 47, "amenities": ["wifi", "full-kitchen", "free-parking", "hot-tub", "air-conditioning", "workspace", "pets-welcome"], "collections": ["desert-design"], "media": [ { "imagePath": "/images/stays/juniper-house-01.jpg", "altText": "Low modern house in the Joshua Tree desert", "caption": "Sunset court" }, { "imagePath": "/images/stays/juniper-house-02.jpg", "altText": "Minimal desert living room in warm natural tones", "caption": "The great room" } ], "houseRules": [ { "ruleType": "pets", "title": "Dogs are welcome", "description": "Up to two dogs with the pet fee included in your quote.", "isAllowed": true }, { "ruleType": "quiet_hours", "title": "Desert quiet after 9pm", "description": "No amplified outdoor music.", "isRequired": true }, { "ruleType": "events", "title": "No events", "description": "The house is for registered overnight guests only.", "isAllowed": false } ], "cleaningFeeCents": 18000, "serviceFeeBasisPoints": 750, "taxBasisPoints": 1250 }
+    },
+    {
+      "id": "property_alder",
+      "name": "Alder Ridge",
+      "internalCode": "CS-ALDER",
+      "propertyType": "chalet",
+      "timezone": "America/New_York",
+      "checkInFrom": "16:00",
+      "checkInUntil": "21:00",
+      "checkOutBy": "10:00",
+      "address": { "id": "address_alder", "addressLine1": "41 Ridge Run", "city": "Stowe", "region": "Vermont", "postalCode": "05672", "countryCode": "US", "latitude": 44.4654, "longitude": -72.6874, "publicLocationLabel": "Stowe, Vermont" },
+      "unit": { "id": "unit_alder", "name": "Entire mountain chalet", "accommodationType": "chalet", "maxGuests": 10, "bedroomCount": 5, "bedCount": 7, "bathroomCountHalfUnits": 8, "squareFeet": 4100, "bedrooms": [ { "name": "Ridge suite", "beds": [{ "bedType": "king", "quantity": 1 }] }, { "name": "Alder suite", "beds": [{ "bedType": "king", "quantity": 1 }] }, { "name": "South room", "beds": [{ "bedType": "queen", "quantity": 1 }] }, { "name": "North room", "beds": [{ "bedType": "queen", "quantity": 1 }] }, { "name": "Bunk room", "beds": [{ "bedType": "single", "quantity": 3 }] } ] },
+      "listing": { "id": "listing_alder", "title": "Alder Ridge Chalet", "slug": "alder-ridge-chalet", "subtitle": "A generous mountain house ten minutes from the lifts", "description": "Gather a full house without giving up quiet corners. Alder Ridge pairs a stone hearth and long dining table with a sauna, boot room, and broad mountain views from the covered terrace.", "bookingMode": "request", "instantBook": false, "isFeatured": true, "baseNightlyRateCents": 78000, "securityDepositCents": 125000, "minimumStay": 3, "maximumStay": 21, "reviewAverageHundredths": 488, "reviewCount": 29, "amenities": ["wifi", "full-kitchen", "free-parking", "hot-tub", "fireplace", "washer-dryer", "ski-access", "workspace"], "collections": ["mountain-houses"], "media": [ { "imagePath": "/images/stays/alder-ridge-01.jpg", "altText": "Timber chalet on a snowy Vermont ridge", "caption": "Alder Ridge in winter" }, { "imagePath": "/images/stays/alder-ridge-02.jpg", "altText": "Chalet great room with stone fireplace", "caption": "The hearth room" } ], "houseRules": [ { "ruleType": "pets", "title": "No pets", "description": "The owner maintains an allergy-aware home.", "isAllowed": false }, { "ruleType": "quiet_hours", "title": "Outdoor quiet after 10pm", "description": "Move conversation indoors after 10pm.", "isRequired": true }, { "ruleType": "maximum_guests", "title": "Ten overnight guests maximum", "description": "All guests must be included in the reservation.", "isRequired": true } ], "cleaningFeeCents": 30000, "serviceFeeBasisPoints": 700, "taxBasisPoints": 1000 }
+    }
+  ],
+  "guests": [
+    { "id": "guest_amara", "name": "Amara Chen", "email": "amara.chen@example.test", "phone": "+1 (416) 555-0108", "verificationStatus": "verified" },
+    { "id": "guest_mateo", "name": "Mateo Rivera", "email": "mateo.rivera@example.test", "phone": "+1 (917) 555-0147", "verificationStatus": "verified" },
+    { "id": "guest_ines", "name": "Ines Laurent", "email": "ines.laurent@example.test", "phone": "+1 (514) 555-0164", "verificationStatus": "pending" },
+    { "id": "guest_sana", "name": "Sana Okafor", "email": "sana.okafor@example.test", "phone": "+1 (510) 555-0182", "verificationStatus": "verified" }
+  ],
+  "reservations": [
+    { "id": "reservation_pineglass_future", "confirmationCode": "CS-2401", "tripToken": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1", "agreementToken": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1", "listingSlug": "pineglass-cabin", "guestId": "guest_amara", "status": "confirmed", "paymentStatus": "paid", "source": "direct", "checkInOffsetDays": 12, "nights": 4, "adults": 2, "children": 1, "infants": 0, "pets": 1, "amountPaid": "full", "agreementStatus": "signed", "conversation": [ { "direction": "inbound", "senderType": "guest", "body": "We are bringing one calm retriever. Is the lower trail clear after rain?" }, { "direction": "outbound", "senderType": "host", "body": "Absolutely. We checked it this morning and left two dog towels by the mudroom." } ] },
+    { "id": "reservation_foundry_current", "confirmationCode": "CS-2402", "tripToken": "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2", "agreementToken": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2", "listingSlug": "foundry-loft", "guestId": "guest_ines", "status": "in_stay", "paymentStatus": "paid", "source": "direct", "checkInOffsetDays": -1, "nights": 3, "adults": 2, "children": 0, "infants": 0, "pets": 0, "amountPaid": "full", "agreementStatus": "signed", "conversation": [ { "direction": "outbound", "senderType": "host", "body": "Your door code is active from 3pm. The loft is on the second floor above the blue awning." }, { "direction": "inbound", "senderType": "guest", "body": "We are in—beautiful light in the living room. Thank you." } ] },
+    { "id": "reservation_tidehouse_completed", "confirmationCode": "CS-2398", "tripToken": "a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3", "agreementToken": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3", "listingSlug": "tidehouse-villa", "guestId": "guest_mateo", "status": "completed", "paymentStatus": "paid", "source": "direct", "checkInOffsetDays": -32, "nights": 4, "adults": 4, "children": 2, "infants": 0, "pets": 0, "amountPaid": "full", "agreementStatus": "signed", "conversation": [ { "direction": "inbound", "senderType": "guest", "body": "Could you recommend a fish market for dinner at the house?" }, { "direction": "outbound", "senderType": "host", "body": "Princess Seafood in Fort Bragg is the best stop. I sent the route in your guide." } ], "review": { "overallRating": 5, "cleanlinessRating": 5, "accuracyRating": 5, "communicationRating": 5, "locationRating": 5, "valueRating": 4, "body": "The headlands view is even better than the photos. Every room felt considered, and the host notes made the whole weekend easy." }, "payout": { "status": "paid", "platformFeeCents": 18600, "managerFeeCents": 31000 } },
+    { "id": "reservation_juniper_channel", "confirmationCode": "CS-2404", "tripToken": "a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4", "agreementToken": "b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4", "listingSlug": "juniper-desert-house", "guestId": "guest_sana", "status": "confirmed", "paymentStatus": "paid", "source": "operator", "checkInOffsetDays": 24, "nights": 3, "adults": 3, "children": 0, "infants": 0, "pets": 1, "amountPaid": "full", "agreementStatus": "signed", "conversation": [ { "direction": "inbound", "senderType": "guest", "body": "We will arrive after sunset. Is the road easy to find?" }, { "direction": "outbound", "senderType": "host", "body": "Yes. The final turn has a small amber reflector; your arrival guide includes a night photo." } ] }
+  ],
+  "calendarBlocks": [
+    { "id": "block_alder_owner", "listingSlug": "alder-ridge-chalet", "startOffsetDays": 6, "nights": 4, "reason": "owner_block", "source": "operator", "notes": "Owner family weekend." },
+    { "id": "block_pineglass_preparation", "listingSlug": "pineglass-cabin", "startOffsetDays": 11, "nights": 1, "reason": "preparation", "source": "operator", "notes": "Arrival preparation before CS-2401." }
+  ],
+  "tasks": [
+    { "id": "task_foundry_turnover", "listingSlug": "foundry-loft", "reservationId": "reservation_foundry_current", "title": "Foundry Loft departure turnover", "taskType": "turnover_cleaning", "status": "assigned", "priority": "normal", "dueOffsetDays": 2 },
+    { "id": "task_tidehouse_windows", "listingSlug": "tidehouse-villa", "title": "Inspect ocean-room window seals", "taskType": "property_maintenance", "status": "queued", "priority": "normal", "dueOffsetDays": 5 }
+  ],
+  "channel": {
+    "connection": { "id": "channel_commonstay_ical", "name": "Juniper external calendar", "provider": "ical", "connectionType": "ical", "status": "active", "settings": { "contract": "availability-only", "eventLimit": 500 }, "syncAvailability": true, "syncRates": false, "syncReservations": false, "syncMessages": false },
+    "listingSlug": "juniper-desert-house",
+    "externalListingId": "juniper-external-calendar",
+    "externalUid": "commonstay-juniper-owner-hold-1",
+    "startOffsetDays": 38,
+    "nights": 2
+  }
+}

@@ -1,0 +1,17 @@
+import { ArrowLeft, Home, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Panel, Workspace, WorkspaceBody, WorkspaceHeader } from '@/features/platform/operations/components/OperationsWorkspace';
+import { rawRecordPath } from '@/features/platform/operations/lib/routes';
+import { createPlatformPropertyAction } from '../actions/detailWorkspaces';
+
+export function PropertyCreatePage() {
+  return <Workspace><WorkspaceHeader sectionLabel="Properties" sectionHref="/platform/properties" currentLabel="New property" eyebrow="Property onboarding" title="Create property workspace" description="Start the physical property record in onboarding state. Address, unit, registration, listing, safety, and owner evidence are completed from the resulting platform detail workspace." actions={<Button asChild size="sm" variant="ghost"><Link href="/dashboard/platform/properties"><ArrowLeft className="mr-2 h-4 w-4" />Properties</Link></Button>} />
+    <WorkspaceBody aside={<Panel title="Fail-closed creation" description="Creation requires exactly one accessible host organization."><div className="space-y-3 p-4 text-xs leading-5 text-muted-foreground"><p className="flex gap-2"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />New properties always begin in onboarding and cannot become sellable from this form.</p><p className="flex gap-2"><Home className="mt-0.5 h-4 w-4 shrink-0" />The platform detail page exposes readiness and legal lifecycle transitions.</p><Button asChild size="sm" variant="outline"><Link href={rawRecordPath('properties')}>Property record configuration</Link></Button></div></Panel>}>
+      <Panel title="Property identity" description="Use the property’s operational name and local accommodation timezone."><form action={createPlatformPropertyAction} className="grid gap-4 p-4 sm:grid-cols-2"><label className="grid gap-1.5 text-xs font-medium sm:col-span-2">Property name<Input required name="name" minLength={2} maxLength={120} placeholder="Harbor House" /></label><label className="grid gap-1.5 text-xs font-medium">Internal code<Input name="internalCode" maxLength={80} placeholder="HBR-001" /></label><label className="grid gap-1.5 text-xs font-medium">Property type<select required name="propertyType" defaultValue="house" className="h-10 rounded-md border border-input bg-background px-3 text-sm"><option value="house">House</option><option value="apartment_building">Apartment building</option><option value="cabin">Cabin</option><option value="villa">Villa</option><option value="cottage">Cottage</option><option value="chalet">Chalet</option><option value="condo">Condo</option><option value="townhouse">Townhouse</option><option value="unique_stay">Unique stay</option></select></label><label className="grid gap-1.5 text-xs font-medium sm:col-span-2">IANA timezone<Input required name="timezone" defaultValue="America/New_York" placeholder="America/New_York" /><span className="font-normal text-muted-foreground">Accommodation dates, access windows, and turns use this timezone.</span></label><div className="flex flex-wrap gap-2 border-t border-border pt-4 sm:col-span-2"><Button type="submit">Create in onboarding</Button><Button asChild variant="outline"><Link href="/dashboard/platform/properties">Cancel</Link></Button></div></form></Panel>
+    </WorkspaceBody>
+  </Workspace>;
+}
+export default PropertyCreatePage;
