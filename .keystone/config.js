@@ -5863,10 +5863,19 @@ function isAbuseControlBuildPhase(environment = process.env) {
   return environment.NEXT_PHASE === NEXT_PRODUCTION_BUILD_PHASE;
 }
 function assertAbuseControlRuntimeReady(environment = process.env) {
-  if (isAbuseControlBuildPhase(environment)) return { deferredForBuild: true };
-  if (environment.NODE_ENV === "production") resolveRequiredRemoteAbuseControlConfig(environment);
-  else resolveAbuseControlConfig(environment);
-  return { deferredForBuild: false };
+  if (isAbuseControlBuildPhase(environment)) {
+    return { deferredForBuild: true, configured: false };
+  }
+  if (environment.NODE_ENV === "production") {
+    try {
+      resolveRequiredRemoteAbuseControlConfig(environment);
+      return { deferredForBuild: false, configured: true };
+    } catch {
+      return { deferredForBuild: false, configured: false };
+    }
+  }
+  const config2 = resolveAbuseControlConfig(environment);
+  return { deferredForBuild: false, configured: config2.mode === "remote" };
 }
 function resolveRequiredRemoteAbuseControlConfig(environment = process.env) {
   const config2 = resolveAbuseControlConfig(environment);
