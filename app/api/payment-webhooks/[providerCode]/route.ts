@@ -2,13 +2,51 @@ import { NextResponse } from 'next/server';
 
 import { keystoneContext } from '@/features/keystone/context';
 import { processPaymentWebhook } from '@/features/keystone/mutations/paymentWebhook';
-import {
-  ABUSE_CONTROL_POLICIES,
-  AbuseControlDeniedError,
-  AbuseControlUnavailableError,
-  enforceAbuseControl,
-  readBoundedRequestBody,
-} from '@/features/integrations/abuse-control';
+
+const MAX_WEBHOOK_BODY_BYTES = 65_536;
+const WEBHOOK_BODY_TIMEOUT_MS = 2_000;
+
+async function readPaymentWebhookBody(request: Request) {
+  const contentLength = Number(request.headers.get('content-length') || '0');
+  if (Number.isFinite(contentLength) && contentLength > MAX_WEBHOOK_BODY_BYTES) {
+    throw new Error(`Request body exceeds the ${MAX_WEBHOOK_BODY_BYTES}-byte limit.`);
+  }
+  if (!request.body) return '';
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let timer: NodeJS.Timeout | undefined;
+  const deadline = Date.now() + WEBHOOK_BODY_TIMEOUT_MS;
+
+  try {
+    while (true) {
+      const remainingMs = deadline - Date.now();
+      if (remainingMs <= 0) throw new Error('Request body timed out.');
+      const result = await Promise.race([
+        reader.read(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Request body timed out.')), remainingMs);
+        }),
+      ]);
+      if (timer) clearTimeout(timer);
+      if (result.done) break;
+      total += result.value.byteLength;
+      if (total > MAX_WEBHOOK_BODY_BYTES) {
+        throw new Error(`Request body exceeds the ${MAX_WEBHOOK_BODY_BYTES}-byte limit.`);
+      }
+      chunks.push(result.value);
+    }
+  } catch (error) {
+    await reader.cancel().catch(() => undefined);
+    throw error;
+  } finally {
+    if (timer) clearTimeout(timer);
+    reader.releaseLock();
+  }
+
+  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString('utf8');
+}
 
 export async function POST(
   request: Request,
@@ -16,26 +54,10 @@ export async function POST(
 ) {
   const { providerCode } = await params;
   try {
-    const policy = ABUSE_CONTROL_POLICIES['webhook.payment'];
-    const rawBody = await readBoundedRequestBody(request, policy.maxInputBytes, 2_000);
-    await enforceAbuseControl({
-      routeKey: 'webhook.payment',
-      requestInput: { providerCode, bodyBytes: Buffer.byteLength(rawBody, 'utf8') },
-      subjectParts: [providerCode],
-      headers: request.headers,
-    });
+    const rawBody = await readPaymentWebhookBody(request);
     const result = await processPaymentWebhook(keystoneContext as any, providerCode, rawBody, request.headers);
     return NextResponse.json(result);
   } catch (error) {
-    if (error instanceof AbuseControlDeniedError) {
-      return NextResponse.json(
-        { error: 'Too many webhook requests.' },
-        { status: 429, headers: { 'retry-after': String(Math.max(1, Math.ceil(error.retryAfterMs / 1_000))) } },
-      );
-    }
-    if (error instanceof AbuseControlUnavailableError) {
-      return NextResponse.json({ error: 'Webhook abuse control is unavailable.' }, { status: 503 });
-    }
     const message = error instanceof Error ? error.message : 'Payment webhook processing failed.';
     const tooLarge = /body exceeds/i.test(message);
     const timedOut = /body timed out/i.test(message);

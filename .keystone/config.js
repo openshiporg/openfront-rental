@@ -37,7 +37,7 @@ module.exports = __toCommonJS(keystone_exports);
 // features/keystone/index.ts
 var import_auth = require("@keystone-6/auth");
 var import_core50 = require("@keystone-6/core");
-var import_config3 = require("dotenv/config");
+var import_config = require("dotenv/config");
 
 // features/keystone/models/AccommodationUnit.ts
 var import_core = require("@keystone-6/core");
@@ -2758,10 +2758,10 @@ async function generatePaymentLinkFunction() {
 }
 
 // features/integrations/payment/index.ts
-function verifySignedWebhook({ rawBody, signature: signature2, secret }) {
-  if (!secret || !signature2) throw new Error("Payment webhook signature is required.");
+function verifySignedWebhook({ rawBody, signature, secret }) {
+  if (!secret || !signature) throw new Error("Payment webhook signature is required.");
   const expected = import_node_crypto2.default.createHmac("sha256", secret).update(rawBody).digest("hex");
-  const providedBuffer = Buffer.from(signature2, "utf8");
+  const providedBuffer = Buffer.from(signature, "utf8");
   const expectedBuffer = Buffer.from(expected, "utf8");
   if (providedBuffer.length !== expectedBuffer.length || !import_node_crypto2.default.timingSafeEqual(providedBuffer, expectedBuffer)) {
     throw new Error("Payment webhook signature is invalid.");
@@ -2802,8 +2802,8 @@ var signedTestAdapter = {
   },
   verifyWebhook({ rawBody, headers }) {
     const secret = process.env.PAYMENT_WEBHOOK_SIGNED_TEST_SECRET || "";
-    const signature2 = headers.get("x-openfront-signature") || "";
-    return verifySignedWebhook({ rawBody, signature: signature2, secret });
+    const signature = headers.get("x-openfront-signature") || "";
+    return verifySignedWebhook({ rawBody, signature, secret });
   }
 };
 var paymentProviderAdapters = {
@@ -5682,415 +5682,6 @@ async function sendPasswordResetEmail(resetToken, to, baseUrl) {
   }
 }
 
-// features/integrations/abuse-control/graphqlPlugin.ts
-var import_graphql = require("graphql");
-
-// features/integrations/abuse-control/identity.ts
-var import_node_crypto17 = __toESM(require("node:crypto"));
-var TRUSTED_VALUE = /^[\x21-\x7e]{1,256}$/;
-var REQUEST_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{15,127}$/;
-function readHeader(headers, name) {
-  if (!headers) return void 0;
-  if (headers instanceof Headers) return headers.get(name) || void 0;
-  const value = headers[name] ?? headers[name.toLowerCase()];
-  return Array.isArray(value) ? value[0] : value;
-}
-function secureEqual(actual, expected) {
-  if (!actual) return false;
-  const actualBuffer = Buffer.from(actual);
-  const expectedBuffer = Buffer.from(expected);
-  return actualBuffer.length === expectedBuffer.length && import_node_crypto17.default.timingSafeEqual(actualBuffer, expectedBuffer);
-}
-function keyedHash(secret, namespace, values) {
-  const canonical = values.map((value) => `${Buffer.byteLength(value, "utf8")}:${value}`).join("|");
-  return import_node_crypto17.default.createHmac("sha256", secret).update(`${namespace}|${canonical}`).digest("hex");
-}
-function resolveTrustedAttribution(config2, headers) {
-  if (config2.mode !== "remote") throw new Error("Trusted attribution requires remote abuse control.");
-  const attestation = readHeader(headers, config2.proxyAttestationHeaderName);
-  if (!secureEqual(attestation, config2.proxyAttestationSecret)) {
-    throw new AbuseControlUnavailableError("Trusted proxy attribution is absent or invalid.");
-  }
-  const client = readHeader(headers, config2.clientHeaderName)?.trim();
-  const requestId = readHeader(headers, config2.requestIdHeaderName)?.trim();
-  if (!client || !TRUSTED_VALUE.test(client)) throw new AbuseControlUnavailableError("Trusted client attribution is absent or invalid.");
-  if (!requestId || !REQUEST_ID.test(requestId)) throw new AbuseControlUnavailableError("Trusted request attribution is absent or invalid.");
-  return {
-    clientHash: keyedHash(config2.subjectSecret, "client", [client]),
-    requestHash: keyedHash(config2.subjectSecret, "request", [requestId])
-  };
-}
-function hashAbuseControlSubject(config2, subjectParts) {
-  if (config2.mode !== "remote") throw new Error("Subject hashing requires remote abuse control.");
-  const normalized = subjectParts.map((value) => String(value ?? "").trim().toLowerCase()).filter(Boolean);
-  return keyedHash(config2.subjectSecret, "subject", normalized.length ? normalized : ["anonymous"]);
-}
-function abuseControlIdempotencyKey(config2, routeKey, subjectHash, clientHash, requestHash, operationScope) {
-  return `ac_${keyedHash(config2.subjectSecret, "consume", [config2.tenantKey, routeKey, subjectHash, clientHash, requestHash, operationScope])}`;
-}
-var AbuseControlUnavailableError = class extends Error {
-  constructor(message = "Required abuse control is unavailable.") {
-    super(message);
-    this.code = "ABUSE_CONTROL_UNAVAILABLE";
-    this.name = "AbuseControlUnavailableError";
-  }
-};
-var AbuseControlDeniedError = class extends Error {
-  constructor(retryAfterMs, decisionId) {
-    super("Too many requests. Please try again later.");
-    this.code = "ABUSE_CONTROL_DENIED";
-    this.name = "AbuseControlDeniedError";
-    this.retryAfterMs = retryAfterMs;
-    this.decisionId = decisionId;
-  }
-};
-
-// features/integrations/abuse-control/bounds.ts
-function serializedInputBytes(value) {
-  let json27;
-  try {
-    json27 = JSON.stringify(value) ?? "";
-  } catch {
-    throw new Error("Request input must be JSON-serializable.");
-  }
-  return Buffer.byteLength(json27, "utf8");
-}
-function assertBoundedInput(value, maxBytes) {
-  const bytes = serializedInputBytes(value);
-  if (bytes > maxBytes) throw new Error(`Request input exceeds the ${maxBytes}-byte limit.`);
-  return bytes;
-}
-async function readBoundedStream(stream, maxBytes, timeoutMs, unavailable) {
-  if (!stream) return "";
-  const reader = stream.getReader();
-  const chunks = [];
-  let total = 0;
-  let timer;
-  const deadline = Date.now() + timeoutMs;
-  try {
-    while (true) {
-      const remainingMs = deadline - Date.now();
-      if (remainingMs <= 0) throw new Error("Request body timed out.");
-      const next = reader.read();
-      const result = await Promise.race([
-        next,
-        new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new Error("Request body timed out.")), remainingMs);
-        })
-      ]);
-      if (timer) clearTimeout(timer);
-      if (result.done) break;
-      total += result.value.byteLength;
-      if (total > maxBytes) throw new Error(`Request body exceeds the ${maxBytes}-byte limit.`);
-      chunks.push(result.value);
-    }
-  } catch (error) {
-    await reader.cancel().catch(() => void 0);
-    if (unavailable) throw new AbuseControlUnavailableError(error instanceof Error ? error.message : void 0);
-    throw error;
-  } finally {
-    if (timer) clearTimeout(timer);
-    reader.releaseLock();
-  }
-  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString("utf8");
-}
-async function readBoundedProviderBody(response, maxBytes = 16384, timeoutMs = 1e3) {
-  const contentLength = Number(response.headers.get("content-length") || "0");
-  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
-    throw new AbuseControlUnavailableError("Abuse-control response exceeds its contract limit.");
-  }
-  return readBoundedStream(response.body, maxBytes, timeoutMs, true);
-}
-
-// features/integrations/abuse-control/config.ts
-var HEADER_NAME = /^[a-z0-9][a-z0-9-]{0,62}$/;
-var SAFE_KEY = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/;
-function requireValue(environment, name, minimumLength = 1) {
-  const value = environment[name]?.trim();
-  if (!value || value.length < minimumLength) throw new Error(`${name} must be configured for durable abuse control.`);
-  return value;
-}
-function headerName(environment, name) {
-  const value = requireValue(environment, name).toLowerCase();
-  if (!HEADER_NAME.test(value)) throw new Error(`${name} must be a valid lowercase HTTP header name.`);
-  return value;
-}
-function resolveAbuseControlConfig(environment = process.env) {
-  const production = environment.NODE_ENV === "production";
-  const mode = environment.ABUSE_CONTROL_MODE?.trim() || (production ? "" : "disabled");
-  if (production && mode !== "remote") throw new Error("Production requires ABUSE_CONTROL_MODE=remote.");
-  if (mode !== "remote" && mode !== "disabled") throw new Error("ABUSE_CONTROL_MODE must be remote or disabled.");
-  const tenantKey = environment.ABUSE_CONTROL_TENANT_KEY?.trim() || (production ? "" : "local-rental");
-  if (!SAFE_KEY.test(tenantKey)) throw new Error("ABUSE_CONTROL_TENANT_KEY must be a stable, non-secret tenant key.");
-  if (mode === "disabled") return { mode, tenantKey };
-  const endpointValue = requireValue(environment, "ABUSE_CONTROL_ENDPOINT");
-  let endpoint2;
-  try {
-    endpoint2 = new URL(endpointValue);
-  } catch {
-    throw new Error("ABUSE_CONTROL_ENDPOINT must be an absolute URL.");
-  }
-  const localHttp = !production && endpoint2.protocol === "http:" && ["127.0.0.1", "::1", "localhost"].includes(endpoint2.hostname);
-  if (endpoint2.protocol !== "https:" && !localHttp) throw new Error("ABUSE_CONTROL_ENDPOINT must use HTTPS outside local development.");
-  if (endpoint2.username || endpoint2.password || endpoint2.search || endpoint2.hash) {
-    throw new Error("ABUSE_CONTROL_ENDPOINT cannot contain credentials, query parameters, or a fragment.");
-  }
-  const keyId = requireValue(environment, "ABUSE_CONTROL_KEY_ID");
-  if (!SAFE_KEY.test(keyId)) throw new Error("ABUSE_CONTROL_KEY_ID is invalid.");
-  const signingSecret = requireValue(environment, "ABUSE_CONTROL_SIGNING_SECRET", 32);
-  const subjectSecret = requireValue(environment, "ABUSE_CONTROL_SUBJECT_SECRET", 32);
-  const proxyAttestationSecret = requireValue(environment, "ABUSE_CONTROL_PROXY_ATTESTATION_SECRET", 32);
-  const readinessProbeSecret = requireValue(environment, "ABUSE_CONTROL_READINESS_PROBE_SECRET", 32);
-  if ((/* @__PURE__ */ new Set([signingSecret, subjectSecret, proxyAttestationSecret, readinessProbeSecret])).size !== 4) {
-    throw new Error("Abuse-control signing, subject, proxy-attestation, and readiness secrets must be distinct.");
-  }
-  return {
-    mode,
-    tenantKey,
-    endpoint: endpoint2.toString().replace(/\/$/, ""),
-    keyId,
-    signingSecret,
-    subjectSecret,
-    clientHeaderName: headerName(environment, "ABUSE_CONTROL_CLIENT_HEADER"),
-    requestIdHeaderName: headerName(environment, "ABUSE_CONTROL_REQUEST_ID_HEADER"),
-    proxyAttestationHeaderName: headerName(environment, "ABUSE_CONTROL_PROXY_ATTESTATION_HEADER"),
-    proxyAttestationSecret,
-    readinessProbeSecret
-  };
-}
-var NEXT_PRODUCTION_BUILD_PHASE = "phase-production-build";
-function isAbuseControlBuildPhase(environment = process.env) {
-  return environment.NEXT_PHASE === NEXT_PRODUCTION_BUILD_PHASE;
-}
-function assertAbuseControlRuntimeReady(environment = process.env) {
-  if (isAbuseControlBuildPhase(environment)) return { deferredForBuild: true };
-  if (environment.NODE_ENV === "production") resolveRequiredRemoteAbuseControlConfig(environment);
-  else resolveAbuseControlConfig(environment);
-  return { deferredForBuild: false };
-}
-function resolveRequiredRemoteAbuseControlConfig(environment = process.env) {
-  const config2 = resolveAbuseControlConfig(environment);
-  if (config2.mode !== "remote") throw new Error("Durable abuse control is disabled.");
-  return config2;
-}
-
-// features/integrations/abuse-control/policies.ts
-var policy = (routeKey, limit, windowSeconds, maxInputBytes, maxProviderLatencyMs = 800) => ({ routeKey, limit, windowSeconds, maxInputBytes, maxProviderLatencyMs, alertOnDeny: true });
-var ABUSE_CONTROL_POLICIES = {
-  "auth.sign-in": policy("auth.sign-in", 8, 300, 8192),
-  "auth.sign-up": policy("auth.sign-up", 4, 3600, 16384),
-  "auth.password-reset-request": policy("auth.password-reset-request", 4, 3600, 4096),
-  "auth.password-reset-redeem": policy("auth.password-reset-redeem", 6, 3600, 8192),
-  "auth.password-reset-validate": policy("auth.password-reset-validate", 12, 3600, 4096),
-  "auth.initial-user": policy("auth.initial-user", 3, 3600, 16384),
-  "storefront.search": policy("storefront.search", 60, 60, 16384),
-  "storefront.listing-read": policy("storefront.listing-read", 120, 60, 4096),
-  "storefront.quote-read": policy("storefront.quote-read", 30, 60, 4096),
-  "storefront.trip-read": policy("storefront.trip-read", 30, 60, 4096),
-  "storefront.agreement-read": policy("storefront.agreement-read", 30, 60, 4096),
-  "storefront.quote-create": policy("storefront.quote-create", 20, 300, 8192),
-  "storefront.reservation-create": policy("storefront.reservation-create", 6, 900, 32768),
-  "storefront.cancellation-request": policy("storefront.cancellation-request", 6, 900, 8192),
-  "storefront.agreement-sign": policy("storefront.agreement-sign", 8, 900, 8192),
-  "webhook.payment": policy("webhook.payment", 120, 60, 65536, 1e3)
-};
-
-// features/integrations/abuse-control/remote.ts
-var import_node_crypto18 = __toESM(require("node:crypto"));
-
-// features/integrations/abuse-control/types.ts
-var ABUSE_CONTROL_CONTRACT_VERSION = 1;
-
-// features/integrations/abuse-control/remote.ts
-var OPAQUE_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{7,255}$/;
-var REQUIRED_GUARANTEES = ["atomicQuota", "idempotentReplay", "durableEvidence", "durableAlertOutbox"];
-function signature(secret, timestamp22, body) {
-  return import_node_crypto18.default.createHmac("sha256", secret).update(`${timestamp22}.${body}`).digest("hex");
-}
-function secureEqual2(actual, expected) {
-  if (!actual) return false;
-  const left = Buffer.from(actual);
-  const right = Buffer.from(expected);
-  return left.length === right.length && import_node_crypto18.default.timingSafeEqual(left, right);
-}
-function assertGuarantees(value) {
-  if (!value || REQUIRED_GUARANTEES.some((key) => value[key] !== true)) {
-    throw new AbuseControlUnavailableError("Abuse-control durability guarantees are absent.");
-  }
-}
-function parseJson(raw) {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    throw new AbuseControlUnavailableError("Abuse-control response is not valid JSON.");
-  }
-}
-async function signedRequest(config2, path, body, timeoutMs, fetchImpl) {
-  if (config2.mode !== "remote") throw new Error("Remote abuse control is not configured.");
-  const timestamp22 = Date.now().toString();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetchImpl(`${config2.endpoint}${path}`, {
-      method: "POST",
-      redirect: "error",
-      cache: "no-store",
-      signal: controller.signal,
-      headers: {
-        "content-type": "application/json",
-        "x-openfront-abuse-key-id": config2.keyId,
-        "x-openfront-abuse-timestamp": timestamp22,
-        "x-openfront-abuse-signature": signature(config2.signingSecret, timestamp22, body)
-      },
-      body
-    });
-    const raw = await readBoundedProviderBody(response, 16384, timeoutMs);
-    const responseTimestamp = response.headers.get("x-openfront-abuse-timestamp");
-    const responseSignature = response.headers.get("x-openfront-abuse-signature");
-    if (!responseTimestamp || !/^\d{13}$/.test(responseTimestamp) || Math.abs(Date.now() - Number(responseTimestamp)) > 3e4) {
-      throw new AbuseControlUnavailableError("Abuse-control response timestamp is invalid.");
-    }
-    if (!secureEqual2(responseSignature, signature(config2.signingSecret, responseTimestamp, raw))) {
-      throw new AbuseControlUnavailableError("Abuse-control response signature is invalid.");
-    }
-    if (!response.ok) throw new AbuseControlUnavailableError(`Abuse-control provider returned HTTP ${response.status}.`);
-    return raw;
-  } catch (error) {
-    if (error instanceof AbuseControlUnavailableError) throw error;
-    throw new AbuseControlUnavailableError(error instanceof Error ? error.message : void 0);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-async function consumeRemoteAbuseControl(config2, request, timeoutMs, fetchImpl = fetch) {
-  const raw = await signedRequest(config2, "/v1/consume", JSON.stringify(request), timeoutMs, fetchImpl);
-  const response = parseJson(raw);
-  if (response.contractVersion !== ABUSE_CONTROL_CONTRACT_VERSION || response.idempotencyKey !== request.idempotencyKey) {
-    throw new AbuseControlUnavailableError("Abuse-control response does not match the request contract.");
-  }
-  if (typeof response.allowed !== "boolean") throw new AbuseControlUnavailableError("Abuse-control decision is invalid.");
-  if (!OPAQUE_ID.test(response.decisionId || "") || !OPAQUE_ID.test(response.evidenceId || "")) {
-    throw new AbuseControlUnavailableError("Abuse-control durable evidence identifiers are invalid.");
-  }
-  if (!Number.isSafeInteger(response.remaining) || response.remaining < 0 || !Number.isSafeInteger(response.retryAfterMs) || response.retryAfterMs < 0) {
-    throw new AbuseControlUnavailableError("Abuse-control quota metadata is invalid.");
-  }
-  assertGuarantees(response.guarantees);
-  if (!response.allowed && !OPAQUE_ID.test(response.alertOutboxId || "")) {
-    throw new AbuseControlUnavailableError("Denied requests require durable alert-outbox evidence.");
-  }
-  return response;
-}
-
-// features/integrations/abuse-control/index.ts
-async function enforceAbuseControl(input) {
-  const policy2 = ABUSE_CONTROL_POLICIES[input.routeKey];
-  assertBoundedInput(input.requestInput, policy2.maxInputBytes);
-  const config2 = input.config || resolveAbuseControlConfig(input.environment);
-  if (config2.mode === "disabled") return { enforced: false };
-  const attribution = resolveTrustedAttribution(config2, input.headers);
-  const subjectHash = hashAbuseControlSubject(config2, input.subjectParts);
-  const idempotencyKey = abuseControlIdempotencyKey(
-    config2,
-    policy2.routeKey,
-    subjectHash,
-    attribution.clientHash,
-    attribution.requestHash,
-    input.operationScope || "root"
-  );
-  const response = await consumeRemoteAbuseControl(config2, {
-    contractVersion: ABUSE_CONTROL_CONTRACT_VERSION,
-    tenantKey: config2.tenantKey,
-    routeKey: policy2.routeKey,
-    subjectHash,
-    clientHash: attribution.clientHash,
-    idempotencyKey,
-    occurredAt: (input.now || /* @__PURE__ */ new Date()).toISOString(),
-    quota: { limit: policy2.limit, windowSeconds: policy2.windowSeconds },
-    evidence: { persist: true, privacyClass: "pseudonymous-security", alertOnDeny: true }
-  }, policy2.maxProviderLatencyMs, input.fetchImpl);
-  if (!response.allowed) throw new AbuseControlDeniedError(response.retryAfterMs, response.decisionId);
-  return {
-    enforced: true,
-    allowed: true,
-    decisionId: response.decisionId,
-    evidenceId: response.evidenceId,
-    remaining: response.remaining
-  };
-}
-
-// features/integrations/abuse-control/graphqlPlugin.ts
-var OPERATIONS = {
-  authenticateUserWithPassword: { routeKey: "auth.sign-in", subject: (args) => [args.email] },
-  createUser: { routeKey: "auth.sign-up", subject: (args) => [args.data?.email] },
-  createUsers: { routeKey: "auth.sign-up", subject: (args) => (args.data || []).map((item) => item?.email) },
-  sendUserPasswordResetLink: { routeKey: "auth.password-reset-request", subject: (args) => [args.email] },
-  redeemUserPasswordResetToken: { routeKey: "auth.password-reset-redeem", subject: (args) => [args.email] },
-  validateUserPasswordResetToken: { routeKey: "auth.password-reset-validate", subject: (args) => [args.email] },
-  createInitialUser: { routeKey: "auth.initial-user", subject: (args) => [args.data?.email] },
-  searchStays: { routeKey: "storefront.search", subject: (args) => [args.destination, args.checkIn, args.checkOut] },
-  publicListing: { routeKey: "storefront.listing-read", subject: (args) => [args.slug] },
-  publicStayQuote: { routeKey: "storefront.quote-read", subject: (args) => [args.token] },
-  publicTrip: { routeKey: "storefront.trip-read", subject: (args) => [args.token] },
-  publicStayAgreement: { routeKey: "storefront.agreement-read", subject: (args) => [args.token] },
-  quoteStay: { routeKey: "storefront.quote-create", subject: (args) => [args.listingId, args.checkIn, args.checkOut] },
-  createStayReservation: { routeKey: "storefront.reservation-create", subject: (args) => [args.quoteToken, args.guestEmail] },
-  requestStayCancellation: { routeKey: "storefront.cancellation-request", subject: (args) => [args.tripToken] },
-  signStayAgreement: { routeKey: "storefront.agreement-sign", subject: (args) => [args.token] }
-};
-function collectRootFields(selectionSet, fragments, seenFragments = /* @__PURE__ */ new Set()) {
-  const fields = [];
-  for (const selection of selectionSet.selections) {
-    if (selection.kind === import_graphql.Kind.FIELD) fields.push(selection);
-    if (selection.kind === import_graphql.Kind.INLINE_FRAGMENT) fields.push(...collectRootFields(selection.selectionSet, fragments, seenFragments));
-    if (selection.kind === import_graphql.Kind.FRAGMENT_SPREAD && !seenFragments.has(selection.name.value)) {
-      seenFragments.add(selection.name.value);
-      const fragment = fragments[selection.name.value];
-      if (fragment) fields.push(...collectRootFields(fragment.selectionSet, fragments, seenFragments));
-    }
-  }
-  return fields;
-}
-function createAbuseControlGraphqlPlugin() {
-  return {
-    async requestDidStart() {
-      return {
-        async didResolveOperation(requestContext) {
-          const operation = requestContext.operation;
-          if (!operation) return;
-          const schema = requestContext.schema;
-          const rootType = operation.operation === "mutation" ? schema.getMutationType() : schema.getQueryType();
-          if (!rootType) return;
-          const fragments = requestContext.document.definitions.reduce((result, definition) => {
-            if (definition.kind === import_graphql.Kind.FRAGMENT_DEFINITION) result[definition.name.value] = definition;
-            return result;
-          }, {});
-          const fields = collectRootFields(operation.selectionSet, fragments);
-          const occurrences = /* @__PURE__ */ new Map();
-          for (const node of fields) {
-            const fieldName = node.name.value;
-            const protectedOperation = OPERATIONS[fieldName];
-            if (!protectedOperation) continue;
-            const field = rootType.getFields()[fieldName];
-            if (!field) continue;
-            const args = (0, import_graphql.getArgumentValues)(field, node, requestContext.request.variables || {});
-            const occurrence = occurrences.get(fieldName) || 0;
-            occurrences.set(fieldName, occurrence + 1);
-            await enforceAbuseControl({
-              routeKey: protectedOperation.routeKey,
-              requestInput: args,
-              subjectParts: protectedOperation.subject(args),
-              headers: requestContext.contextValue?.req?.headers,
-              operationScope: `${node.alias?.value || fieldName}:${occurrence}`
-            });
-          }
-        }
-      };
-    }
-  };
-}
-var PROTECTED_GRAPHQL_OPERATIONS = Object.freeze({ ...OPERATIONS });
-
 // features/keystone/lib/runtimeSecrets.ts
 var DEVELOPMENT_SESSION_SECRET = "openfront-local-development-session-secret-only";
 function resolveSessionSecret(environment = process.env) {
@@ -6107,7 +5698,6 @@ function resolveSessionSecret(environment = process.env) {
 
 // features/keystone/index.ts
 var databaseURL = process.env.DATABASE_URL || "file:./keystone.db";
-assertAbuseControlRuntimeReady();
 var sessionConfig = {
   maxAge: 60 * 60 * 24,
   secret: resolveSessionSecret()
@@ -6236,8 +5826,7 @@ var keystone_default = withAuth(
     session: (0, import_session.statelessSessions)(sessionConfig),
     graphql: {
       extendGraphqlSchema,
-      bodyParser: { limit: "64kb" },
-      apolloConfig: { plugins: [createAbuseControlGraphqlPlugin()] }
+      bodyParser: { limit: "64kb" }
     },
     server: {
       maxFileSize: 5 * 1024 * 1024,

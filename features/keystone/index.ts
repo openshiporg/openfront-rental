@@ -5,13 +5,9 @@ import { models } from "./models";
 import { statelessSessions } from "@keystone-6/core/session";
 import { extendGraphqlSchema } from "./mutations";
 import { sendPasswordResetEmail } from "./lib/mail";
-import { createAbuseControlGraphqlPlugin } from '../integrations/abuse-control/graphqlPlugin';
-import { assertAbuseControlRuntimeReady } from '../integrations/abuse-control';
 import { resolveSessionSecret } from "./lib/runtimeSecrets";
 
 const databaseURL = process.env.DATABASE_URL || "file:./keystone.db";
-
-assertAbuseControlRuntimeReady();
 
 const sessionConfig = {
   maxAge: 60 * 60 * 24,
@@ -146,7 +142,6 @@ export default withAuth(
     graphql: {
       extendGraphqlSchema,
       bodyParser: { limit: '64kb' },
-      apolloConfig: { plugins: [createAbuseControlGraphqlPlugin() as any] },
     },
     server: {
       maxFileSize: 5 * 1024 * 1024,
