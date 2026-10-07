@@ -1,7 +1,8 @@
 import { list } from '@keystone-6/core';
+import { denyAll } from '@keystone-6/core/access';
 import { relationship, select, text } from '@keystone-6/core/fields';
 
-import { hostScopedListAccess } from '../access';
+import { hostScopedListAccess, permissions } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
 
@@ -45,11 +46,15 @@ export const Property = list({
     registrationNumber: text(),
     internalNotes: text({ ui: { displayMode: 'textarea' } }),
     address: relationship({ ref: 'PropertyAddress.property' }),
-    units: relationship({ ref: 'AccommodationUnit.property', many: true }),
-    listings: relationship({ ref: 'Listing.property', many: true }),
-    ownerAssignments: relationship({ ref: 'PropertyOwnerAssignment.property', many: true }),
-    tasks: relationship({ ref: 'PropertyTask.property', many: true }),
-    taskRules: relationship({ ref: 'TaskRule.property', many: true }),
+    units: relationship({ ref: 'AccommodationUnit.property', many: true, access: { create: denyAll, update: denyAll } }),
+    listings: relationship({
+      ref: 'Listing.property',
+      many: true,
+      access: { read: permissions.canReadListings, create: denyAll, update: denyAll },
+    }),
+    ownerAssignments: relationship({ ref: 'PropertyOwnerAssignment.property', many: true, access: { create: denyAll, update: denyAll } }),
+    tasks: relationship({ ref: 'PropertyTask.property', many: true, access: { create: denyAll, update: denyAll } }),
+    taskRules: relationship({ ref: 'TaskRule.property', many: true, access: { create: denyAll, update: denyAll } }),
     ...trackingFields,
   },
 });

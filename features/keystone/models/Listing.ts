@@ -1,7 +1,8 @@
 import { graphql, list } from '@keystone-6/core';
+import { denyAll } from '@keystone-6/core/access';
 import { checkbox, integer, relationship, select, text, virtual } from '@keystone-6/core/fields';
 
-import { hostScopedListAccess } from '../access';
+import { hostScopedListAccess, permissions } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
 
@@ -14,7 +15,10 @@ export const Listing = list({
   },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization.listings' }),
-    property: relationship({ ref: 'Property.listings' }),
+    property: relationship({
+      ref: 'Property.listings',
+      access: { read: permissions.canReadProperties, update: permissions.canManageProperties },
+    }),
     accommodationUnit: relationship({ ref: 'AccommodationUnit.listings' }),
     title: text({ validation: { isRequired: true } }),
     slug: text({ validation: { isRequired: true }, isIndexed: 'unique' }),
@@ -45,8 +49,8 @@ export const Listing = list({
     securityDepositCents: integer({ defaultValue: 0, validation: { min: 0 } }),
     minimumStay: integer({ defaultValue: 1, validation: { min: 1 } }),
     maximumStay: integer({ validation: { min: 1 } }),
-    advanceNoticeHours: integer({ defaultValue: 24, validation: { min: 0 } }),
-    bookingWindowDays: integer({ defaultValue: 365, validation: { min: 1 } }),
+    advanceNoticeHours: integer({ defaultValue: 24, validation: { min: 0 }, ui: { description: 'Informational configuration only: stay search, quote, and reservation conversion do not currently enforce this notice.' } }),
+    bookingWindowDays: integer({ defaultValue: 365, validation: { min: 1 }, ui: { description: 'Informational configuration only: stay search, quote, and reservation conversion do not currently enforce this window.' } }),
     reviewAverageHundredths: integer({ defaultValue: 0, validation: { min: 0, max: 500 } }),
     reviewCount: integer({ defaultValue: 0, validation: { min: 0 } }),
     thumbnail: virtual({
@@ -75,12 +79,20 @@ export const Listing = list({
     amenities: relationship({ ref: 'Amenity.listings', many: true }),
     collections: relationship({ ref: 'StayCollection.listings', many: true }),
     houseRules: relationship({ ref: 'HouseRule.listing', many: true }),
-    calendarBlocks: relationship({ ref: 'CalendarBlock.listing', many: true }),
+    calendarBlocks: relationship({
+      ref: 'CalendarBlock.listing',
+      many: true,
+      access: { create: denyAll, update: denyAll },
+    }),
     ratePlans: relationship({ ref: 'RatePlan.listing', many: true }),
     feeDefinitions: relationship({ ref: 'FeeDefinition.listing', many: true }),
     taxRules: relationship({ ref: 'TaxRule.listing', many: true }),
     quotes: relationship({ ref: 'StayQuote.listing', many: true }),
-    reservations: relationship({ ref: 'Reservation.listing', many: true }),
+    reservations: relationship({
+      ref: 'Reservation.listing',
+      many: true,
+      access: { read: permissions.canReadReservations, update: () => false },
+    }),
     conversations: relationship({ ref: 'Conversation.listing', many: true }),
     reviews: relationship({ ref: 'Review.listing', many: true }),
     tasks: relationship({ ref: 'PropertyTask.listing', many: true }),

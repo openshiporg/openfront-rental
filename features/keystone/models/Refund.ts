@@ -14,6 +14,7 @@ export const Refund = list({
     hostOrganization: relationship({ ref: 'HostOrganization' }),
     reservation: relationship({ ref: 'Reservation.refunds' }),
     payment: relationship({ ref: 'Payment.refunds' }),
+    reservationAmendment: relationship({ ref: 'ReservationAmendment.refunds', access: { create: () => false, update: () => false } }),
     refundNumber: text({ validation: { isRequired: true }, isIndexed: 'unique' }),
     idempotencyKey: text({ validation: { isRequired: true }, isIndexed: 'unique' }),
     status: select({
@@ -21,7 +22,7 @@ export const Refund = list({
       options: [
         { label: 'Pending', value: 'pending' },
         { label: 'Processing', value: 'processing' },
-        { label: 'Succeeded', value: 'succeeded' },
+        { label: 'Succeeded (recorded)', value: 'succeeded' },
         { label: 'Failed', value: 'failed' },
         { label: 'Cancelled', value: 'cancelled' },
       ],
@@ -33,6 +34,7 @@ export const Refund = list({
         { label: 'Guest cancellation', value: 'guest_cancellation' },
         { label: 'Host cancellation', value: 'host_cancellation' },
         { label: 'Stay issue', value: 'stay_issue' },
+        { label: 'Stay amendment', value: 'stay_amendment' },
         { label: 'Overpayment', value: 'overpayment' },
         { label: 'Goodwill', value: 'goodwill' },
         { label: 'Other', value: 'other' },
@@ -41,7 +43,11 @@ export const Refund = list({
     }),
     amountCents: integer({ validation: { isRequired: true, min: 1 } }),
     currencyCode: text({ defaultValue: 'USD' }),
-    providerRefundId: text({ isIndexed: 'unique' }),
+    providerRefundId: text({
+      isIndexed: 'unique',
+      db: { isNullable: true },
+      ui: { description: 'External provider reference only. Manual refund liabilities and attestations do not receive a provider ID.' },
+    }),
     processedAt: timestamp(),
     data: json(),
     ...trackingFields,

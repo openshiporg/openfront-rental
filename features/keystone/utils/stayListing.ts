@@ -43,6 +43,7 @@ export const STAY_LISTING_SELECTION = `
   }
   accommodationUnit {
     id
+    status
     name
     accommodationType
     maxGuests
@@ -94,6 +95,8 @@ function mediaUrl(media: any) {
 }
 
 export function toPublicListing(listing: any) {
+  const accommodation = listing.accommodationUnit ? { ...listing.accommodationUnit } : listing.accommodationUnit;
+  if (accommodation && typeof accommodation === 'object') delete accommodation.status;
   const address = listing.property?.address;
   const showExact = Boolean(address?.showExactAddressPublicly);
   return {
@@ -145,7 +148,7 @@ export function toPublicListing(listing: any) {
             : null,
         }
       : null,
-    accommodation: listing.accommodationUnit,
+    accommodation,
     media: (listing.media || []).map((item: any) => ({
       id: item.id,
       url: mediaUrl(item),

@@ -1,4 +1,4 @@
-import { resolvePublicTokenRecord } from '../utils/publicTokenAccess';
+import { hashPublicOwnershipToken, isPublicOwnershipTokenActive, resolvePublicTokenRecord } from '../utils/publicTokenAccess';
 
 export async function signStayAgreement(
   _root: unknown,
@@ -28,8 +28,19 @@ export async function signStayAgreement(
 
   return context.prisma.$transaction(async (tx: any) => {
     await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `agreement:${agreement.id}`);
+    await tx.$queryRawUnsafe('SELECT "id" FROM "StayAgreement" WHERE "id" = $1 FOR UPDATE', agreement.id);
     const locked = await tx.stayAgreement.findUnique({ where: { id: agreement.id } });
-    if (!locked || locked.status === 'voided') throw new Error('Agreement link is invalid or expired.');
+    if (
+      !locked
+      || locked.signingTokenHash !== hashPublicOwnershipToken(args.token)
+      || !isPublicOwnershipTokenActive({
+        tokenExpiresAt: locked.signingTokenExpiresAt,
+        tokenRevokedAt: locked.signingTokenRevokedAt,
+      })
+      || locked.status === 'voided'
+    ) {
+      throw new Error('Agreement link is invalid or expired.');
+    }
     if (locked.status === 'signed') return locked;
     return tx.stayAgreement.update({
       where: { id: locked.id },

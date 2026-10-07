@@ -65,7 +65,7 @@ export const User = list({
       defaultValue: 'not_started',
       access: { update: () => false },
     }),
-    hostMemberships: relationship({ ref: 'HostMembership.user', many: true }),
+    hostMemberships: relationship({ ref: 'HostMembership.user', many: true, access: { create: denyAll, update: denyAll } }),
     guestProfile: relationship({ ref: 'GuestProfile.user', ui: { itemView: { fieldMode: 'read' } } }),
     sentMessages: relationship({ ref: 'Message.senderUser', many: true }),
     authoredReviews: relationship({ ref: 'Review.authorUser', many: true }),

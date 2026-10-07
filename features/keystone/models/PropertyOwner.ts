@@ -1,4 +1,5 @@
 import { list } from '@keystone-6/core';
+import { denyAll } from '@keystone-6/core/access';
 import { integer, json, relationship, select, text } from '@keystone-6/core/fields';
 
 import { hostScopedListAccess } from '../access';
@@ -52,8 +53,16 @@ export const PropertyOwner = list({
       ui: { description: 'Non-secret tax classification and reporting metadata. Never store tax IDs or bank credentials here.' },
     }),
     assignments: relationship({ ref: 'PropertyOwnerAssignment.owner', many: true }),
-    statements: relationship({ ref: 'OwnerStatement.owner', many: true }),
-    payouts: relationship({ ref: 'Payout.propertyOwner', many: true }),
+    statements: relationship({
+      ref: 'OwnerStatement.owner',
+      many: true,
+      access: { create: denyAll, update: denyAll },
+    }),
+    payouts: relationship({
+      ref: 'Payout.propertyOwner',
+      many: true,
+      access: { create: denyAll, update: denyAll },
+    }),
     ...trackingFields,
   },
 });

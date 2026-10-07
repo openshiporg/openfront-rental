@@ -1,11 +1,21 @@
 import { handleDashboardRoutes, getAuthenticatedUser } from '@/features/dashboard/middleware';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  getFreshInstallPublicRedirect,
+  getFreshInstallRootRedirect,
+} from '@/features/platform/routing/rootRouting';
 
 export async function proxy(request: NextRequest) {
   // Get authenticated user once
   const { user, redirectToInit } = await getAuthenticatedUser(request);
   
-  // Let dashboard handler manage its routes
+  const rootRedirect = getFreshInstallRootRedirect(request.nextUrl.pathname, redirectToInit);
+  if (rootRedirect) return NextResponse.redirect(new URL(rootRedirect, request.url));
+
+  const publicRedirect = getFreshInstallPublicRedirect(request.nextUrl.pathname, redirectToInit);
+  if (publicRedirect) return NextResponse.redirect(new URL(publicRedirect, request.url));
+
+  // Let the shared dashboard handler own /dashboard → /dashboard/init.
   const dashboardResponse = await handleDashboardRoutes(request, user, redirectToInit);
   if (dashboardResponse) return dashboardResponse;
   

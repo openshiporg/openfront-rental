@@ -1,4 +1,5 @@
 import { resolveActiveStayQuote } from '../utils/stayQuoteAccess';
+import { publicStayQuoteProjection } from '../utils/publicStayProjections';
 
 export async function publicStayQuote(_root: unknown, args: { token: string }, context: any) {
   const quote = await resolveActiveStayQuote({
@@ -17,11 +18,5 @@ export async function publicStayQuote(_root: unknown, args: { token: string }, c
     },
   });
   if (!quote) return null;
-  const { tokenHash: _tokenHash, ...publicQuote } = quote;
-  return {
-    ...publicQuote,
-    breakdown: quote.quoteSnapshot?.quote || null,
-    cancellationPolicy: quote.quoteSnapshot?.cancellationPolicy || null,
-    listing: quote.quoteSnapshot?.listing || quote.listing,
-  };
+  return publicStayQuoteProjection(quote);
 }

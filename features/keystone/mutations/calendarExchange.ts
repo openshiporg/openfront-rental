@@ -3,6 +3,8 @@ import crypto from 'node:crypto';
 import { exportICalendar, iCalendarChecksum, parseICalendar } from '../../integrations/channels/ical';
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
 import { enqueueOutboxEvent } from '../utils/outbox';
+import { findAccommodationUnitCapacityConflict, findListingCapacityConflict, lockAccommodationUnitCapacity, lockListingCapacity } from '../utils/reservationAllocation';
+import { readBoundedPages } from '../utils/readBoundedPages';
 
 function importKey(hostId: string, connectionId: string, listingId: string, checksum: string) {
   return `ical-import:${hostId}:${connectionId}:${listingId}:${checksum}`;
@@ -11,6 +13,10 @@ function importKey(hostId: string, connectionId: string, listingId: string, chec
 function blockId(connectionId: string, listingId: string, uid: string) {
   return `ical_${crypto.createHash('sha256').update(`${connectionId}|${listingId}|${uid}`).digest('hex')}`;
 }
+
+const CALENDAR_PAGE_SIZE = 250;
+const MAX_CALENDAR_EVIDENCE = 5000;
+
 
 export async function importListingCalendar(
   _root: unknown,
@@ -38,7 +44,15 @@ export async function importListingCalendar(
   if (sourceLabel.length > 240) throw new Error('Calendar source label is too long.');
 
   return context.prisma.$transaction(async (tx: any) => {
-    await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `stay-listing:${listing.id}`);
+    await lockListingCapacity(tx, [listing.id]);
+    const inventoryListing = await tx.listing.findUnique({
+      where: { id: listing.id },
+      select: { hostOrganizationId: true, accommodationUnitId: true },
+    });
+    if (!inventoryListing || inventoryListing.hostOrganizationId !== connection.hostOrganization.id) {
+      throw new Error('Calendar listing must belong to the same host organization.');
+    }
+    await lockAccommodationUnitCapacity(tx, [inventoryListing.accommodationUnitId]);
     const existing = await tx.dataExchangeJob.findUnique({ where: { idempotencyKey } });
     if (existing?.status === 'succeeded' || existing?.status === 'partially_succeeded') return existing;
     const job = existing || await tx.dataExchangeJob.create({
@@ -65,6 +79,11 @@ export async function importListingCalendar(
     for (const event of events) {
       const id = blockId(connection.id, listing.id, event.uid);
       const current = await tx.calendarBlock.findUnique({ where: { id } });
+      if (current && (current.reservationId || current.reason === 'reservation')) {
+        conflictCount += 1;
+        conflicts.push({ uid: event.uid, startDate: event.startDate, endDate: event.endDate });
+        continue;
+      }
       if (event.status === 'cancelled') {
         if (current?.status === 'active') {
           await tx.calendarBlock.update({ where: { id }, data: { status: 'released', notes: `${event.summary} (cancelled in source calendar)` } });
@@ -72,11 +91,21 @@ export async function importListingCalendar(
         } else skippedCount += 1;
         continue;
       }
-      const conflict = await tx.calendarBlock.findFirst({
-        where: { listingId: listing.id, status: 'active', id: { not: id }, startDate: { lt: event.endDate }, endDate: { gt: event.startDate } },
-        select: { id: true },
-      });
-      if (conflict) {
+      const capacityConflict = inventoryListing.accommodationUnitId
+        ? await findAccommodationUnitCapacityConflict(tx, {
+          accommodationUnitId: inventoryListing.accommodationUnitId,
+          hostOrganizationId: connection.hostOrganization.id,
+          checkInDate: event.startDate,
+          checkOutDate: event.endDate,
+          excludeCalendarBlockId: id,
+        })
+        : await findListingCapacityConflict(tx, {
+          listingId: listing.id,
+          checkInDate: event.startDate,
+          checkOutDate: event.endDate,
+          excludeCalendarBlockId: id,
+        });
+      if (capacityConflict) {
         conflictCount += 1;
         conflicts.push({ uid: event.uid, startDate: event.startDate, endDate: event.endDate });
         continue;
@@ -148,14 +177,18 @@ export async function exportListingCalendar(
   const listing = await context.query.Listing.findOne({ where: { id: args.listingId }, query: 'id title hostOrganization { id }' });
   if (!listing?.hostOrganization?.id) throw new Error('Listing not found.');
   await assertHostOrganizationAccess({ context, hostOrganizationId: listing.hostOrganization.id, permission: 'canReadChannels' });
-  const blocks = await context.prisma.calendarBlock.findMany({
-    where: { listingId: listing.id, status: 'active' },
-    orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
-    select: { id: true, externalUid: true, startDate: true, endDate: true, reason: true },
-    take: 1000,
-  });
+  const blocks = await readBoundedPages(
+    (skip, take) => context.prisma.calendarBlock.findMany({
+      where: { listingId: listing.id, status: 'active' },
+      orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+      select: { id: true, externalUid: true, startDate: true, endDate: true, reason: true },
+      take,
+      skip,
+    }),
+    { pageSize: CALENDAR_PAGE_SIZE, maxItems: MAX_CALENDAR_EVIDENCE, label: 'Calendar export' },
+  );
   const calendarText = exportICalendar(blocks.map((block: any) => ({
-    uid: block.externalUid || `commonstay-${listing.id}-${block.id}`,
+    uid: block.externalUid || `housekind-${listing.id}-${block.id}`,
     startDate: block.startDate,
     endDate: block.endDate,
     summary: block.reason === 'property_maintenance' ? 'Unavailable - property maintenance' : 'Unavailable',

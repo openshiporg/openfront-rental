@@ -125,8 +125,11 @@ export function AiChatSidebar() {
       }
 
       const keysResult = await getSharedKeys();
-      if (!keysResult.success || !keysResult.keys) {
+      if (keysResult.success === false) {
         throw new Error(keysResult.error || "Shared API keys are not configured.");
+      }
+      if (!keysResult.keys) {
+        throw new Error("Shared API keys are not configured.");
       }
 
       await sendMessage(

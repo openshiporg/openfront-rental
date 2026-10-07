@@ -1,4 +1,5 @@
 import { list } from '@keystone-6/core';
+import { denyAll } from '@keystone-6/core/access';
 import { integer, json, relationship, select, text, timestamp } from '@keystone-6/core/fields';
 
 import { isSignedIn, permissions, rules } from '../access';
@@ -49,6 +50,7 @@ export const Reservation = list({
         { label: 'Partial', value: 'partial' },
         { label: 'Paid', value: 'paid' },
         { label: 'Partially Refunded', value: 'partially_refunded' },
+        { label: 'Refund Pending', value: 'refund_pending' },
         { label: 'Refunded', value: 'refunded' },
       ],
       defaultValue: 'unpaid',
@@ -95,7 +97,12 @@ export const Reservation = list({
     guestNotes: text({ ui: { displayMode: 'textarea' } }),
     internalNotes: text({ ui: { displayMode: 'textarea' } }),
     lineItems: relationship({ ref: 'ReservationLineItem.reservation', many: true }),
-    calendarBlocks: relationship({ ref: 'CalendarBlock.reservation', many: true }),
+    amendments: relationship({ ref: 'ReservationAmendment.reservation', many: true, access: { create: () => false, update: () => false } }),
+    calendarBlocks: relationship({
+      ref: 'CalendarBlock.reservation',
+      many: true,
+      access: { create: denyAll, update: denyAll },
+    }),
     agreement: relationship({ ref: 'StayAgreement.reservation' }),
     securityDeposit: relationship({ ref: 'SecurityDeposit.reservation' }),
     damageClaims: relationship({ ref: 'DamageClaim.reservation', many: true }),

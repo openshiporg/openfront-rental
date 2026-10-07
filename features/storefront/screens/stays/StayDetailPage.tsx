@@ -1,120 +1,35 @@
-import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-
 import { StorefrontShell } from '../../components/StorefrontShell';
+import { StayGallery } from '../../components/StayGallery';
+import { SectionNav, UnavailableStay } from '../../components/Journey';
+import { SubmitButton } from '../../components/SubmitButton';
 import { getPublicStay } from '../../lib/data/stays';
 import { quoteStayAction } from '../../lib/data/stay-actions';
 import { formatMoney, formatType } from '../../lib/format';
+import { countParam, searchQuery, single, type SearchParams } from '../../lib/navigation';
+import { publicActionFailureMessage } from '../../lib/public-token-copy';
 
-export async function StayDetailPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ slug: string }>;
-  searchParams?: Promise<{
-    error?: string;
-    destination?: string;
-    checkIn?: string;
-    checkOut?: string;
-    adults?: string;
-    children?: string;
-    infants?: string;
-    pets?: string;
-  }>;
-}) {
+export async function StayDetailPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams?: Promise<SearchParams> }) {
   const { slug } = await params;
-  const query = await searchParams;
+  const query = (await searchParams) || {};
   const { stay, error } = await getPublicStay(slug);
-  if (!stay && !error) notFound();
-  if (!stay) return <StorefrontShell><main className="stay-shell stay-token-page"><div className="stay-notice" role="alert">This stay could not be loaded. {error}</div></main></StorefrontShell>;
+  if (!stay) return <StorefrontShell><UnavailableStay title={error ? 'This home couldn’t be loaded.' : 'This home is unavailable.'}>{error || 'The home may no longer be published. Explore the current homes or return to your trip.'}</UnavailableStay></StorefrontShell>;
   const accommodation = stay.accommodation || {};
   const location = stay.property?.location?.publicLocationLabel;
-  const photos = stay.media || [];
-  const searchBackQuery = new URLSearchParams({
-    ...(query?.destination ? { destination: query.destination } : {}),
-    ...(query?.checkIn ? { checkIn: query.checkIn } : {}),
-    ...(query?.checkOut ? { checkOut: query.checkOut } : {}),
-    adults: query?.adults || '2',
-    children: query?.children || '0',
-    pets: query?.pets || '0',
-  }).toString();
-
-  return (
-    <StorefrontShell>
-      <main>
-        <header className="stay-shell stay-listing-head">
-          <nav aria-label="Breadcrumb"><Link href={`/search?${searchBackQuery}`}>All homes</Link><span>/</span><span aria-current="page">{stay.title}</span></nav>
-          <h1>{stay.title}</h1>
-          <div className="stay-listing-subline">
-            <span>{location}</span>
-            {stay.reviewCount ? <span>{((stay.reviewAverageHundredths ?? 0) / 100).toFixed(2)} from {stay.reviewCount} reviews</span> : null}
-          </div>
-        </header>
-
-        <section className="stay-gallery" aria-label={`${stay.title} photographs`}>
-          {photos.slice(0, 3).map((photo: any, index: number) => (
-            <figure key={photo.id || photo.url} className={index === 0 ? 'stay-gallery-main' : ''}>
-              <Image src={photo.url} alt={photo.altText || stay.title} fill priority={index === 0} sizes={index === 0 ? '(max-width: 800px) 100vw, 66vw' : '34vw'} />
-              {photo.caption ? <figcaption>{photo.caption}</figcaption> : null}
-            </figure>
-          ))}
-        </section>
-
-        <div className="stay-shell stay-detail-layout">
-          <div className="stay-detail-copy">
-            <section>
-              <p className="stay-overline">{formatType(accommodation.accommodationType)} hosted by {stay.host?.name || 'an independent host'}</p>
-              <h2>{stay.subtitle || `An independent stay in ${location}`}</h2>
-              <p className="stay-long-copy">{stay.description}</p>
-              <div className="stay-facts">
-                <span>{accommodation.maxGuests} guests</span><span>{accommodation.bedroomCount} bedrooms</span><span>{accommodation.bedCount} beds</span><span>{(accommodation.bathroomCountHalfUnits || 0) / 2} baths</span>
-              </div>
-            </section>
-
-            <section className="stay-detail-section">
-              <h2>What this home offers</h2>
-              <ul className="stay-amenities">{(stay.amenities || []).map((amenity: any) => <li key={amenity.id}>{amenity.name}</li>)}</ul>
-            </section>
-
-            <section className="stay-detail-section">
-              <h2>House notes</h2>
-              <dl className="stay-rule-list">{(stay.houseRules || []).map((rule: any) => <div key={rule.id}><dt>{rule.title}</dt><dd>{rule.description}</dd></div>)}</dl>
-            </section>
-
-            <section className="stay-detail-section stay-host-note">
-              <h2>Hosted by {stay.host?.name}</h2>
-              <p>{stay.host?.publicBio || 'Your host cares for this home and remains your direct point of contact throughout the stay.'}</p>
-            </section>
-          </div>
-
-          <aside className="stay-book-panel" aria-labelledby="book-title">
-            <p><strong>{formatMoney(stay.baseNightlyRateCents, stay.currencyCode)}</strong> night</p>
-            <h2 id="book-title">Check your stay</h2>
-            {query?.error ? <div className="stay-form-error" role="alert">{query.error}</div> : null}
-            <form action={quoteStayAction} className="stay-book-form">
-              <input type="hidden" name="listingId" value={stay.id} />
-              <input type="hidden" name="listingSlug" value={stay.slug} />
-              <div className="stay-field-row">
-                <label>Check in<input required type="date" name="checkIn" defaultValue={query?.checkIn} /></label>
-                <label>Check out<input required type="date" name="checkOut" defaultValue={query?.checkOut} /></label>
-              </div>
-              <div className="stay-field-row">
-                <label>Adults<input required type="number" name="adults" min="1" max={accommodation.maxGuests || 16} defaultValue={query?.adults || '2'} /></label>
-                <label>Children<input type="number" name="children" min="0" max="12" defaultValue={query?.children || '0'} /></label>
-              </div>
-              <div className="stay-field-row">
-                <label>Infants<input type="number" name="infants" min="0" max="5" defaultValue={query?.infants || '0'} /></label>
-                <label>Pets<input type="number" name="pets" min="0" max="4" defaultValue={query?.pets || '0'} /></label>
-              </div>
-              <button type="submit">See total price</button>
-            </form>
-            <p className="stay-form-note">No charge is made when you request a quote. Quotes remain valid for 30 minutes.</p>
-          </aside>
-        </div>
-      </main>
-    </StorefrontShell>
-  );
+  const rate = stay.ratePlans?.[0];
+  const queryString = searchQuery(query);
+  return <StorefrontShell activeNav="search"><main id="stay-main">
+    <header className="stay-shell stay-listing-head"><nav aria-label="Breadcrumb"><Link href={`/search?${queryString}`}>Homes</Link><span aria-hidden="true">/</span><span aria-current="page">{stay.title}</span></nav><div className="stay-listing-title-row"><div><p className="stay-overline">{location || 'Independent accommodation'}</p><h1>{stay.title}</h1></div><a className="stay-button" href="#book">Check dates ↗</a></div><p>{formatType(accommodation.accommodationType)} · Hosted by {stay.host?.name || 'an independent host'}</p></header>
+    <StayGallery title={stay.title} photos={stay.media?.length ? stay.media : stay.thumbnail ? [{ url: stay.thumbnail, altText: stay.title }] : []} />
+    <div className="stay-shell"><SectionNav items={[{ id: 'overview', label: 'The home' }, { id: 'rooms', label: 'Rooms' }, { id: 'amenities', label: 'Amenities' }, { id: 'policies', label: 'Good to know' }, { id: 'host', label: 'Your host' }, { id: 'book', label: 'Dates & guests' }]} /></div>
+    <div className="stay-shell stay-detail-layout"><div className="stay-detail-copy">
+      <section id="overview"><p className="stay-overline">Make yourself at home</p><h2>{stay.subtitle || 'A place to settle in.'}</h2><p className="stay-long-copy">{stay.description || 'Ask the host for more details about this home before reserving.'}</p><div className="stay-facts">{[['guests', accommodation.maxGuests], ['bedrooms', accommodation.bedroomCount], ['beds', accommodation.bedCount], ['baths', accommodation.bathroomCountHalfUnits != null ? accommodation.bathroomCountHalfUnits / 2 : null]].map(([label, value]) => value != null ? <span key={String(label)}><strong>{value}</strong>{label}</span> : null)}</div></section>
+      <section id="rooms" className="stay-detail-section"><p className="stay-overline">Room for everyone</p><h2>Where you’ll sleep.</h2>{accommodation.bedrooms?.length ? <div className="stay-room-list">{accommodation.bedrooms.map((room: any) => <div key={room.id}><h3>{room.name}</h3><p>{room.beds?.map((bed: any) => `${bed.quantity} ${formatType(bed.bedType)}`).join(' · ') || 'Bed configuration not listed'}</p></div>)}</div> : <p>Room-by-room sleeping arrangements have not been published. Ask the host if you need a particular bed setup.</p>}</section>
+      <section id="amenities" className="stay-detail-section"><h2>The everyday comforts.</h2>{stay.amenities?.length ? <ul className="stay-amenities">{stay.amenities.map(item => <li key={item.id}>{item.name}</li>)}</ul> : <p>Amenities have not been listed. Check with the host about anything essential to your stay.</p>}<p className="stay-form-note">For specific accessibility needs, confirm the details with the host before reserving.</p></section>
+      <section id="policies" className="stay-detail-section"><p className="stay-overline">Before you book</p><h2>Good to know.</h2><dl className="stay-rule-list"><div><dt>Arrival & departure</dt><dd>Check in {stay.property?.checkInFrom || 'at an agreed time'}{stay.property?.checkInUntil ? `–${stay.property.checkInUntil}` : ''}. Check out {stay.property?.checkOutBy || 'at an agreed time'}. {stay.property?.timezone ? `Local timezone: ${stay.property.timezone}.` : ''}</dd></div><div><dt>Length of stay</dt><dd>{rate?.minimumStay ?? stay.minimumStay ?? 'Ask the host'} nights minimum{(rate?.maximumStay ?? stay.maximumStay) ? ` · ${rate?.maximumStay ?? stay.maximumStay} nights maximum` : ''}. Date-specific rules may vary.</dd></div><div><dt>Booking & payment</dt><dd>{stay.instantBook ? 'This home offers instant confirmation.' : 'Your request requires host approval.'} Payment is arranged separately with the host; no online charge is made here.</dd></div><div><dt>Cancellation</dt><dd>{rate?.cancellationPolicy?.summary || 'Review the cancellation policy in your quote before reserving.'}{rate?.cancellationPolicy?.fullTerms ? <details><summary>Read full policy</summary><p className="stay-long-copy">{rate.cancellationPolicy.fullTerms}</p></details> : null}</dd></div><div><dt>Security deposit</dt><dd>{typeof stay.securityDepositCents === 'number' && stay.securityDepositCents > 0 ? `${formatMoney(stay.securityDepositCents, stay.currencyCode)} separate from the stay price. Ask your host about collection, deductions, and return.` : 'Review your dated quote for any separate deposit requirement.'}</dd></div>{stay.houseRules?.map(rule => <div key={rule.id}><dt>{rule.title}</dt><dd>{rule.description || (rule.isAllowed === false ? 'Not allowed' : 'Ask the host for details')}</dd></div>)}</dl><Link href="/policies" className="stay-text-link">About booking, payment & policies ↗</Link></section>
+      <section id="host" className="stay-detail-section stay-host-note"><p className="stay-overline">A direct connection</p><h2>{stay.host?.name || 'Your independent host'}</h2><p>{stay.host?.publicBio || 'Contact the host through the published support details for questions about the home or your plans.'}</p><Link className="stay-text-link" href="/help">Contact & stay support ↗</Link></section>
+    </div>
+    <aside id="book" className="stay-book-panel" aria-labelledby="book-title"><p className="stay-overline">Your time away</p><h2 id="book-title">Make room for a stay.</h2><p className="stay-panel-price">{typeof stay.baseNightlyRateCents === 'number' ? <><strong>{formatMoney(stay.baseNightlyRateCents, stay.currencyCode)}</strong> base / night</> : 'Request a dated quote'}</p><p className="stay-form-note">Your total includes the quoted fees and taxes. A deposit, if required, is separate.</p>{query.error ? <div className="stay-form-error" role="alert">{publicActionFailureMessage('quote')}</div> : null}<form action={quoteStayAction} className="stay-book-form"><input type="hidden" name="listingId" value={stay.id} /><input type="hidden" name="listingSlug" value={stay.slug} />{['destination', 'bedrooms', 'instantBook', 'collection', 'offset'].map(key => <input key={key} type="hidden" name={key} value={single(query[key])} />)}<div className="stay-field-row"><label>Check in<input required type="date" name="checkIn" defaultValue={single(query.checkIn)} /></label><label>Check out<input required type="date" name="checkOut" defaultValue={single(query.checkOut)} /></label></div><div className="stay-field-row"><label>Adults<input required type="number" name="adults" min="1" max={accommodation.maxGuests || 16} defaultValue={Math.min(Math.max(countParam(query.adults, 2), 1), accommodation.maxGuests || 16)} /></label><label>Children<input type="number" name="children" min="0" max="12" defaultValue={countParam(query.children, 0, 12)} /></label><label>Infants<input type="number" name="infants" min="0" max="5" defaultValue={countParam(query.infants, 0, 5)} /></label><label>Pets<input type="number" name="pets" min="0" max="4" defaultValue={countParam(query.pets, 0, 4)} /></label></div><SubmitButton pendingLabel="Checking your dates…">See the full quote ↗</SubmitButton></form><p className="stay-form-note">No charge to get a quote. A quote is valid for 30 minutes and does not hold the home. Availability is checked again when you reserve.</p><Link href={`/compare?${queryString}&home=${encodeURIComponent(stay.slug)}`} className="stay-text-link">Compare this home</Link></aside></div>
+  </main></StorefrontShell>;
 }
-
 export default StayDetailPage;

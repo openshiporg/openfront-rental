@@ -36,6 +36,7 @@ import { PropertyTask } from './PropertyTask';
 import { RatePlan } from './RatePlan';
 import { Refund } from './Refund';
 import { Reservation } from './Reservation';
+import { ReservationAmendment } from './ReservationAmendment';
 import { ReservationLineItem } from './ReservationLineItem';
 import { Review } from './Review';
 import { Role } from './Role';
@@ -76,6 +77,7 @@ export const models = {
   GuestProfile,
   GuestParty,
   Reservation,
+  ReservationAmendment,
   ReservationLineItem,
   StayAgreement,
   SecurityDeposit,

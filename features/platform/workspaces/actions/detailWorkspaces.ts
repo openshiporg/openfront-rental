@@ -5,14 +5,16 @@ import { redirect } from 'next/navigation';
 
 import { keystoneClient } from '@/features/dashboard/lib/keystoneClient';
 import { platformDetailPath } from '@/features/platform/operations/lib/routes';
+import { isValidIanaTimeZone, normalizePropertyInternalCode } from '../lib/propertyInput';
 
 async function detailQuery<T>(query: string, variables: Record<string, unknown>) {
   const response = await keystoneClient<T>(query, variables);
-  return response.success ? { data: response.data, error: null } : { data: null, error: response.error };
+  return response.success ? { data: response.data, error: null } : { data: null, error: 'Workspace detail is temporarily unavailable.' };
 }
 
 export async function getPropertyDetailWorkspace(id: string) {
   return detailQuery<any>(`query PropertyDetailWorkspace($id: ID!, $reservationWhere: ReservationWhereInput!, $blockWhere: CalendarBlockWhereInput!) {
+    actor: authenticatedItem { ... on User { id role { canManageProperties } } }
     property(where: { id: $id }) {
       id name internalCode propertyType status timezone registrationNumber checkInFrom checkInUntil checkOutBy internalNotes
       hostOrganization { id name }
@@ -29,6 +31,7 @@ export async function getPropertyDetailWorkspace(id: string) {
 
 export async function getListingDetailWorkspace(id: string) {
   return detailQuery<any>(`query ListingDetailWorkspace($id: ID!) {
+    actor: authenticatedItem { ... on User { id role { canManageListings } } }
     listing(where: { id: $id }) {
       id title slug subtitle description status bookingMode instantBook currencyCode baseNightlyRateCents securityDepositCents minimumStay maximumStay advanceNoticeHours bookingWindowDays reviewAverageHundredths reviewCount
       property { id name status registrationNumber timezone address { publicLocationLabel } }
@@ -87,6 +90,7 @@ export async function getConversationDetailWorkspace(id: string) {
 export async function getPaymentDetailWorkspace(id: string) {
   return detailQuery<any>(`query PaymentDetailWorkspace($id: ID!) { payment(where: { id: $id }) {
     id amountCents refundedAmountCents currencyCode status paymentMethod provider providerPaymentId idempotencyKey processedAt errorMessage createdAt updatedAt
+    processedBy { id name }
     paymentProvider { id name code isInstalled }
     guest { id name email verificationStatus }
     reservation { id confirmationCode status paymentStatus totalAmountCents amountPaidCents currencyCode listing { id title } }
@@ -203,17 +207,30 @@ export async function createPropertyListingAction(formData: FormData) {
   revalidatePath(platformDetailPath('property', propertyId)); revalidatePath('/dashboard/platform/properties'); revalidatePath('/dashboard/platform/listings');
 }
 
-export async function createPlatformPropertyAction(formData: FormData) {
+export type PropertyCreateActionState = { ok: boolean; message: string };
+
+export async function createPlatformPropertyAction(
+  _previousState: PropertyCreateActionState,
+  formData: FormData,
+): Promise<PropertyCreateActionState> {
   const name = String(formData.get('name') || '').trim();
-  const internalCode = String(formData.get('internalCode') || '').trim();
+  const internalCode = normalizePropertyInternalCode(String(formData.get('internalCode') || ''));
   const propertyType = String(formData.get('propertyType') || 'house');
   const timezone = String(formData.get('timezone') || '').trim();
   const allowedTypes = ['house', 'apartment_building', 'cabin', 'villa', 'cottage', 'chalet', 'condo', 'townhouse', 'unique_stay'];
-  if (name.length < 2 || name.length > 120 || internalCode.length > 80 || !allowedTypes.includes(propertyType) || !/^[A-Za-z_]+(?:\/[A-Za-z_+-]+)+$/.test(timezone)) throw new Error('Provide a valid property name, type, and IANA timezone.');
+  if (name.length < 2 || name.length > 120) return { ok: false, message: 'Property name must be between 2 and 120 characters.' };
+  if (!internalCode || internalCode.length > 80) return { ok: false, message: 'Internal code is required and must be at most 80 characters.' };
+  if (!allowedTypes.includes(propertyType)) return { ok: false, message: 'Choose a supported property type.' };
+  if (!isValidIanaTimeZone(timezone)) return { ok: false, message: 'Use a valid IANA timezone such as America/New_York.' };
+
   const hosts = await keystoneClient<any>(`query PropertyCreateAuthority { hostOrganizations(orderBy: [{ name: asc }], take: 2) { id name } }`);
-  if (!hosts.success || hosts.data.hostOrganizations?.length !== 1) throw new Error('Property creation requires exactly one accessible host organization.');
-  const response = await keystoneClient<any>(`mutation CreatePlatformProperty($data: PropertyCreateInput!) { createProperty(data: $data) { id status } }`, { data: { hostOrganization: { connect: { id: hosts.data.hostOrganizations[0].id } }, name, internalCode: internalCode || null, propertyType, timezone, status: 'onboarding' } });
-  if (!response.success || !response.data.createProperty?.id) throw new Error(response.success ? 'Property creation was not confirmed.' : response.error);
+  if (!hosts.success || hosts.data.hostOrganizations?.length !== 1) {
+    return { ok: false, message: 'Property creation requires exactly one accessible host organization.' };
+  }
+  const response = await keystoneClient<any>(`mutation CreatePlatformProperty($data: PropertyCreateInput!) { createProperty(data: $data) { id status } }`, { data: { hostOrganization: { connect: { id: hosts.data.hostOrganizations[0].id } }, name, internalCode, propertyType, timezone, status: 'onboarding' } });
+  if (!response.success || !response.data.createProperty?.id) {
+    return { ok: false, message: 'Property could not be created. Verify that the internal code is unique and try again.' };
+  }
   revalidatePath('/dashboard/platform/properties');
   redirect(platformDetailPath('property', response.data.createProperty.id));
 }

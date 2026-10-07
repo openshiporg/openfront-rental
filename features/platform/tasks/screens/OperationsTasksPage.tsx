@@ -12,7 +12,8 @@ const lanes = [
   { id: 'completed', label: 'Completed evidence', statuses: ['completed'] },
 ];
 
-export async function OperationsTasksPage() {
+export async function OperationsTasksPage({ searchParams }: { searchParams?: Promise<{ error?: string }> } = {}) {
+  const query = (await searchParams) || {};
   const { tasks, properties, users, error } = await getOperationsTasks();
   const open = tasks.filter((task: any) => !['completed', 'cancelled'].includes(task.status)); const now = Date.now();
   const overdue = open.filter((task: any) => task.dueAt && new Date(task.dueAt).getTime() < now);
@@ -20,6 +21,7 @@ export async function OperationsTasksPage() {
   const exceptions = [...overdue.map((task: any) => ({ id: `overdue-${task.id}`, title: task.title, detail: `${task.property?.name} · due ${formatTimestamp(task.dueAt)}. Use the task transition form on this board.`, href: '#task-board', actionLabel: 'Open task board', resolution: 'action' as const, tone: 'danger' as const })), ...unassigned.map((task: any) => ({ id: `unassigned-${task.id}`, title: task.title, detail: `${task.property?.name} · assignee required through the task transition form.`, href: '#task-board', actionLabel: 'Assign task', resolution: 'action' as const }))];
 
   return <Workspace><WorkspaceHeader sectionLabel="Tasks" sectionHref="/platform/tasks" eyebrow="Field operations" title="Tasks & checklists" description="Assign turnover, inspection, maintenance, restocking, and guest support work. Completion remains a controlled transition with checklist evidence." />
+    {query.error ? <div role="alert" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">{query.error}</div> : null}
     {error ? <div role="alert" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Tasks could not be loaded: {error}</div> : null}
     <MetricStrip items={[{ label: 'Open work', value: open.length, detail: `${tasks.length} total records`, icon: ClipboardCheck }, { label: 'Overdue', value: overdue.length, detail: 'past recorded due time', tone: overdue.length ? 'danger' : 'success', icon: AlertTriangle }, { label: 'Unassigned', value: unassigned.length, detail: 'needs an owner', tone: unassigned.length ? 'warning' : 'success', icon: UserRoundCheck }, { label: 'Completed', value: tasks.filter((task: any) => task.status === 'completed').length, detail: 'completion evidence retained', icon: CheckCircle2 }]} />
     <WorkspaceBody aside={<><ExceptionRail title="Dispatch exceptions" items={exceptions} empty="No overdue or unassigned work." /><Panel title="Create work" description="Manual task creation uses the protected operations command."><form action={createOperationsTask} className="grid gap-2 p-4">

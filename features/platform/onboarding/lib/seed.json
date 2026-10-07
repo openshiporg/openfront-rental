@@ -1,10 +1,10 @@
 {
   "settings": {
-    "name": "Commonstay",
+    "name": "Housekind",
     "tagline": "Remarkable homes, locally hosted",
     "homepageHeadline": "Stay somewhere considered.",
     "publicDescription": "Independent stays with thoughtful details, clear total pricing, and direct relationships with the people who care for each home.",
-    "supportEmail": "hello@commonstay.local",
+    "supportEmail": "hello@housekind.local",
     "supportPhone": "+1 (518) 555-0142",
     "currencyCode": "USD",
     "locale": "en-US",
@@ -15,22 +15,22 @@
     "isPublished": true
   },
   "hostOrganization": {
-    "id": "host_commonstay_collective",
-    "name": "Commonstay Collective",
-    "slug": "commonstay-collective",
+    "id": "host_housekind_collective",
+    "name": "Housekind Collective",
+    "slug": "housekind-collective",
     "organizationType": "property_manager",
     "status": "active",
     "publicBio": "A small team partnering with independent owners to host design-led homes across the Northeast and California.",
-    "publicEmail": "hosts@commonstay.local",
+    "publicEmail": "hosts@housekind.local",
     "publicPhone": "+1 (518) 555-0142",
     "website": "https://rental.local",
-    "canonicalUrl": "https://rental.local/hosts/commonstay-collective",
-    "federationId": "urn:openfront:host:commonstay-collective",
+    "canonicalUrl": "https://rental.local/hosts/housekind-collective",
+    "federationId": "urn:openfront:host:housekind-collective",
     "dataCustody": "self_hosted",
     "isPublic": true
   },
   "cancellationPolicy": {
-    "id": "policy_commonstay_moderate_2026",
+    "id": "policy_housekind_moderate_2026",
     "name": "Moderate",
     "version": "moderate-2026-01",
     "policyType": "moderate",
@@ -44,7 +44,7 @@
     ]
   },
   "paymentProvider": {
-    "id": "provider_commonstay_manual",
+    "id": "provider_housekind_manual",
     "name": "Manual direct-booking payments",
     "code": "pp_system_default",
     "isInstalled": true,
@@ -159,10 +159,10 @@
     { "id": "task_tidehouse_windows", "listingSlug": "tidehouse-villa", "title": "Inspect ocean-room window seals", "taskType": "property_maintenance", "status": "queued", "priority": "normal", "dueOffsetDays": 5 }
   ],
   "channel": {
-    "connection": { "id": "channel_commonstay_ical", "name": "Juniper external calendar", "provider": "ical", "connectionType": "ical", "status": "active", "settings": { "contract": "availability-only", "eventLimit": 500 }, "syncAvailability": true, "syncRates": false, "syncReservations": false, "syncMessages": false },
+    "connection": { "id": "channel_housekind_ical", "name": "Juniper external calendar", "provider": "ical", "connectionType": "ical", "status": "active", "settings": { "contract": "availability-only", "eventLimit": 500 }, "syncAvailability": true, "syncRates": false, "syncReservations": false, "syncMessages": false },
     "listingSlug": "juniper-desert-house",
     "externalListingId": "juniper-external-calendar",
-    "externalUid": "commonstay-juniper-owner-hold-1",
+    "externalUid": "housekind-juniper-owner-hold-1",
     "startOffsetDays": 38,
     "nights": 2
   }

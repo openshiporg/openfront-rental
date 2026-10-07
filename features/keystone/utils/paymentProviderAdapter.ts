@@ -1,32 +1,123 @@
-import { getPaymentAdapter } from '../../integrations/payment';
+import {
+  getPaymentAdapter,
+  type CapturePaymentInput,
+  type CreatePaymentInput,
+  type PaymentAdapter,
+  type PaymentCapability,
+  type PaymentReferenceInput,
+  type RefundInstructionInput,
+} from '../../integrations/payment';
 
-function adapterFor(provider: any) {
-  const code = provider?.code || provider?.provider || provider;
+type PaymentProviderSelection = string | {
+  code?: string | null;
+  provider?: string | null;
+  isInstalled?: boolean | null;
+};
+
+function adapterFor(provider: PaymentProviderSelection): PaymentAdapter {
+  const code = typeof provider === 'string' ? provider : provider?.code || provider?.provider;
+  if (!code) throw new Error('Payment provider is required.');
+  if (typeof provider !== 'string' && provider.isInstalled === false) {
+    throw new Error('Payment provider is not available.');
+  }
   return getPaymentAdapter(code);
 }
 
-export async function createPayment({ provider, reservation, amount, currency }: { provider: any; reservation: any; amount: number; currency: string }) {
-  return adapterFor(provider).createPayment({ reservation, amount, currency });
+export class UnsupportedPaymentCapabilityError extends Error {
+  constructor(providerCode: string, capability: PaymentCapability) {
+    super(`Payment provider ${providerCode} does not support ${capability}.`);
+    this.name = 'UnsupportedPaymentCapabilityError';
+  }
 }
 
-export async function capturePayment({ provider, paymentId, amount }: { provider: any; paymentId: string; amount?: number }) {
-  return adapterFor(provider).capturePayment({ paymentId, amount });
+function requireCapability(adapter: PaymentAdapter, capability: PaymentCapability) {
+  if (!adapter.capabilities.includes(capability)) {
+    throw new UnsupportedPaymentCapabilityError(adapter.code, capability);
+  }
 }
 
-export async function refundPayment({ provider, paymentId, amount, currency }: { provider: any; paymentId: string; amount: number; currency: string }) {
-  return adapterFor(provider).refundPayment({ paymentId, amount, currency });
+export async function createPayment({
+  provider,
+  reservation,
+  amount,
+  currency,
+}: {
+  provider: PaymentProviderSelection;
+  reservation: CreatePaymentInput['reservation'];
+  amount: number;
+  currency: string;
+}) {
+  const adapter = adapterFor(provider);
+  requireCapability(adapter, 'createPayment');
+  return adapter.createPayment({ reservation, amount, currency });
 }
 
-export async function getPaymentStatus({ provider, paymentId }: { provider: any; paymentId: string }) {
-  return adapterFor(provider).getPaymentStatus({ paymentId });
+export async function capturePayment({
+  provider,
+  paymentId,
+  amount,
+}: {
+  provider: PaymentProviderSelection;
+  paymentId: string;
+  amount: number;
+}) {
+  const adapter = adapterFor(provider);
+  requireCapability(adapter, 'capturePayment');
+  return adapter.capturePayment({ paymentId, amount } satisfies CapturePaymentInput);
 }
 
-export async function generatePaymentLink({ provider, paymentId }: { provider: any; paymentId: string }) {
-  return adapterFor(provider).generatePaymentLink({ paymentId });
+/** The manual adapter returns instructions only; actual refund attestation stays in the domain command. */
+export async function refundPayment({
+  provider,
+  paymentId,
+  amount,
+  currency,
+}: {
+  provider: PaymentProviderSelection;
+  paymentId: string;
+  amount: number;
+  currency: string;
+}) {
+  const adapter = adapterFor(provider);
+  requireCapability(adapter, 'refundInstruction');
+  return adapter.refundPayment({ paymentId, amount, currency } satisfies RefundInstructionInput);
 }
 
-export function verifyPaymentWebhook({ providerCode, rawBody, headers }: { providerCode: string; rawBody: string; headers: Headers }) {
+export async function getPaymentStatus({
+  provider,
+  paymentId,
+}: {
+  provider: PaymentProviderSelection;
+  paymentId: string;
+}) {
+  const adapter = adapterFor(provider);
+  requireCapability(adapter, 'getPaymentStatus');
+  return adapter.getPaymentStatus({ paymentId } satisfies PaymentReferenceInput);
+}
+
+export async function generatePaymentLink({
+  provider,
+  paymentId,
+}: {
+  provider: PaymentProviderSelection;
+  paymentId: string;
+}) {
+  const adapter = adapterFor(provider);
+  requireCapability(adapter, 'generatePaymentLink');
+  return adapter.generatePaymentLink({ paymentId } satisfies PaymentReferenceInput);
+}
+
+export function verifyPaymentWebhook({
+  providerCode,
+  rawBody,
+  headers,
+}: {
+  providerCode: string;
+  rawBody: string;
+  headers: Headers;
+}) {
   const adapter = getPaymentAdapter(providerCode);
-  if (!adapter.verifyWebhook) throw new Error(`Payment provider ${providerCode} does not accept public webhooks.`);
+  requireCapability(adapter, 'verifyWebhook');
+  if (!adapter.verifyWebhook) throw new Error(`Payment provider ${adapter.code} has no webhook verifier.`);
   return adapter.verifyWebhook({ rawBody, headers });
 }

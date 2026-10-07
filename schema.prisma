@@ -115,6 +115,7 @@ model HostOrganization {
   listings                                  Listing[]                 @relation("Listing_hostOrganization")
   guests                                    GuestProfile[]            @relation("GuestProfile_hostOrganization")
   reservations                              Reservation[]             @relation("Reservation_hostOrganization")
+  reservationAmendments                     ReservationAmendment[]    @relation("ReservationAmendment_hostOrganization")
   payments                                  Payment[]                 @relation("Payment_hostOrganization")
   paymentProviders                          PaymentProvider[]         @relation("PaymentProvider_hostOrganization")
   paymentWebhookEvents                      PaymentWebhookEvent[]     @relation("PaymentWebhookEvent_hostOrganization")
@@ -659,67 +660,95 @@ model GuestParty {
 }
 
 model Reservation {
-  id                                  String                @id @default(cuid())
-  hostOrganization                    HostOrganization?     @relation("Reservation_hostOrganization", fields: [hostOrganizationId], references: [id])
-  hostOrganizationId                  String?               @map("hostOrganization")
-  listing                             Listing?              @relation("Reservation_listing", fields: [listingId], references: [id])
-  listingId                           String?               @map("listing")
-  accommodationUnit                   AccommodationUnit?    @relation("Reservation_accommodationUnit", fields: [accommodationUnitId], references: [id])
-  accommodationUnitId                 String?               @map("accommodationUnit")
-  guest                               GuestProfile?         @relation("Reservation_guest", fields: [guestId], references: [id])
-  guestId                             String?               @map("guest")
-  guestParty                          GuestParty?           @relation("GuestParty_reservation")
-  quote                               StayQuote?            @relation("Reservation_quote", fields: [quoteId], references: [id])
-  quoteId                             String?               @unique @map("quote")
-  confirmationCode                    String                @unique @default("")
-  tripTokenHash                       String                @unique @default("")
+  id                                  String                 @id @default(cuid())
+  hostOrganization                    HostOrganization?      @relation("Reservation_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId                  String?                @map("hostOrganization")
+  listing                             Listing?               @relation("Reservation_listing", fields: [listingId], references: [id])
+  listingId                           String?                @map("listing")
+  accommodationUnit                   AccommodationUnit?     @relation("Reservation_accommodationUnit", fields: [accommodationUnitId], references: [id])
+  accommodationUnitId                 String?                @map("accommodationUnit")
+  guest                               GuestProfile?          @relation("Reservation_guest", fields: [guestId], references: [id])
+  guestId                             String?                @map("guest")
+  guestParty                          GuestParty?            @relation("GuestParty_reservation")
+  quote                               StayQuote?             @relation("Reservation_quote", fields: [quoteId], references: [id])
+  quoteId                             String?                @unique @map("quote")
+  confirmationCode                    String                 @unique @default("")
+  tripTokenHash                       String                 @unique @default("")
   tripTokenExpiresAt                  DateTime
   tripTokenRevokedAt                  DateTime?
-  status                              String?               @default("pending")
-  paymentStatus                       String?               @default("unpaid")
-  source                              String?               @default("direct")
-  checkInDate                         String                @default("")
-  checkOutDate                        String                @default("")
-  scheduledCheckInTime                String                @default("")
-  scheduledCheckOutTime               String                @default("")
+  status                              String?                @default("pending")
+  paymentStatus                       String?                @default("unpaid")
+  source                              String?                @default("direct")
+  checkInDate                         String                 @default("")
+  checkOutDate                        String                 @default("")
+  scheduledCheckInTime                String                 @default("")
+  scheduledCheckOutTime               String                 @default("")
   checkedInAt                         DateTime?
   checkedOutAt                        DateTime?
   cancelledAt                         DateTime?
-  cancellationReason                  String                @default("")
+  cancellationReason                  String                 @default("")
   cancelledBy                         String?
-  currencyCode                        String                @default("USD")
-  lodgingSubtotalCents                Int?                  @default(0)
-  feeTotalCents                       Int?                  @default(0)
-  taxTotalCents                       Int?                  @default(0)
-  discountTotalCents                  Int?                  @default(0)
-  securityDepositCents                Int?                  @default(0)
-  totalAmountCents                    Int?                  @default(0)
-  amountPaidCents                     Int?                  @default(0)
+  currencyCode                        String                 @default("USD")
+  lodgingSubtotalCents                Int?                   @default(0)
+  feeTotalCents                       Int?                   @default(0)
+  taxTotalCents                       Int?                   @default(0)
+  discountTotalCents                  Int?                   @default(0)
+  securityDepositCents                Int?                   @default(0)
+  totalAmountCents                    Int?                   @default(0)
+  amountPaidCents                     Int?                   @default(0)
   bookingSnapshot                     Json?
-  guestNotes                          String                @default("")
-  internalNotes                       String                @default("")
-  lineItems                           ReservationLineItem[] @relation("ReservationLineItem_reservation")
-  calendarBlocks                      CalendarBlock[]       @relation("CalendarBlock_reservation")
-  agreement                           StayAgreement?        @relation("Reservation_agreement", fields: [agreementId], references: [id])
-  agreementId                         String?               @unique @map("agreement")
-  securityDeposit                     SecurityDeposit?      @relation("Reservation_securityDeposit", fields: [securityDepositId], references: [id])
-  securityDepositId                   String?               @unique @map("securityDeposit")
-  damageClaims                        DamageClaim[]         @relation("DamageClaim_reservation")
-  payments                            Payment[]             @relation("Payment_reservation")
-  refunds                             Refund[]              @relation("Refund_reservation")
-  payout                              Payout?               @relation("Payout_reservation")
-  conversation                        Conversation?         @relation("Conversation_reservation")
-  reviews                             Review[]              @relation("Review_reservation")
-  channelReservation                  ChannelReservation?   @relation("ChannelReservation_reservation")
-  tasks                               PropertyTask[]        @relation("PropertyTask_reservation")
-  createdAt                           DateTime              @default(now())
-  updatedAt                           DateTime              @default(now()) @updatedAt
-  from_OwnerStatementLine_reservation OwnerStatementLine[]  @relation("OwnerStatementLine_reservation")
+  guestNotes                          String                 @default("")
+  internalNotes                       String                 @default("")
+  lineItems                           ReservationLineItem[]  @relation("ReservationLineItem_reservation")
+  amendments                          ReservationAmendment[] @relation("ReservationAmendment_reservation")
+  calendarBlocks                      CalendarBlock[]        @relation("CalendarBlock_reservation")
+  agreement                           StayAgreement?         @relation("Reservation_agreement", fields: [agreementId], references: [id])
+  agreementId                         String?                @unique @map("agreement")
+  securityDeposit                     SecurityDeposit?       @relation("Reservation_securityDeposit", fields: [securityDepositId], references: [id])
+  securityDepositId                   String?                @unique @map("securityDeposit")
+  damageClaims                        DamageClaim[]          @relation("DamageClaim_reservation")
+  payments                            Payment[]              @relation("Payment_reservation")
+  refunds                             Refund[]               @relation("Refund_reservation")
+  payout                              Payout?                @relation("Payout_reservation")
+  conversation                        Conversation?          @relation("Conversation_reservation")
+  reviews                             Review[]               @relation("Review_reservation")
+  channelReservation                  ChannelReservation?    @relation("ChannelReservation_reservation")
+  tasks                               PropertyTask[]         @relation("PropertyTask_reservation")
+  createdAt                           DateTime               @default(now())
+  updatedAt                           DateTime               @default(now()) @updatedAt
+  from_OwnerStatementLine_reservation OwnerStatementLine[]   @relation("OwnerStatementLine_reservation")
 
   @@index([hostOrganizationId])
   @@index([listingId])
   @@index([accommodationUnitId])
   @@index([guestId])
+}
+
+model ReservationAmendment {
+  id                          String            @id @default(cuid())
+  hostOrganization            HostOrganization? @relation("ReservationAmendment_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId          String?           @map("hostOrganization")
+  reservation                 Reservation?      @relation("ReservationAmendment_reservation", fields: [reservationId], references: [id])
+  reservationId               String?           @map("reservation")
+  idempotencyKey              String            @unique @default("")
+  requestHash                 String            @default("")
+  actorUserId                 String            @default("")
+  reason                      String            @default("")
+  previousCheckInDate         String            @default("")
+  previousCheckOutDate        String            @default("")
+  checkInDate                 String            @default("")
+  checkOutDate                String            @default("")
+  currencyCode                String            @default("")
+  originalBookingSnapshotHash String            @default("")
+  beforeSnapshot              Json?
+  afterSnapshot               Json?
+  delta                       Json?
+  refunds                     Refund[]          @relation("Refund_reservationAmendment")
+  createdAt                   DateTime          @default(now())
+  updatedAt                   DateTime          @default(now()) @updatedAt
+
+  @@index([hostOrganizationId])
+  @@index([reservationId])
 }
 
 model ReservationLineItem {
@@ -902,29 +931,32 @@ model PaymentWebhookEvent {
 }
 
 model Refund {
-  id                             String               @id @default(cuid())
-  hostOrganization               HostOrganization?    @relation("Refund_hostOrganization", fields: [hostOrganizationId], references: [id])
-  hostOrganizationId             String?              @map("hostOrganization")
-  reservation                    Reservation?         @relation("Refund_reservation", fields: [reservationId], references: [id])
-  reservationId                  String?              @map("reservation")
-  payment                        Payment?             @relation("Refund_payment", fields: [paymentId], references: [id])
-  paymentId                      String?              @map("payment")
-  refundNumber                   String               @unique @default("")
-  idempotencyKey                 String               @unique @default("")
-  status                         String?              @default("pending")
-  reason                         String?              @default("other")
+  id                             String                @id @default(cuid())
+  hostOrganization               HostOrganization?     @relation("Refund_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId             String?               @map("hostOrganization")
+  reservation                    Reservation?          @relation("Refund_reservation", fields: [reservationId], references: [id])
+  reservationId                  String?               @map("reservation")
+  payment                        Payment?              @relation("Refund_payment", fields: [paymentId], references: [id])
+  paymentId                      String?               @map("payment")
+  reservationAmendment           ReservationAmendment? @relation("Refund_reservationAmendment", fields: [reservationAmendmentId], references: [id])
+  reservationAmendmentId         String?               @map("reservationAmendment")
+  refundNumber                   String                @unique @default("")
+  idempotencyKey                 String                @unique @default("")
+  status                         String?               @default("pending")
+  reason                         String?               @default("other")
   amountCents                    Int
-  currencyCode                   String               @default("USD")
-  providerRefundId               String               @unique @default("")
+  currencyCode                   String                @default("USD")
+  providerRefundId               String?               @unique
   processedAt                    DateTime?
   data                           Json?
-  createdAt                      DateTime             @default(now())
-  updatedAt                      DateTime             @default(now()) @updatedAt
-  from_OwnerStatementLine_refund OwnerStatementLine[] @relation("OwnerStatementLine_refund")
+  createdAt                      DateTime              @default(now())
+  updatedAt                      DateTime              @default(now()) @updatedAt
+  from_OwnerStatementLine_refund OwnerStatementLine[]  @relation("OwnerStatementLine_refund")
 
   @@index([hostOrganizationId])
   @@index([reservationId])
   @@index([paymentId])
+  @@index([reservationAmendmentId])
 }
 
 model Payout {

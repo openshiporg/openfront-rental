@@ -10,14 +10,14 @@ type User {
   phone: String
   isActive: Boolean
   onboardingStatus: String
-  hostMemberships(where: HostMembershipWhereInput! = {}, orderBy: [HostMembershipOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: HostMembershipWhereUniqueInput): [HostMembership!]
+  hostMemberships(where: HostMembershipWhereInput! = {}, orderBy: [HostMembershipOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: HostMembershipWhereUniqueInput): [HostMembership!]
   hostMembershipsCount(where: HostMembershipWhereInput! = {}): Int
   guestProfile: GuestProfile
-  sentMessages(where: MessageWhereInput! = {}, orderBy: [MessageOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MessageWhereUniqueInput): [Message!]
+  sentMessages(where: MessageWhereInput! = {}, orderBy: [MessageOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: MessageWhereUniqueInput): [Message!]
   sentMessagesCount(where: MessageWhereInput! = {}): Int
-  authoredReviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
+  authoredReviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
   authoredReviewsCount(where: ReviewWhereInput! = {}): Int
-  assignedPropertyTasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
+  assignedPropertyTasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
   assignedPropertyTasksCount(where: PropertyTaskWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -340,7 +340,7 @@ type Role {
   canManageRoles: Boolean
   canManageOnboarding: Boolean
   canManageSettings: Boolean
-  assignedTo(where: UserWhereInput! = {}, orderBy: [UserOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: UserWhereUniqueInput): [User!]
+  assignedTo(where: UserWhereInput! = {}, orderBy: [UserOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: UserWhereUniqueInput): [User!]
   assignedToCount(where: UserWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -670,47 +670,49 @@ type HostOrganization {
   federationId: String
   dataCustody: String
   isPublic: Boolean
-  memberships(where: HostMembershipWhereInput! = {}, orderBy: [HostMembershipOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: HostMembershipWhereUniqueInput): [HostMembership!]
+  memberships(where: HostMembershipWhereInput! = {}, orderBy: [HostMembershipOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: HostMembershipWhereUniqueInput): [HostMembership!]
   membershipsCount(where: HostMembershipWhereInput! = {}): Int
-  properties(where: PropertyWhereInput! = {}, orderBy: [PropertyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyWhereUniqueInput): [Property!]
+  properties(where: PropertyWhereInput! = {}, orderBy: [PropertyOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyWhereUniqueInput): [Property!]
   propertiesCount(where: PropertyWhereInput! = {}): Int
-  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
+  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
   listingsCount(where: ListingWhereInput! = {}): Int
-  guests(where: GuestProfileWhereInput! = {}, orderBy: [GuestProfileOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: GuestProfileWhereUniqueInput): [GuestProfile!]
+  guests(where: GuestProfileWhereInput! = {}, orderBy: [GuestProfileOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: GuestProfileWhereUniqueInput): [GuestProfile!]
   guestsCount(where: GuestProfileWhereInput! = {}): Int
-  reservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
+  reservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
   reservationsCount(where: ReservationWhereInput! = {}): Int
-  payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
+  reservationAmendments(where: ReservationAmendmentWhereInput! = {}, orderBy: [ReservationAmendmentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationAmendmentWhereUniqueInput): [ReservationAmendment!]
+  reservationAmendmentsCount(where: ReservationAmendmentWhereInput! = {}): Int
+  payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
   paymentsCount(where: PaymentWhereInput! = {}): Int
-  paymentProviders(where: PaymentProviderWhereInput! = {}, orderBy: [PaymentProviderOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentProviderWhereUniqueInput): [PaymentProvider!]
+  paymentProviders(where: PaymentProviderWhereInput! = {}, orderBy: [PaymentProviderOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PaymentProviderWhereUniqueInput): [PaymentProvider!]
   paymentProvidersCount(where: PaymentProviderWhereInput! = {}): Int
-  paymentWebhookEvents(where: PaymentWebhookEventWhereInput! = {}, orderBy: [PaymentWebhookEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentWebhookEventWhereUniqueInput): [PaymentWebhookEvent!]
+  paymentWebhookEvents(where: PaymentWebhookEventWhereInput! = {}, orderBy: [PaymentWebhookEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PaymentWebhookEventWhereUniqueInput): [PaymentWebhookEvent!]
   paymentWebhookEventsCount(where: PaymentWebhookEventWhereInput! = {}): Int
-  payouts(where: PayoutWhereInput! = {}, orderBy: [PayoutOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PayoutWhereUniqueInput): [Payout!]
+  payouts(where: PayoutWhereInput! = {}, orderBy: [PayoutOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PayoutWhereUniqueInput): [Payout!]
   payoutsCount(where: PayoutWhereInput! = {}): Int
-  propertyOwners(where: PropertyOwnerWhereInput! = {}, orderBy: [PropertyOwnerOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyOwnerWhereUniqueInput): [PropertyOwner!]
+  propertyOwners(where: PropertyOwnerWhereInput! = {}, orderBy: [PropertyOwnerOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyOwnerWhereUniqueInput): [PropertyOwner!]
   propertyOwnersCount(where: PropertyOwnerWhereInput! = {}): Int
-  propertyOwnerAssignments(where: PropertyOwnerAssignmentWhereInput! = {}, orderBy: [PropertyOwnerAssignmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyOwnerAssignmentWhereUniqueInput): [PropertyOwnerAssignment!]
+  propertyOwnerAssignments(where: PropertyOwnerAssignmentWhereInput! = {}, orderBy: [PropertyOwnerAssignmentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyOwnerAssignmentWhereUniqueInput): [PropertyOwnerAssignment!]
   propertyOwnerAssignmentsCount(where: PropertyOwnerAssignmentWhereInput! = {}): Int
-  ownerStatements(where: OwnerStatementWhereInput! = {}, orderBy: [OwnerStatementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OwnerStatementWhereUniqueInput): [OwnerStatement!]
+  ownerStatements(where: OwnerStatementWhereInput! = {}, orderBy: [OwnerStatementOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: OwnerStatementWhereUniqueInput): [OwnerStatement!]
   ownerStatementsCount(where: OwnerStatementWhereInput! = {}): Int
-  ownerStatementLines(where: OwnerStatementLineWhereInput! = {}, orderBy: [OwnerStatementLineOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OwnerStatementLineWhereUniqueInput): [OwnerStatementLine!]
+  ownerStatementLines(where: OwnerStatementLineWhereInput! = {}, orderBy: [OwnerStatementLineOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: OwnerStatementLineWhereUniqueInput): [OwnerStatementLine!]
   ownerStatementLinesCount(where: OwnerStatementLineWhereInput! = {}): Int
-  cancellationPolicies(where: CancellationPolicyWhereInput! = {}, orderBy: [CancellationPolicyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CancellationPolicyWhereUniqueInput): [CancellationPolicy!]
+  cancellationPolicies(where: CancellationPolicyWhereInput! = {}, orderBy: [CancellationPolicyOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: CancellationPolicyWhereUniqueInput): [CancellationPolicy!]
   cancellationPoliciesCount(where: CancellationPolicyWhereInput! = {}): Int
-  conversations(where: ConversationWhereInput! = {}, orderBy: [ConversationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ConversationWhereUniqueInput): [Conversation!]
+  conversations(where: ConversationWhereInput! = {}, orderBy: [ConversationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ConversationWhereUniqueInput): [Conversation!]
   conversationsCount(where: ConversationWhereInput! = {}): Int
-  reviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
+  reviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
   reviewsCount(where: ReviewWhereInput! = {}): Int
-  tasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
+  tasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
   tasksCount(where: PropertyTaskWhereInput! = {}): Int
-  taskRules(where: TaskRuleWhereInput! = {}, orderBy: [TaskRuleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TaskRuleWhereUniqueInput): [TaskRule!]
+  taskRules(where: TaskRuleWhereInput! = {}, orderBy: [TaskRuleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: TaskRuleWhereUniqueInput): [TaskRule!]
   taskRulesCount(where: TaskRuleWhereInput! = {}): Int
-  channelConnections(where: ChannelConnectionWhereInput! = {}, orderBy: [ChannelConnectionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelConnectionWhereUniqueInput): [ChannelConnection!]
+  channelConnections(where: ChannelConnectionWhereInput! = {}, orderBy: [ChannelConnectionOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelConnectionWhereUniqueInput): [ChannelConnection!]
   channelConnectionsCount(where: ChannelConnectionWhereInput! = {}): Int
-  dataExchangeJobs(where: DataExchangeJobWhereInput! = {}, orderBy: [DataExchangeJobOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: DataExchangeJobWhereUniqueInput): [DataExchangeJob!]
+  dataExchangeJobs(where: DataExchangeJobWhereInput! = {}, orderBy: [DataExchangeJobOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: DataExchangeJobWhereUniqueInput): [DataExchangeJob!]
   dataExchangeJobsCount(where: DataExchangeJobWhereInput! = {}): Int
-  outboxEvents(where: OutboxEventWhereInput! = {}, orderBy: [OutboxEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OutboxEventWhereUniqueInput): [OutboxEvent!]
+  outboxEvents(where: OutboxEventWhereInput! = {}, orderBy: [OutboxEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: OutboxEventWhereUniqueInput): [OutboxEvent!]
   outboxEventsCount(where: OutboxEventWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -744,6 +746,7 @@ input HostOrganizationWhereInput {
   listings: ListingManyRelationFilter
   guests: GuestProfileManyRelationFilter
   reservations: ReservationManyRelationFilter
+  reservationAmendments: ReservationAmendmentManyRelationFilter
   payments: PaymentManyRelationFilter
   paymentProviders: PaymentProviderManyRelationFilter
   paymentWebhookEvents: PaymentWebhookEventManyRelationFilter
@@ -786,6 +789,12 @@ input ReservationManyRelationFilter {
   every: ReservationWhereInput
   some: ReservationWhereInput
   none: ReservationWhereInput
+}
+
+input ReservationAmendmentManyRelationFilter {
+  every: ReservationAmendmentWhereInput
+  some: ReservationAmendmentWhereInput
+  none: ReservationAmendmentWhereInput
 }
 
 input PaymentManyRelationFilter {
@@ -908,6 +917,7 @@ input HostOrganizationUpdateInput {
   listings: ListingRelateToManyForUpdateInput
   guests: GuestProfileRelateToManyForUpdateInput
   reservations: ReservationRelateToManyForUpdateInput
+  reservationAmendments: ReservationAmendmentRelateToManyForUpdateInput
   payments: PaymentRelateToManyForUpdateInput
   paymentProviders: PaymentProviderRelateToManyForUpdateInput
   paymentWebhookEvents: PaymentWebhookEventRelateToManyForUpdateInput
@@ -954,6 +964,13 @@ input ReservationRelateToManyForUpdateInput {
   set: [ReservationWhereUniqueInput!]
   create: [ReservationCreateInput!]
   connect: [ReservationWhereUniqueInput!]
+}
+
+input ReservationAmendmentRelateToManyForUpdateInput {
+  disconnect: [ReservationAmendmentWhereUniqueInput!]
+  set: [ReservationAmendmentWhereUniqueInput!]
+  create: [ReservationAmendmentCreateInput!]
+  connect: [ReservationAmendmentWhereUniqueInput!]
 }
 
 input PaymentRelateToManyForUpdateInput {
@@ -1077,6 +1094,7 @@ input HostOrganizationCreateInput {
   listings: ListingRelateToManyForCreateInput
   guests: GuestProfileRelateToManyForCreateInput
   reservations: ReservationRelateToManyForCreateInput
+  reservationAmendments: ReservationAmendmentRelateToManyForCreateInput
   payments: PaymentRelateToManyForCreateInput
   paymentProviders: PaymentProviderRelateToManyForCreateInput
   paymentWebhookEvents: PaymentWebhookEventRelateToManyForCreateInput
@@ -1115,6 +1133,11 @@ input GuestProfileRelateToManyForCreateInput {
 input ReservationRelateToManyForCreateInput {
   create: [ReservationCreateInput!]
   connect: [ReservationWhereUniqueInput!]
+}
+
+input ReservationAmendmentRelateToManyForCreateInput {
+  create: [ReservationAmendmentCreateInput!]
+  connect: [ReservationAmendmentWhereUniqueInput!]
 }
 
 input PaymentRelateToManyForCreateInput {
@@ -1281,15 +1304,15 @@ type Property {
   registrationNumber: String
   internalNotes: String
   address: PropertyAddress
-  units(where: AccommodationUnitWhereInput! = {}, orderBy: [AccommodationUnitOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AccommodationUnitWhereUniqueInput): [AccommodationUnit!]
+  units(where: AccommodationUnitWhereInput! = {}, orderBy: [AccommodationUnitOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: AccommodationUnitWhereUniqueInput): [AccommodationUnit!]
   unitsCount(where: AccommodationUnitWhereInput! = {}): Int
-  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
+  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
   listingsCount(where: ListingWhereInput! = {}): Int
-  ownerAssignments(where: PropertyOwnerAssignmentWhereInput! = {}, orderBy: [PropertyOwnerAssignmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyOwnerAssignmentWhereUniqueInput): [PropertyOwnerAssignment!]
+  ownerAssignments(where: PropertyOwnerAssignmentWhereInput! = {}, orderBy: [PropertyOwnerAssignmentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyOwnerAssignmentWhereUniqueInput): [PropertyOwnerAssignment!]
   ownerAssignmentsCount(where: PropertyOwnerAssignmentWhereInput! = {}): Int
-  tasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
+  tasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
   tasksCount(where: PropertyTaskWhereInput! = {}): Int
-  taskRules(where: TaskRuleWhereInput! = {}, orderBy: [TaskRuleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TaskRuleWhereUniqueInput): [TaskRule!]
+  taskRules(where: TaskRuleWhereInput! = {}, orderBy: [TaskRuleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: TaskRuleWhereUniqueInput): [TaskRule!]
   taskRulesCount(where: TaskRuleWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -1546,11 +1569,11 @@ type PropertyOwner {
   payoutMethod: String
   payoutReference: String
   taxProfile: JSON
-  assignments(where: PropertyOwnerAssignmentWhereInput! = {}, orderBy: [PropertyOwnerAssignmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyOwnerAssignmentWhereUniqueInput): [PropertyOwnerAssignment!]
+  assignments(where: PropertyOwnerAssignmentWhereInput! = {}, orderBy: [PropertyOwnerAssignmentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyOwnerAssignmentWhereUniqueInput): [PropertyOwnerAssignment!]
   assignmentsCount(where: PropertyOwnerAssignmentWhereInput! = {}): Int
-  statements(where: OwnerStatementWhereInput! = {}, orderBy: [OwnerStatementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OwnerStatementWhereUniqueInput): [OwnerStatement!]
+  statements(where: OwnerStatementWhereInput! = {}, orderBy: [OwnerStatementOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: OwnerStatementWhereUniqueInput): [OwnerStatement!]
   statementsCount(where: OwnerStatementWhereInput! = {}): Int
-  payouts(where: PayoutWhereInput! = {}, orderBy: [PayoutOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PayoutWhereUniqueInput): [Payout!]
+  payouts(where: PayoutWhereInput! = {}, orderBy: [PayoutOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PayoutWhereUniqueInput): [Payout!]
   payoutsCount(where: PayoutWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -1770,11 +1793,11 @@ type AccommodationUnit {
   bathroomCountHalfUnits: Int
   squareFeet: Int
   floorLabel: String
-  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
+  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
   listingsCount(where: ListingWhereInput! = {}): Int
-  bedrooms(where: BedroomWhereInput! = {}, orderBy: [BedroomOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: BedroomWhereUniqueInput): [Bedroom!]
+  bedrooms(where: BedroomWhereInput! = {}, orderBy: [BedroomOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: BedroomWhereUniqueInput): [Bedroom!]
   bedroomsCount(where: BedroomWhereInput! = {}): Int
-  reservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
+  reservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
   reservationsCount(where: ReservationWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -1889,7 +1912,7 @@ type Bedroom {
   accommodationUnit: AccommodationUnit
   name: String
   order: Int
-  beds(where: BedWhereInput! = {}, orderBy: [BedOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: BedWhereUniqueInput): [Bed!]
+  beds(where: BedWhereInput! = {}, orderBy: [BedOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: BedWhereUniqueInput): [Bed!]
   bedsCount(where: BedWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -2050,7 +2073,7 @@ type Amenity {
   slug: String
   category: String
   iconKey: String
-  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
+  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
   listingsCount(where: ListingWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -2134,33 +2157,33 @@ type Listing {
   reviewAverageHundredths: Int
   reviewCount: Int
   thumbnail: String
-  media(where: ListingMediaWhereInput! = {}, orderBy: [ListingMediaOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ListingMediaWhereUniqueInput): [ListingMedia!]
+  media(where: ListingMediaWhereInput! = {}, orderBy: [ListingMediaOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingMediaWhereUniqueInput): [ListingMedia!]
   mediaCount(where: ListingMediaWhereInput! = {}): Int
-  amenities(where: AmenityWhereInput! = {}, orderBy: [AmenityOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AmenityWhereUniqueInput): [Amenity!]
+  amenities(where: AmenityWhereInput! = {}, orderBy: [AmenityOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: AmenityWhereUniqueInput): [Amenity!]
   amenitiesCount(where: AmenityWhereInput! = {}): Int
-  collections(where: StayCollectionWhereInput! = {}, orderBy: [StayCollectionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StayCollectionWhereUniqueInput): [StayCollection!]
+  collections(where: StayCollectionWhereInput! = {}, orderBy: [StayCollectionOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: StayCollectionWhereUniqueInput): [StayCollection!]
   collectionsCount(where: StayCollectionWhereInput! = {}): Int
-  houseRules(where: HouseRuleWhereInput! = {}, orderBy: [HouseRuleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: HouseRuleWhereUniqueInput): [HouseRule!]
+  houseRules(where: HouseRuleWhereInput! = {}, orderBy: [HouseRuleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: HouseRuleWhereUniqueInput): [HouseRule!]
   houseRulesCount(where: HouseRuleWhereInput! = {}): Int
-  calendarBlocks(where: CalendarBlockWhereInput! = {}, orderBy: [CalendarBlockOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CalendarBlockWhereUniqueInput): [CalendarBlock!]
+  calendarBlocks(where: CalendarBlockWhereInput! = {}, orderBy: [CalendarBlockOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: CalendarBlockWhereUniqueInput): [CalendarBlock!]
   calendarBlocksCount(where: CalendarBlockWhereInput! = {}): Int
-  ratePlans(where: RatePlanWhereInput! = {}, orderBy: [RatePlanOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RatePlanWhereUniqueInput): [RatePlan!]
+  ratePlans(where: RatePlanWhereInput! = {}, orderBy: [RatePlanOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: RatePlanWhereUniqueInput): [RatePlan!]
   ratePlansCount(where: RatePlanWhereInput! = {}): Int
-  feeDefinitions(where: FeeDefinitionWhereInput! = {}, orderBy: [FeeDefinitionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: FeeDefinitionWhereUniqueInput): [FeeDefinition!]
+  feeDefinitions(where: FeeDefinitionWhereInput! = {}, orderBy: [FeeDefinitionOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: FeeDefinitionWhereUniqueInput): [FeeDefinition!]
   feeDefinitionsCount(where: FeeDefinitionWhereInput! = {}): Int
-  taxRules(where: TaxRuleWhereInput! = {}, orderBy: [TaxRuleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TaxRuleWhereUniqueInput): [TaxRule!]
+  taxRules(where: TaxRuleWhereInput! = {}, orderBy: [TaxRuleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: TaxRuleWhereUniqueInput): [TaxRule!]
   taxRulesCount(where: TaxRuleWhereInput! = {}): Int
-  quotes(where: StayQuoteWhereInput! = {}, orderBy: [StayQuoteOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StayQuoteWhereUniqueInput): [StayQuote!]
+  quotes(where: StayQuoteWhereInput! = {}, orderBy: [StayQuoteOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: StayQuoteWhereUniqueInput): [StayQuote!]
   quotesCount(where: StayQuoteWhereInput! = {}): Int
-  reservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
+  reservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
   reservationsCount(where: ReservationWhereInput! = {}): Int
-  conversations(where: ConversationWhereInput! = {}, orderBy: [ConversationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ConversationWhereUniqueInput): [Conversation!]
+  conversations(where: ConversationWhereInput! = {}, orderBy: [ConversationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ConversationWhereUniqueInput): [Conversation!]
   conversationsCount(where: ConversationWhereInput! = {}): Int
-  reviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
+  reviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
   reviewsCount(where: ReviewWhereInput! = {}): Int
-  tasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
+  tasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
   tasksCount(where: PropertyTaskWhereInput! = {}): Int
-  channelListings(where: ChannelListingWhereInput! = {}, orderBy: [ChannelListingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelListingWhereUniqueInput): [ChannelListing!]
+  channelListings(where: ChannelListingWhereInput! = {}, orderBy: [ChannelListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelListingWhereUniqueInput): [ChannelListing!]
   channelListingsCount(where: ChannelListingWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -2615,7 +2638,7 @@ type StayCollection {
   slug: String
   description: String
   isActive: Boolean
-  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
+  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
   listingsCount(where: ListingWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -2876,9 +2899,9 @@ type RatePlan {
   advanceNoticeHours: Int
   bookingWindowDays: Int
   isDefault: Boolean
-  seasonalRates(where: SeasonalRateWhereInput! = {}, orderBy: [SeasonalRateOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: SeasonalRateWhereUniqueInput): [SeasonalRate!]
+  seasonalRates(where: SeasonalRateWhereInput! = {}, orderBy: [SeasonalRateOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: SeasonalRateWhereUniqueInput): [SeasonalRate!]
   seasonalRatesCount(where: SeasonalRateWhereInput! = {}): Int
-  quotes(where: StayQuoteWhereInput! = {}, orderBy: [StayQuoteOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StayQuoteWhereUniqueInput): [StayQuote!]
+  quotes(where: StayQuoteWhereInput! = {}, orderBy: [StayQuoteOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: StayQuoteWhereUniqueInput): [StayQuote!]
   quotesCount(where: StayQuoteWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -3277,9 +3300,9 @@ type CancellationPolicy {
   fullTerms: String
   freeCancellationHours: Int
   rules: JSON
-  ratePlans(where: RatePlanWhereInput! = {}, orderBy: [RatePlanOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RatePlanWhereUniqueInput): [RatePlan!]
+  ratePlans(where: RatePlanWhereInput! = {}, orderBy: [RatePlanOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: RatePlanWhereUniqueInput): [RatePlan!]
   ratePlansCount(where: RatePlanWhereInput! = {}): Int
-  agreements(where: StayAgreementWhereInput! = {}, orderBy: [StayAgreementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StayAgreementWhereUniqueInput): [StayAgreement!]
+  agreements(where: StayAgreementWhereInput! = {}, orderBy: [StayAgreementOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: StayAgreementWhereUniqueInput): [StayAgreement!]
   agreementsCount(where: StayAgreementWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -3530,13 +3553,13 @@ type GuestProfile {
   preferredLanguage: String
   marketingConsent: Boolean
   internalNotes: String
-  reservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
+  reservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
   reservationsCount(where: ReservationWhereInput! = {}): Int
-  conversations(where: ConversationWhereInput! = {}, orderBy: [ConversationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ConversationWhereUniqueInput): [Conversation!]
+  conversations(where: ConversationWhereInput! = {}, orderBy: [ConversationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ConversationWhereUniqueInput): [Conversation!]
   conversationsCount(where: ConversationWhereInput! = {}): Int
-  reviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
+  reviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
   reviewsCount(where: ReviewWhereInput! = {}): Int
-  payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
+  payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
   paymentsCount(where: PaymentWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -3734,24 +3757,26 @@ type Reservation {
   bookingSnapshot: JSON
   guestNotes: String
   internalNotes: String
-  lineItems(where: ReservationLineItemWhereInput! = {}, orderBy: [ReservationLineItemOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReservationLineItemWhereUniqueInput): [ReservationLineItem!]
+  lineItems(where: ReservationLineItemWhereInput! = {}, orderBy: [ReservationLineItemOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationLineItemWhereUniqueInput): [ReservationLineItem!]
   lineItemsCount(where: ReservationLineItemWhereInput! = {}): Int
-  calendarBlocks(where: CalendarBlockWhereInput! = {}, orderBy: [CalendarBlockOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CalendarBlockWhereUniqueInput): [CalendarBlock!]
+  amendments(where: ReservationAmendmentWhereInput! = {}, orderBy: [ReservationAmendmentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationAmendmentWhereUniqueInput): [ReservationAmendment!]
+  amendmentsCount(where: ReservationAmendmentWhereInput! = {}): Int
+  calendarBlocks(where: CalendarBlockWhereInput! = {}, orderBy: [CalendarBlockOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: CalendarBlockWhereUniqueInput): [CalendarBlock!]
   calendarBlocksCount(where: CalendarBlockWhereInput! = {}): Int
   agreement: StayAgreement
   securityDeposit: SecurityDeposit
-  damageClaims(where: DamageClaimWhereInput! = {}, orderBy: [DamageClaimOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: DamageClaimWhereUniqueInput): [DamageClaim!]
+  damageClaims(where: DamageClaimWhereInput! = {}, orderBy: [DamageClaimOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: DamageClaimWhereUniqueInput): [DamageClaim!]
   damageClaimsCount(where: DamageClaimWhereInput! = {}): Int
-  payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
+  payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
   paymentsCount(where: PaymentWhereInput! = {}): Int
-  refunds(where: RefundWhereInput! = {}, orderBy: [RefundOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RefundWhereUniqueInput): [Refund!]
+  refunds(where: RefundWhereInput! = {}, orderBy: [RefundOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: RefundWhereUniqueInput): [Refund!]
   refundsCount(where: RefundWhereInput! = {}): Int
   payout: Payout
   conversation: Conversation
-  reviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
+  reviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
   reviewsCount(where: ReviewWhereInput! = {}): Int
   channelReservation: ChannelReservation
-  tasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
+  tasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
   tasksCount(where: PropertyTaskWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -3808,6 +3833,7 @@ input ReservationWhereInput {
   guestNotes: StringFilter
   internalNotes: StringFilter
   lineItems: ReservationLineItemManyRelationFilter
+  amendments: ReservationAmendmentManyRelationFilter
   calendarBlocks: CalendarBlockManyRelationFilter
   agreement: StayAgreementWhereInput
   securityDeposit: SecurityDepositWhereInput
@@ -3908,6 +3934,7 @@ input ReservationUpdateInput {
   guestNotes: String
   internalNotes: String
   lineItems: ReservationLineItemRelateToManyForUpdateInput
+  amendments: ReservationAmendmentRelateToManyForUpdateInput
   calendarBlocks: CalendarBlockRelateToManyForUpdateInput
   agreement: StayAgreementRelateToOneForUpdateInput
   securityDeposit: SecurityDepositRelateToOneForUpdateInput
@@ -4020,6 +4047,7 @@ input ReservationCreateInput {
   guestNotes: String
   internalNotes: String
   lineItems: ReservationLineItemRelateToManyForCreateInput
+  amendments: ReservationAmendmentRelateToManyForCreateInput
   calendarBlocks: CalendarBlockRelateToManyForCreateInput
   agreement: StayAgreementRelateToOneForCreateInput
   securityDeposit: SecurityDepositRelateToOneForCreateInput
@@ -4078,6 +4106,119 @@ input PayoutRelateToOneForCreateInput {
 input ConversationRelateToOneForCreateInput {
   create: ConversationCreateInput
   connect: ConversationWhereUniqueInput
+}
+
+type ReservationAmendment {
+  id: ID!
+  hostOrganization: HostOrganization
+  reservation: Reservation
+  idempotencyKey: String
+  requestHash: String
+  actorUserId: String
+  reason: String
+  previousCheckInDate: String
+  previousCheckOutDate: String
+  checkInDate: String
+  checkOutDate: String
+  currencyCode: String
+  originalBookingSnapshotHash: String
+  beforeSnapshot: JSON
+  afterSnapshot: JSON
+  delta: JSON
+  refunds(where: RefundWhereInput! = {}, orderBy: [RefundOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: RefundWhereUniqueInput): [Refund!]
+  refundsCount(where: RefundWhereInput! = {}): Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ReservationAmendmentWhereUniqueInput {
+  id: ID
+  idempotencyKey: String
+}
+
+input ReservationAmendmentWhereInput {
+  AND: [ReservationAmendmentWhereInput!]
+  OR: [ReservationAmendmentWhereInput!]
+  NOT: [ReservationAmendmentWhereInput!]
+  id: IDFilter
+  hostOrganization: HostOrganizationWhereInput
+  reservation: ReservationWhereInput
+  idempotencyKey: StringFilter
+  requestHash: StringFilter
+  actorUserId: StringFilter
+  reason: StringFilter
+  previousCheckInDate: StringFilter
+  previousCheckOutDate: StringFilter
+  checkInDate: StringFilter
+  checkOutDate: StringFilter
+  currencyCode: StringFilter
+  originalBookingSnapshotHash: StringFilter
+  refunds: RefundManyRelationFilter
+  createdAt: DateTimeFilter
+  updatedAt: DateTimeFilter
+}
+
+input ReservationAmendmentOrderByInput {
+  id: OrderDirection
+  idempotencyKey: OrderDirection
+  requestHash: OrderDirection
+  actorUserId: OrderDirection
+  reason: OrderDirection
+  previousCheckInDate: OrderDirection
+  previousCheckOutDate: OrderDirection
+  checkInDate: OrderDirection
+  checkOutDate: OrderDirection
+  currencyCode: OrderDirection
+  originalBookingSnapshotHash: OrderDirection
+  createdAt: OrderDirection
+  updatedAt: OrderDirection
+}
+
+input ReservationAmendmentUpdateInput {
+  hostOrganization: HostOrganizationRelateToOneForUpdateInput
+  reservation: ReservationRelateToOneForUpdateInput
+  idempotencyKey: String
+  requestHash: String
+  actorUserId: String
+  reason: String
+  previousCheckInDate: String
+  previousCheckOutDate: String
+  checkInDate: String
+  checkOutDate: String
+  currencyCode: String
+  originalBookingSnapshotHash: String
+  beforeSnapshot: JSON
+  afterSnapshot: JSON
+  delta: JSON
+  refunds: RefundRelateToManyForUpdateInput
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input ReservationAmendmentUpdateArgs {
+  where: ReservationAmendmentWhereUniqueInput!
+  data: ReservationAmendmentUpdateInput!
+}
+
+input ReservationAmendmentCreateInput {
+  hostOrganization: HostOrganizationRelateToOneForCreateInput
+  reservation: ReservationRelateToOneForCreateInput
+  idempotencyKey: String
+  requestHash: String
+  actorUserId: String
+  reason: String
+  previousCheckInDate: String
+  previousCheckOutDate: String
+  checkInDate: String
+  checkOutDate: String
+  currencyCode: String
+  originalBookingSnapshotHash: String
+  beforeSnapshot: JSON
+  afterSnapshot: JSON
+  delta: JSON
+  refunds: RefundRelateToManyForCreateInput
+  createdAt: DateTime
+  updatedAt: DateTime
 }
 
 type ReservationLineItem {
@@ -4505,11 +4646,11 @@ type Payment {
   processedAt: DateTime
   errorMessage: String
   processedBy: User
-  refunds(where: RefundWhereInput! = {}, orderBy: [RefundOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RefundWhereUniqueInput): [Refund!]
+  refunds(where: RefundWhereInput! = {}, orderBy: [RefundOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: RefundWhereUniqueInput): [Refund!]
   refundsCount(where: RefundWhereInput! = {}): Int
-  securityDeposits(where: SecurityDepositWhereInput! = {}, orderBy: [SecurityDepositOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: SecurityDepositWhereUniqueInput): [SecurityDeposit!]
+  securityDeposits(where: SecurityDepositWhereInput! = {}, orderBy: [SecurityDepositOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: SecurityDepositWhereUniqueInput): [SecurityDeposit!]
   securityDepositsCount(where: SecurityDepositWhereInput! = {}): Int
-  webhookEvents(where: PaymentWebhookEventWhereInput! = {}, orderBy: [PaymentWebhookEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentWebhookEventWhereUniqueInput): [PaymentWebhookEvent!]
+  webhookEvents(where: PaymentWebhookEventWhereInput! = {}, orderBy: [PaymentWebhookEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PaymentWebhookEventWhereUniqueInput): [PaymentWebhookEvent!]
   webhookEventsCount(where: PaymentWebhookEventWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -4653,9 +4794,9 @@ type PaymentProvider {
   code: String
   isInstalled: Boolean
   metadata: JSON
-  payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
+  payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
   paymentsCount(where: PaymentWhereInput! = {}): Int
-  webhookEvents(where: PaymentWebhookEventWhereInput! = {}, orderBy: [PaymentWebhookEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentWebhookEventWhereUniqueInput): [PaymentWebhookEvent!]
+  webhookEvents(where: PaymentWebhookEventWhereInput! = {}, orderBy: [PaymentWebhookEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PaymentWebhookEventWhereUniqueInput): [PaymentWebhookEvent!]
   webhookEventsCount(where: PaymentWebhookEventWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -4819,6 +4960,7 @@ type Refund {
   hostOrganization: HostOrganization
   reservation: Reservation
   payment: Payment
+  reservationAmendment: ReservationAmendment
   refundNumber: String
   idempotencyKey: String
   status: String
@@ -4847,13 +4989,14 @@ input RefundWhereInput {
   hostOrganization: HostOrganizationWhereInput
   reservation: ReservationWhereInput
   payment: PaymentWhereInput
+  reservationAmendment: ReservationAmendmentWhereInput
   refundNumber: StringFilter
   idempotencyKey: StringFilter
   status: StringNullableFilter
   reason: StringNullableFilter
   amountCents: IntFilter
   currencyCode: StringFilter
-  providerRefundId: StringFilter
+  providerRefundId: StringNullableFilter
   processedAt: DateTimeNullableFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
@@ -4877,6 +5020,7 @@ input RefundUpdateInput {
   hostOrganization: HostOrganizationRelateToOneForUpdateInput
   reservation: ReservationRelateToOneForUpdateInput
   payment: PaymentRelateToOneForUpdateInput
+  reservationAmendment: ReservationAmendmentRelateToOneForUpdateInput
   refundNumber: String
   idempotencyKey: String
   status: String
@@ -4888,6 +5032,12 @@ input RefundUpdateInput {
   data: JSON
   createdAt: DateTime
   updatedAt: DateTime
+}
+
+input ReservationAmendmentRelateToOneForUpdateInput {
+  create: ReservationAmendmentCreateInput
+  connect: ReservationAmendmentWhereUniqueInput
+  disconnect: Boolean
 }
 
 input RefundUpdateArgs {
@@ -4899,6 +5049,7 @@ input RefundCreateInput {
   hostOrganization: HostOrganizationRelateToOneForCreateInput
   reservation: ReservationRelateToOneForCreateInput
   payment: PaymentRelateToOneForCreateInput
+  reservationAmendment: ReservationAmendmentRelateToOneForCreateInput
   refundNumber: String
   idempotencyKey: String
   status: String
@@ -4910,6 +5061,11 @@ input RefundCreateInput {
   data: JSON
   createdAt: DateTime
   updatedAt: DateTime
+}
+
+input ReservationAmendmentRelateToOneForCreateInput {
+  create: ReservationAmendmentCreateInput
+  connect: ReservationAmendmentWhereUniqueInput
 }
 
 type Payout {
@@ -5065,9 +5221,9 @@ type OwnerStatement {
   sentAt: DateTime
   paidAt: DateTime
   paidReference: String
-  lines(where: OwnerStatementLineWhereInput! = {}, orderBy: [OwnerStatementLineOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OwnerStatementLineWhereUniqueInput): [OwnerStatementLine!]
+  lines(where: OwnerStatementLineWhereInput! = {}, orderBy: [OwnerStatementLineOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: OwnerStatementLineWhereUniqueInput): [OwnerStatementLine!]
   linesCount(where: OwnerStatementLineWhereInput! = {}): Int
-  payouts(where: PayoutWhereInput! = {}, orderBy: [PayoutOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PayoutWhereUniqueInput): [Payout!]
+  payouts(where: PayoutWhereInput! = {}, orderBy: [PayoutOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PayoutWhereUniqueInput): [Payout!]
   payoutsCount(where: PayoutWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -5323,7 +5479,7 @@ type Conversation {
   status: String
   externalThreadId: String
   lastMessageAt: DateTime
-  messages(where: MessageWhereInput! = {}, orderBy: [MessageOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MessageWhereUniqueInput): [Message!]
+  messages(where: MessageWhereInput! = {}, orderBy: [MessageOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: MessageWhereUniqueInput): [Message!]
   messagesCount(where: MessageWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -5639,7 +5795,7 @@ type TaskRule {
   priority: String
   checklistTemplate: JSON
   isActive: Boolean
-  tasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
+  tasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
   tasksCount(where: PropertyTaskWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -5890,15 +6046,15 @@ type ChannelConnection {
   syncMessages: Boolean
   lastSyncedAt: DateTime
   lastError: String
-  channelListings(where: ChannelListingWhereInput! = {}, orderBy: [ChannelListingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelListingWhereUniqueInput): [ChannelListing!]
+  channelListings(where: ChannelListingWhereInput! = {}, orderBy: [ChannelListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelListingWhereUniqueInput): [ChannelListing!]
   channelListingsCount(where: ChannelListingWhereInput! = {}): Int
-  channelReservations(where: ChannelReservationWhereInput! = {}, orderBy: [ChannelReservationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelReservationWhereUniqueInput): [ChannelReservation!]
+  channelReservations(where: ChannelReservationWhereInput! = {}, orderBy: [ChannelReservationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelReservationWhereUniqueInput): [ChannelReservation!]
   channelReservationsCount(where: ChannelReservationWhereInput! = {}): Int
-  syncEvents(where: ChannelSyncEventWhereInput! = {}, orderBy: [ChannelSyncEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelSyncEventWhereUniqueInput): [ChannelSyncEvent!]
+  syncEvents(where: ChannelSyncEventWhereInput! = {}, orderBy: [ChannelSyncEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelSyncEventWhereUniqueInput): [ChannelSyncEvent!]
   syncEventsCount(where: ChannelSyncEventWhereInput! = {}): Int
-  dataExchangeJobs(where: DataExchangeJobWhereInput! = {}, orderBy: [DataExchangeJobOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: DataExchangeJobWhereUniqueInput): [DataExchangeJob!]
+  dataExchangeJobs(where: DataExchangeJobWhereInput! = {}, orderBy: [DataExchangeJobOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: DataExchangeJobWhereUniqueInput): [DataExchangeJob!]
   dataExchangeJobsCount(where: DataExchangeJobWhereInput! = {}): Int
-  conversations(where: ConversationWhereInput! = {}, orderBy: [ConversationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ConversationWhereUniqueInput): [Conversation!]
+  conversations(where: ConversationWhereInput! = {}, orderBy: [ConversationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ConversationWhereUniqueInput): [Conversation!]
   conversationsCount(where: ConversationWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -6044,9 +6200,9 @@ type ChannelListing {
   status: String
   mapping: JSON
   lastSyncedAt: DateTime
-  channelReservations(where: ChannelReservationWhereInput! = {}, orderBy: [ChannelReservationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelReservationWhereUniqueInput): [ChannelReservation!]
+  channelReservations(where: ChannelReservationWhereInput! = {}, orderBy: [ChannelReservationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelReservationWhereUniqueInput): [ChannelReservation!]
   channelReservationsCount(where: ChannelReservationWhereInput! = {}): Int
-  syncEvents(where: ChannelSyncEventWhereInput! = {}, orderBy: [ChannelSyncEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelSyncEventWhereUniqueInput): [ChannelSyncEvent!]
+  syncEvents(where: ChannelSyncEventWhereInput! = {}, orderBy: [ChannelSyncEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelSyncEventWhereUniqueInput): [ChannelSyncEvent!]
   syncEventsCount(where: ChannelSyncEventWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -6136,9 +6292,9 @@ type ChannelReservation {
   currencyCode: String
   rawData: JSON
   lastSyncedAt: DateTime
-  calendarBlocks(where: CalendarBlockWhereInput! = {}, orderBy: [CalendarBlockOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CalendarBlockWhereUniqueInput): [CalendarBlock!]
+  calendarBlocks(where: CalendarBlockWhereInput! = {}, orderBy: [CalendarBlockOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: CalendarBlockWhereUniqueInput): [CalendarBlock!]
   calendarBlocksCount(where: CalendarBlockWhereInput! = {}): Int
-  syncEvents(where: ChannelSyncEventWhereInput! = {}, orderBy: [ChannelSyncEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelSyncEventWhereUniqueInput): [ChannelSyncEvent!]
+  syncEvents(where: ChannelSyncEventWhereInput! = {}, orderBy: [ChannelSyncEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelSyncEventWhereUniqueInput): [ChannelSyncEvent!]
   syncEventsCount(where: ChannelSyncEventWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -6736,6 +6892,12 @@ type Mutation {
   updateReservations(data: [ReservationUpdateArgs!]!): [Reservation]
   deleteReservation(where: ReservationWhereUniqueInput!): Reservation
   deleteReservations(where: [ReservationWhereUniqueInput!]!): [Reservation]
+  createReservationAmendment(data: ReservationAmendmentCreateInput!): ReservationAmendment
+  createReservationAmendments(data: [ReservationAmendmentCreateInput!]!): [ReservationAmendment]
+  updateReservationAmendment(where: ReservationAmendmentWhereUniqueInput!, data: ReservationAmendmentUpdateInput!): ReservationAmendment
+  updateReservationAmendments(data: [ReservationAmendmentUpdateArgs!]!): [ReservationAmendment]
+  deleteReservationAmendment(where: ReservationAmendmentWhereUniqueInput!): ReservationAmendment
+  deleteReservationAmendments(where: [ReservationAmendmentWhereUniqueInput!]!): [ReservationAmendment]
   createReservationLineItem(data: ReservationLineItemCreateInput!): ReservationLineItem
   createReservationLineItems(data: [ReservationLineItemCreateInput!]!): [ReservationLineItem]
   updateReservationLineItem(where: ReservationLineItemWhereUniqueInput!, data: ReservationLineItemUpdateInput!): ReservationLineItem
@@ -6878,6 +7040,8 @@ type Mutation {
   requestStayCancellation(tripToken: String!, reason: String): StayCancellationResult!
   signStayAgreement(token: String!, signatureName: String!): StayAgreementMutationResult!
   transitionStayReservation(reservationId: ID!, transition: String!, note: String): StayReservationMutationResult!
+  reassignStayReservation(reservationId: ID!, targetAccommodationUnitId: ID!, reason: String!): JSON!
+  amendConfirmedStay(reservationId: ID!, expectedCheckInDate: String!, expectedCheckOutDate: String!, checkInDate: String!, checkOutDate: String!, reason: String!, idempotencyKey: String!): JSON!
   initiateStayPayment(reservationId: ID!, paymentProviderCode: String, amountCents: Int): StayPaymentResult!
   captureStayPayment(paymentId: ID!): StayPaymentResult!
   generateOwnerStatement(ownerId: ID!, periodStart: String!, periodEnd: String!, currencyCode: String): JSON!
@@ -6887,11 +7051,12 @@ type Mutation {
   importListingCalendar(channelConnectionId: ID!, listingId: ID!, calendarText: String!, sourceLabel: String): JSON!
   exportListingCalendar(listingId: ID!): JSON!
   exportHostArchive(hostOrganizationId: ID!): JSON!
-  refundStayPayment(paymentId: ID!, amountCents: Int!, reason: String): JSON!
+  refundStayPayment(paymentId: ID!, refundId: ID, operationKey: String!, amountCents: Int!, reason: String, confirmFundsReturned: Boolean!, manualEvidenceReference: String!): JSON!
   transitionSecurityDeposit(depositId: ID!, transition: String!, amountCents: Int, reference: String): JSON!
   createStayDamageClaim(reservationId: ID!, description: String!, claimedAmountCents: Int!, evidence: JSON): JSON!
   transitionDamageClaim(claimId: ID!, transition: String!, approvedAmountCents: Int): JSON!
   updateOnboardingStatus(status: String!): OnboardingStatusResult!
+  rentalOnboarding(input: JSON!, operationId: String, mode: String!): JSON!
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
@@ -6924,151 +7089,154 @@ enum PasswordResetRedemptionErrorCode {
 
 type Query {
   user(where: UserWhereUniqueInput!): User
-  users(where: UserWhereInput! = {}, orderBy: [UserOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: UserWhereUniqueInput): [User!]
+  users(where: UserWhereInput! = {}, orderBy: [UserOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: UserWhereUniqueInput): [User!]
   usersCount(where: UserWhereInput! = {}): Int
   role(where: RoleWhereUniqueInput!): Role
-  roles(where: RoleWhereInput! = {}, orderBy: [RoleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RoleWhereUniqueInput): [Role!]
+  roles(where: RoleWhereInput! = {}, orderBy: [RoleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: RoleWhereUniqueInput): [Role!]
   rolesCount(where: RoleWhereInput! = {}): Int
   marketplaceSettings(where: MarketplaceSettingsWhereUniqueInput! = {id: 1}): MarketplaceSettings
-  marketplaceSettingsItems(where: MarketplaceSettingsWhereInput! = {id: {equals: 1}}, orderBy: [MarketplaceSettingsOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MarketplaceSettingsWhereUniqueInput): [MarketplaceSettings!]
+  marketplaceSettingsItems(where: MarketplaceSettingsWhereInput! = {id: {equals: 1}}, orderBy: [MarketplaceSettingsOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: MarketplaceSettingsWhereUniqueInput): [MarketplaceSettings!]
   marketplaceSettingsItemsCount(where: MarketplaceSettingsWhereInput! = {id: {equals: 1}}): Int
   hostOrganization(where: HostOrganizationWhereUniqueInput!): HostOrganization
-  hostOrganizations(where: HostOrganizationWhereInput! = {}, orderBy: [HostOrganizationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: HostOrganizationWhereUniqueInput): [HostOrganization!]
+  hostOrganizations(where: HostOrganizationWhereInput! = {}, orderBy: [HostOrganizationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: HostOrganizationWhereUniqueInput): [HostOrganization!]
   hostOrganizationsCount(where: HostOrganizationWhereInput! = {}): Int
   hostMembership(where: HostMembershipWhereUniqueInput!): HostMembership
-  hostMemberships(where: HostMembershipWhereInput! = {}, orderBy: [HostMembershipOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: HostMembershipWhereUniqueInput): [HostMembership!]
+  hostMemberships(where: HostMembershipWhereInput! = {}, orderBy: [HostMembershipOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: HostMembershipWhereUniqueInput): [HostMembership!]
   hostMembershipsCount(where: HostMembershipWhereInput! = {}): Int
   property(where: PropertyWhereUniqueInput!): Property
-  properties(where: PropertyWhereInput! = {}, orderBy: [PropertyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyWhereUniqueInput): [Property!]
+  properties(where: PropertyWhereInput! = {}, orderBy: [PropertyOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyWhereUniqueInput): [Property!]
   propertiesCount(where: PropertyWhereInput! = {}): Int
   propertyAddress(where: PropertyAddressWhereUniqueInput!): PropertyAddress
-  propertyAddresses(where: PropertyAddressWhereInput! = {}, orderBy: [PropertyAddressOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyAddressWhereUniqueInput): [PropertyAddress!]
+  propertyAddresses(where: PropertyAddressWhereInput! = {}, orderBy: [PropertyAddressOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyAddressWhereUniqueInput): [PropertyAddress!]
   propertyAddressesCount(where: PropertyAddressWhereInput! = {}): Int
   propertyOwner(where: PropertyOwnerWhereUniqueInput!): PropertyOwner
-  propertyOwners(where: PropertyOwnerWhereInput! = {}, orderBy: [PropertyOwnerOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyOwnerWhereUniqueInput): [PropertyOwner!]
+  propertyOwners(where: PropertyOwnerWhereInput! = {}, orderBy: [PropertyOwnerOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyOwnerWhereUniqueInput): [PropertyOwner!]
   propertyOwnersCount(where: PropertyOwnerWhereInput! = {}): Int
   propertyOwnerAssignment(where: PropertyOwnerAssignmentWhereUniqueInput!): PropertyOwnerAssignment
-  propertyOwnerAssignments(where: PropertyOwnerAssignmentWhereInput! = {}, orderBy: [PropertyOwnerAssignmentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyOwnerAssignmentWhereUniqueInput): [PropertyOwnerAssignment!]
+  propertyOwnerAssignments(where: PropertyOwnerAssignmentWhereInput! = {}, orderBy: [PropertyOwnerAssignmentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyOwnerAssignmentWhereUniqueInput): [PropertyOwnerAssignment!]
   propertyOwnerAssignmentsCount(where: PropertyOwnerAssignmentWhereInput! = {}): Int
   accommodationUnit(where: AccommodationUnitWhereUniqueInput!): AccommodationUnit
-  accommodationUnits(where: AccommodationUnitWhereInput! = {}, orderBy: [AccommodationUnitOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AccommodationUnitWhereUniqueInput): [AccommodationUnit!]
+  accommodationUnits(where: AccommodationUnitWhereInput! = {}, orderBy: [AccommodationUnitOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: AccommodationUnitWhereUniqueInput): [AccommodationUnit!]
   accommodationUnitsCount(where: AccommodationUnitWhereInput! = {}): Int
   bedroom(where: BedroomWhereUniqueInput!): Bedroom
-  bedrooms(where: BedroomWhereInput! = {}, orderBy: [BedroomOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: BedroomWhereUniqueInput): [Bedroom!]
+  bedrooms(where: BedroomWhereInput! = {}, orderBy: [BedroomOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: BedroomWhereUniqueInput): [Bedroom!]
   bedroomsCount(where: BedroomWhereInput! = {}): Int
   bed(where: BedWhereUniqueInput!): Bed
-  beds(where: BedWhereInput! = {}, orderBy: [BedOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: BedWhereUniqueInput): [Bed!]
+  beds(where: BedWhereInput! = {}, orderBy: [BedOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: BedWhereUniqueInput): [Bed!]
   bedsCount(where: BedWhereInput! = {}): Int
   amenity(where: AmenityWhereUniqueInput!): Amenity
-  amenities(where: AmenityWhereInput! = {}, orderBy: [AmenityOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: AmenityWhereUniqueInput): [Amenity!]
+  amenities(where: AmenityWhereInput! = {}, orderBy: [AmenityOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: AmenityWhereUniqueInput): [Amenity!]
   amenitiesCount(where: AmenityWhereInput! = {}): Int
   listing(where: ListingWhereUniqueInput!): Listing
-  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
+  listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
   listingsCount(where: ListingWhereInput! = {}): Int
   listingMedia(where: ListingMediaWhereUniqueInput!): ListingMedia
-  listingMedias(where: ListingMediaWhereInput! = {}, orderBy: [ListingMediaOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ListingMediaWhereUniqueInput): [ListingMedia!]
+  listingMedias(where: ListingMediaWhereInput! = {}, orderBy: [ListingMediaOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingMediaWhereUniqueInput): [ListingMedia!]
   listingMediasCount(where: ListingMediaWhereInput! = {}): Int
   stayCollection(where: StayCollectionWhereUniqueInput!): StayCollection
-  stayCollections(where: StayCollectionWhereInput! = {}, orderBy: [StayCollectionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StayCollectionWhereUniqueInput): [StayCollection!]
+  stayCollections(where: StayCollectionWhereInput! = {}, orderBy: [StayCollectionOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: StayCollectionWhereUniqueInput): [StayCollection!]
   stayCollectionsCount(where: StayCollectionWhereInput! = {}): Int
   houseRule(where: HouseRuleWhereUniqueInput!): HouseRule
-  houseRules(where: HouseRuleWhereInput! = {}, orderBy: [HouseRuleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: HouseRuleWhereUniqueInput): [HouseRule!]
+  houseRules(where: HouseRuleWhereInput! = {}, orderBy: [HouseRuleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: HouseRuleWhereUniqueInput): [HouseRule!]
   houseRulesCount(where: HouseRuleWhereInput! = {}): Int
   calendarBlock(where: CalendarBlockWhereUniqueInput!): CalendarBlock
-  calendarBlocks(where: CalendarBlockWhereInput! = {}, orderBy: [CalendarBlockOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CalendarBlockWhereUniqueInput): [CalendarBlock!]
+  calendarBlocks(where: CalendarBlockWhereInput! = {}, orderBy: [CalendarBlockOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: CalendarBlockWhereUniqueInput): [CalendarBlock!]
   calendarBlocksCount(where: CalendarBlockWhereInput! = {}): Int
   ratePlan(where: RatePlanWhereUniqueInput!): RatePlan
-  ratePlans(where: RatePlanWhereInput! = {}, orderBy: [RatePlanOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RatePlanWhereUniqueInput): [RatePlan!]
+  ratePlans(where: RatePlanWhereInput! = {}, orderBy: [RatePlanOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: RatePlanWhereUniqueInput): [RatePlan!]
   ratePlansCount(where: RatePlanWhereInput! = {}): Int
   seasonalRate(where: SeasonalRateWhereUniqueInput!): SeasonalRate
-  seasonalRates(where: SeasonalRateWhereInput! = {}, orderBy: [SeasonalRateOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: SeasonalRateWhereUniqueInput): [SeasonalRate!]
+  seasonalRates(where: SeasonalRateWhereInput! = {}, orderBy: [SeasonalRateOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: SeasonalRateWhereUniqueInput): [SeasonalRate!]
   seasonalRatesCount(where: SeasonalRateWhereInput! = {}): Int
   feeDefinition(where: FeeDefinitionWhereUniqueInput!): FeeDefinition
-  feeDefinitions(where: FeeDefinitionWhereInput! = {}, orderBy: [FeeDefinitionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: FeeDefinitionWhereUniqueInput): [FeeDefinition!]
+  feeDefinitions(where: FeeDefinitionWhereInput! = {}, orderBy: [FeeDefinitionOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: FeeDefinitionWhereUniqueInput): [FeeDefinition!]
   feeDefinitionsCount(where: FeeDefinitionWhereInput! = {}): Int
   taxRule(where: TaxRuleWhereUniqueInput!): TaxRule
-  taxRules(where: TaxRuleWhereInput! = {}, orderBy: [TaxRuleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TaxRuleWhereUniqueInput): [TaxRule!]
+  taxRules(where: TaxRuleWhereInput! = {}, orderBy: [TaxRuleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: TaxRuleWhereUniqueInput): [TaxRule!]
   taxRulesCount(where: TaxRuleWhereInput! = {}): Int
   cancellationPolicy(where: CancellationPolicyWhereUniqueInput!): CancellationPolicy
-  cancellationPolicies(where: CancellationPolicyWhereInput! = {}, orderBy: [CancellationPolicyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: CancellationPolicyWhereUniqueInput): [CancellationPolicy!]
+  cancellationPolicies(where: CancellationPolicyWhereInput! = {}, orderBy: [CancellationPolicyOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: CancellationPolicyWhereUniqueInput): [CancellationPolicy!]
   cancellationPoliciesCount(where: CancellationPolicyWhereInput! = {}): Int
   stayQuote(where: StayQuoteWhereUniqueInput!): StayQuote
-  stayQuotes(where: StayQuoteWhereInput! = {}, orderBy: [StayQuoteOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StayQuoteWhereUniqueInput): [StayQuote!]
+  stayQuotes(where: StayQuoteWhereInput! = {}, orderBy: [StayQuoteOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: StayQuoteWhereUniqueInput): [StayQuote!]
   stayQuotesCount(where: StayQuoteWhereInput! = {}): Int
   guestProfile(where: GuestProfileWhereUniqueInput!): GuestProfile
-  guestProfiles(where: GuestProfileWhereInput! = {}, orderBy: [GuestProfileOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: GuestProfileWhereUniqueInput): [GuestProfile!]
+  guestProfiles(where: GuestProfileWhereInput! = {}, orderBy: [GuestProfileOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: GuestProfileWhereUniqueInput): [GuestProfile!]
   guestProfilesCount(where: GuestProfileWhereInput! = {}): Int
   guestParty(where: GuestPartyWhereUniqueInput!): GuestParty
-  guestParties(where: GuestPartyWhereInput! = {}, orderBy: [GuestPartyOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: GuestPartyWhereUniqueInput): [GuestParty!]
+  guestParties(where: GuestPartyWhereInput! = {}, orderBy: [GuestPartyOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: GuestPartyWhereUniqueInput): [GuestParty!]
   guestPartiesCount(where: GuestPartyWhereInput! = {}): Int
   reservation(where: ReservationWhereUniqueInput!): Reservation
-  reservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
+  reservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
   reservationsCount(where: ReservationWhereInput! = {}): Int
+  reservationAmendment(where: ReservationAmendmentWhereUniqueInput!): ReservationAmendment
+  reservationAmendments(where: ReservationAmendmentWhereInput! = {}, orderBy: [ReservationAmendmentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationAmendmentWhereUniqueInput): [ReservationAmendment!]
+  reservationAmendmentsCount(where: ReservationAmendmentWhereInput! = {}): Int
   reservationLineItem(where: ReservationLineItemWhereUniqueInput!): ReservationLineItem
-  reservationLineItems(where: ReservationLineItemWhereInput! = {}, orderBy: [ReservationLineItemOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReservationLineItemWhereUniqueInput): [ReservationLineItem!]
+  reservationLineItems(where: ReservationLineItemWhereInput! = {}, orderBy: [ReservationLineItemOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationLineItemWhereUniqueInput): [ReservationLineItem!]
   reservationLineItemsCount(where: ReservationLineItemWhereInput! = {}): Int
   stayAgreement(where: StayAgreementWhereUniqueInput!): StayAgreement
-  stayAgreements(where: StayAgreementWhereInput! = {}, orderBy: [StayAgreementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: StayAgreementWhereUniqueInput): [StayAgreement!]
+  stayAgreements(where: StayAgreementWhereInput! = {}, orderBy: [StayAgreementOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: StayAgreementWhereUniqueInput): [StayAgreement!]
   stayAgreementsCount(where: StayAgreementWhereInput! = {}): Int
   securityDeposit(where: SecurityDepositWhereUniqueInput!): SecurityDeposit
-  securityDeposits(where: SecurityDepositWhereInput! = {}, orderBy: [SecurityDepositOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: SecurityDepositWhereUniqueInput): [SecurityDeposit!]
+  securityDeposits(where: SecurityDepositWhereInput! = {}, orderBy: [SecurityDepositOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: SecurityDepositWhereUniqueInput): [SecurityDeposit!]
   securityDepositsCount(where: SecurityDepositWhereInput! = {}): Int
   damageClaim(where: DamageClaimWhereUniqueInput!): DamageClaim
-  damageClaims(where: DamageClaimWhereInput! = {}, orderBy: [DamageClaimOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: DamageClaimWhereUniqueInput): [DamageClaim!]
+  damageClaims(where: DamageClaimWhereInput! = {}, orderBy: [DamageClaimOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: DamageClaimWhereUniqueInput): [DamageClaim!]
   damageClaimsCount(where: DamageClaimWhereInput! = {}): Int
   payment(where: PaymentWhereUniqueInput!): Payment
-  payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
+  payments(where: PaymentWhereInput! = {}, orderBy: [PaymentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PaymentWhereUniqueInput): [Payment!]
   paymentsCount(where: PaymentWhereInput! = {}): Int
   paymentProvider(where: PaymentProviderWhereUniqueInput!): PaymentProvider
-  paymentProviders(where: PaymentProviderWhereInput! = {}, orderBy: [PaymentProviderOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentProviderWhereUniqueInput): [PaymentProvider!]
+  paymentProviders(where: PaymentProviderWhereInput! = {}, orderBy: [PaymentProviderOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PaymentProviderWhereUniqueInput): [PaymentProvider!]
   paymentProvidersCount(where: PaymentProviderWhereInput! = {}): Int
   paymentWebhookEvent(where: PaymentWebhookEventWhereUniqueInput!): PaymentWebhookEvent
-  paymentWebhookEvents(where: PaymentWebhookEventWhereInput! = {}, orderBy: [PaymentWebhookEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PaymentWebhookEventWhereUniqueInput): [PaymentWebhookEvent!]
+  paymentWebhookEvents(where: PaymentWebhookEventWhereInput! = {}, orderBy: [PaymentWebhookEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PaymentWebhookEventWhereUniqueInput): [PaymentWebhookEvent!]
   paymentWebhookEventsCount(where: PaymentWebhookEventWhereInput! = {}): Int
   refund(where: RefundWhereUniqueInput!): Refund
-  refunds(where: RefundWhereInput! = {}, orderBy: [RefundOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: RefundWhereUniqueInput): [Refund!]
+  refunds(where: RefundWhereInput! = {}, orderBy: [RefundOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: RefundWhereUniqueInput): [Refund!]
   refundsCount(where: RefundWhereInput! = {}): Int
   payout(where: PayoutWhereUniqueInput!): Payout
-  payouts(where: PayoutWhereInput! = {}, orderBy: [PayoutOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PayoutWhereUniqueInput): [Payout!]
+  payouts(where: PayoutWhereInput! = {}, orderBy: [PayoutOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PayoutWhereUniqueInput): [Payout!]
   payoutsCount(where: PayoutWhereInput! = {}): Int
   ownerStatement(where: OwnerStatementWhereUniqueInput!): OwnerStatement
-  ownerStatements(where: OwnerStatementWhereInput! = {}, orderBy: [OwnerStatementOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OwnerStatementWhereUniqueInput): [OwnerStatement!]
+  ownerStatements(where: OwnerStatementWhereInput! = {}, orderBy: [OwnerStatementOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: OwnerStatementWhereUniqueInput): [OwnerStatement!]
   ownerStatementsCount(where: OwnerStatementWhereInput! = {}): Int
   ownerStatementLine(where: OwnerStatementLineWhereUniqueInput!): OwnerStatementLine
-  ownerStatementLines(where: OwnerStatementLineWhereInput! = {}, orderBy: [OwnerStatementLineOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OwnerStatementLineWhereUniqueInput): [OwnerStatementLine!]
+  ownerStatementLines(where: OwnerStatementLineWhereInput! = {}, orderBy: [OwnerStatementLineOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: OwnerStatementLineWhereUniqueInput): [OwnerStatementLine!]
   ownerStatementLinesCount(where: OwnerStatementLineWhereInput! = {}): Int
   conversation(where: ConversationWhereUniqueInput!): Conversation
-  conversations(where: ConversationWhereInput! = {}, orderBy: [ConversationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ConversationWhereUniqueInput): [Conversation!]
+  conversations(where: ConversationWhereInput! = {}, orderBy: [ConversationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ConversationWhereUniqueInput): [Conversation!]
   conversationsCount(where: ConversationWhereInput! = {}): Int
   message(where: MessageWhereUniqueInput!): Message
-  messages(where: MessageWhereInput! = {}, orderBy: [MessageOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: MessageWhereUniqueInput): [Message!]
+  messages(where: MessageWhereInput! = {}, orderBy: [MessageOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: MessageWhereUniqueInput): [Message!]
   messagesCount(where: MessageWhereInput! = {}): Int
   review(where: ReviewWhereUniqueInput!): Review
-  reviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
+  reviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
   reviewsCount(where: ReviewWhereInput! = {}): Int
   taskRule(where: TaskRuleWhereUniqueInput!): TaskRule
-  taskRules(where: TaskRuleWhereInput! = {}, orderBy: [TaskRuleOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: TaskRuleWhereUniqueInput): [TaskRule!]
+  taskRules(where: TaskRuleWhereInput! = {}, orderBy: [TaskRuleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: TaskRuleWhereUniqueInput): [TaskRule!]
   taskRulesCount(where: TaskRuleWhereInput! = {}): Int
   propertyTask(where: PropertyTaskWhereUniqueInput!): PropertyTask
-  propertyTasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
+  propertyTasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
   propertyTasksCount(where: PropertyTaskWhereInput! = {}): Int
   channelConnection(where: ChannelConnectionWhereUniqueInput!): ChannelConnection
-  channelConnections(where: ChannelConnectionWhereInput! = {}, orderBy: [ChannelConnectionOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelConnectionWhereUniqueInput): [ChannelConnection!]
+  channelConnections(where: ChannelConnectionWhereInput! = {}, orderBy: [ChannelConnectionOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelConnectionWhereUniqueInput): [ChannelConnection!]
   channelConnectionsCount(where: ChannelConnectionWhereInput! = {}): Int
   channelListing(where: ChannelListingWhereUniqueInput!): ChannelListing
-  channelListings(where: ChannelListingWhereInput! = {}, orderBy: [ChannelListingOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelListingWhereUniqueInput): [ChannelListing!]
+  channelListings(where: ChannelListingWhereInput! = {}, orderBy: [ChannelListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelListingWhereUniqueInput): [ChannelListing!]
   channelListingsCount(where: ChannelListingWhereInput! = {}): Int
   channelReservation(where: ChannelReservationWhereUniqueInput!): ChannelReservation
-  channelReservations(where: ChannelReservationWhereInput! = {}, orderBy: [ChannelReservationOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelReservationWhereUniqueInput): [ChannelReservation!]
+  channelReservations(where: ChannelReservationWhereInput! = {}, orderBy: [ChannelReservationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelReservationWhereUniqueInput): [ChannelReservation!]
   channelReservationsCount(where: ChannelReservationWhereInput! = {}): Int
   channelSyncEvent(where: ChannelSyncEventWhereUniqueInput!): ChannelSyncEvent
-  channelSyncEvents(where: ChannelSyncEventWhereInput! = {}, orderBy: [ChannelSyncEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: ChannelSyncEventWhereUniqueInput): [ChannelSyncEvent!]
+  channelSyncEvents(where: ChannelSyncEventWhereInput! = {}, orderBy: [ChannelSyncEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelSyncEventWhereUniqueInput): [ChannelSyncEvent!]
   channelSyncEventsCount(where: ChannelSyncEventWhereInput! = {}): Int
   dataExchangeJob(where: DataExchangeJobWhereUniqueInput!): DataExchangeJob
-  dataExchangeJobs(where: DataExchangeJobWhereInput! = {}, orderBy: [DataExchangeJobOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: DataExchangeJobWhereUniqueInput): [DataExchangeJob!]
+  dataExchangeJobs(where: DataExchangeJobWhereInput! = {}, orderBy: [DataExchangeJobOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: DataExchangeJobWhereUniqueInput): [DataExchangeJob!]
   dataExchangeJobsCount(where: DataExchangeJobWhereInput! = {}): Int
   outboxEvent(where: OutboxEventWhereUniqueInput!): OutboxEvent
-  outboxEvents(where: OutboxEventWhereInput! = {}, orderBy: [OutboxEventOrderByInput!]! = [], take: Int, skip: Int! = 0, cursor: OutboxEventWhereUniqueInput): [OutboxEvent!]
+  outboxEvents(where: OutboxEventWhereInput! = {}, orderBy: [OutboxEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: OutboxEventWhereUniqueInput): [OutboxEvent!]
   outboxEventsCount(where: OutboxEventWhereInput! = {}): Int
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem

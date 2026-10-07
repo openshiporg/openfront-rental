@@ -2,8 +2,10 @@ import { mergeSchemas } from '@graphql-tools/schema';
 import type { GraphQLSchema } from 'graphql';
 
 import { captureStayPayment } from './captureStayPayment';
+import { amendConfirmedStay } from './amendConfirmedStay';
 import { exportListingCalendar, importListingCalendar } from './calendarExchange';
 import { createStayReservation } from './createStayReservation';
+import { cancelStayQuote } from './cancelStayQuote';
 import { initiateStayPayment } from './initiateStayPayment';
 import { exportHostArchive, hostOperationsReport } from './hostReporting';
 import { generateOwnerStatement, transitionOwnerStatement } from './ownerStatements';
@@ -15,16 +17,20 @@ import { publicStayQuote } from './publicStayQuote';
 import { publicTrip } from './publicTrip';
 import redirectToInit from './redirectToInit';
 import { requestStayCancellation } from './requestStayCancellation';
+import { reassignStayReservation } from './reassignStayReservation';
 import { searchStays } from './searchStays';
 import { signStayAgreement } from './signStayAgreement';
 import { createDamageClaim, refundStayPayment, transitionDamageClaim, transitionSecurityDeposit } from './stayFinancialOperations';
 import { quoteStay } from './quoteStay';
 import { transitionStayReservation } from './transitionStayReservation';
 import { updateOnboardingStatus } from './updateOnboardingStatus';
+import { rentalOnboarding } from '../onboarding/rentalOnboarding';
+import { installCalendarBlockGraphqlBoundary } from '../utils/calendarBlockGraphqlBoundary';
 
 const graphql = String.raw;
 
 export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
+  installCalendarBlockGraphqlBoundary(baseSchema);
   return mergeSchemas({
     schemas: [baseSchema],
     typeDefs: graphql`
@@ -81,6 +87,12 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         listing: JSON
         tripToken: String!
         agreementToken: String!
+      }
+
+      type CancelStayQuoteResult {
+        id: ID!
+        quoteNumber: String!
+        status: String!
       }
 
       type StayReservationMutationResult {
@@ -174,6 +186,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
           invitedGuests: JSON
           guestNotes: String
         ): CreateStayReservationResult!
+        cancelStayQuote(quoteId: ID!): CancelStayQuoteResult!
 
         requestStayCancellation(tripToken: String!, reason: String): StayCancellationResult!
         signStayAgreement(token: String!, signatureName: String!): StayAgreementMutationResult!
@@ -183,6 +196,22 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
           transition: String!
           note: String
         ): StayReservationMutationResult!
+
+        reassignStayReservation(
+          reservationId: ID!
+          targetAccommodationUnitId: ID!
+          reason: String!
+        ): JSON!
+
+        amendConfirmedStay(
+          reservationId: ID!
+          expectedCheckInDate: String!
+          expectedCheckOutDate: String!
+          checkInDate: String!
+          checkOutDate: String!
+          reason: String!
+          idempotencyKey: String!
+        ): JSON!
 
         initiateStayPayment(
           reservationId: ID!
@@ -215,12 +244,13 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         importListingCalendar(channelConnectionId: ID!, listingId: ID!, calendarText: String!, sourceLabel: String): JSON!
         exportListingCalendar(listingId: ID!): JSON!
         exportHostArchive(hostOrganizationId: ID!): JSON!
-        refundStayPayment(paymentId: ID!, amountCents: Int!, reason: String): JSON!
+        refundStayPayment(paymentId: ID!, refundId: ID, operationKey: String!, amountCents: Int!, reason: String, confirmFundsReturned: Boolean!, manualEvidenceReference: String!): JSON!
         transitionSecurityDeposit(depositId: ID!, transition: String!, amountCents: Int, reference: String): JSON!
         createStayDamageClaim(reservationId: ID!, description: String!, claimedAmountCents: Int!, evidence: JSON): JSON!
         transitionDamageClaim(claimId: ID!, transition: String!, approvedAmountCents: Int): JSON!
 
         updateOnboardingStatus(status: String!): OnboardingStatusResult!
+        rentalOnboarding(input: JSON!, operationId: String, mode: String!): JSON!
       }
     `,
     resolvers: {
@@ -237,9 +267,12 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
       Mutation: {
         quoteStay,
         createStayReservation,
+        cancelStayQuote,
         requestStayCancellation,
         signStayAgreement,
         transitionStayReservation,
+        reassignStayReservation,
+        amendConfirmedStay,
         initiateStayPayment,
         captureStayPayment,
         generateOwnerStatement,
@@ -254,6 +287,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         createStayDamageClaim: createDamageClaim,
         transitionDamageClaim,
         updateOnboardingStatus,
+        rentalOnboarding,
       },
     },
   });

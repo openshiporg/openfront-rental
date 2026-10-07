@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { keystoneContext } from '@/features/keystone/context';
 import { processPaymentWebhook } from '@/features/keystone/mutations/paymentWebhook';
+import { UnsupportedPaymentCapabilityError } from '@/features/keystone/utils/paymentProviderAdapter';
 
 const MAX_WEBHOOK_BODY_BYTES = 65_536;
 const WEBHOOK_BODY_TIMEOUT_MS = 2_000;
@@ -61,7 +62,8 @@ export async function POST(
     const message = error instanceof Error ? error.message : 'Payment webhook processing failed.';
     const tooLarge = /body exceeds/i.test(message);
     const timedOut = /body timed out/i.test(message);
-    const clientError = /signature|payload|unsupported|event id|integer cents|currency/i.test(message);
+    const clientError = error instanceof UnsupportedPaymentCapabilityError
+      || /signature|payload|unsupported|event id|integer cents|currency/i.test(message);
     const conflict = /does not match|does not map|cannot settle/i.test(message);
     console.error('Payment webhook rejected', { providerCode, message });
     return NextResponse.json({ error: message }, { status: tooLarge ? 413 : timedOut ? 408 : clientError ? 400 : conflict ? 409 : 500 });

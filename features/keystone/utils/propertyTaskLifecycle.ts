@@ -37,10 +37,10 @@ export function applyPropertyTaskTransition(state: TaskState, transition: TaskAc
       if (state.status !== 'in_progress') throw new Error('A task must be in progress before completion.');
       const completionNotes = boundedNotes(transition.completionNotes);
       const completionEvidence = transition.completionEvidence ? structuredClone(transition.completionEvidence) : undefined;
-      if (!completionNotes && (!completionEvidence || Object.keys(completionEvidence).length === 0)) {
-        throw new Error('Task completion requires notes or checklist evidence.');
+      if (completionEvidence?.checklistConfirmed !== true) {
+        throw new Error('Task completion requires confirmed checklist evidence.');
       }
-      if (completionEvidence && JSON.stringify(completionEvidence).length > 16_000) {
+      if (JSON.stringify(completionEvidence).length > 16_000) {
         throw new Error('Task completion evidence is too large.');
       }
       return {

@@ -1,6 +1,8 @@
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
 import { enqueueOutboxEvent } from '../utils/outbox';
 import { createReservationTasksForTransition } from '../utils/reservationTaskAutomation';
+import { reconcileReservationPaymentEvidence, reservationPaymentStatus } from '../utils/paymentReconciliation';
+import { createUncoveredRefundReviewLiabilities } from '../utils/refundReviewLiabilities';
 
 type Transition = 'confirm' | 'check_in' | 'complete' | 'cancel' | 'no_show';
 
@@ -29,10 +31,42 @@ export async function transitionStayReservation(
   await assertHostOrganizationAccess({ context, hostOrganizationId: reservation.hostOrganization.id, permission: 'canManageReservations' });
   return context.prisma.$transaction(async (tx: any) => {
     await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `reservation:${reservation.id}`);
+    await tx.$queryRawUnsafe('SELECT "id" FROM "Reservation" WHERE "id" = $1 FOR UPDATE', reservation.id);
     const locked = await tx.reservation.findUnique({ where: { id: reservation.id } });
     if (!locked) throw new Error('Reservation not found.');
     if (!transition.from.includes(locked.status)) {
       throw new Error(`Cannot ${args.transition.replace('_', ' ')} a ${locked.status} reservation.`);
+    }
+
+    let paymentReconciliation: ReturnType<typeof reconcileReservationPaymentEvidence> | null = null;
+    let createdLiabilityCents = 0;
+    if (['cancel', 'no_show'].includes(args.transition)) {
+      const paymentIds = await tx.payment.findMany({ where: { reservationId: locked.id }, orderBy: [{ id: 'asc' }], select: { id: true } });
+      for (const payment of paymentIds) {
+        await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `payment-refund:${payment.id}`);
+      }
+      const [payments, refunds] = await Promise.all([
+        tx.payment.findMany({
+          where: { reservationId: locked.id },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          select: { id: true, status: true, amountCents: true, refundedAmountCents: true, currencyCode: true },
+        }),
+        tx.refund.findMany({
+          where: { reservationId: locked.id },
+          select: { id: true, paymentId: true, status: true, amountCents: true, currencyCode: true },
+        }),
+      ]);
+      paymentReconciliation = reconcileReservationPaymentEvidence({ payments, refunds, currencyCode: locked.currencyCode });
+      const review = await createUncoveredRefundReviewLiabilities(tx, {
+        reservation: locked,
+        payments,
+        refunds,
+        netPaidCents: paymentReconciliation.netPaidCents,
+        reason: args.transition === 'cancel' ? 'host_cancellation' : 'stay_issue',
+        liabilityType: args.transition === 'cancel' ? 'host_cancellation_review' : 'no_show_review',
+        operationPrefix: `${args.transition}-refund-review`,
+      });
+      createdLiabilityCents = review.createdCents;
     }
 
     const now = new Date();
@@ -47,6 +81,14 @@ export async function transitionStayReservation(
       data.cancelledAt = now;
       data.cancelledBy = 'host';
       data.cancellationReason = transitionNote || 'Cancelled by host or property manager.';
+    }
+    if (paymentReconciliation) {
+      data.amountPaidCents = paymentReconciliation.netPaidCents;
+      data.paymentStatus = reservationPaymentStatus({
+        ...paymentReconciliation,
+        totalAmountCents: locked.totalAmountCents || 0,
+        openRefundCents: paymentReconciliation.openRefundCents + createdLiabilityCents,
+      });
     }
     const updated = await tx.reservation.update({ where: { id: locked.id }, data });
     if (['cancel', 'no_show'].includes(args.transition)) {

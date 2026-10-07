@@ -6,7 +6,13 @@ export function humanize(value?: string | null) {
 }
 
 export function formatMoney(cents?: number | null, currency = 'USD') {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format((cents || 0) / 100);
+  const amount = cents ?? 0;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: amount % 100 ? 2 : 0,
+    maximumFractionDigits: 2,
+  }).format(amount / 100);
 }
 
 export function formatTimestamp(value?: string | null) {

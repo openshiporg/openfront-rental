@@ -26,6 +26,13 @@ function isExpired(value: string | Date | null | undefined, now: Date) {
   return Number.isNaN(expiresAt.getTime()) || expiresAt <= now;
 }
 
+export function isPublicOwnershipTokenActive(
+  record: PublicOwnershipTokenRecord | null | undefined,
+  now = new Date(),
+) {
+  return Boolean(record && !record.tokenRevokedAt && !isExpired(record.tokenExpiresAt, now));
+}
+
 export async function resolvePublicTokenRecord<T extends object>({
   token,
   invalidMessage,
@@ -45,7 +52,7 @@ export async function resolvePublicTokenRecord<T extends object>({
 
   const record = await findRecordByHash(hashPublicOwnershipToken(token));
   const tokenRecord = record as PublicOwnershipTokenRecord | null | undefined;
-  if (!record || tokenRecord?.tokenRevokedAt || isExpired(tokenRecord?.tokenExpiresAt, now) || isUnavailable(record)) {
+  if (!record || !isPublicOwnershipTokenActive(tokenRecord, now) || isUnavailable(record)) {
     return null;
   }
 

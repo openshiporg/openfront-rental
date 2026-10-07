@@ -1,10 +1,16 @@
+import { isDeepStrictEqual } from 'node:util';
+
 import {
   createPublicOwnershipToken,
   hashPublicOwnershipToken,
   publicTokenExpiry,
 } from '../utils/publicTokenAccess';
 import { createReservationLineItemsFromQuote, createStayBookingSnapshot } from '../utils/stayBookingSnapshot';
+import { assertAccommodationUnitAvailable, lockAccommodationUnitCapacity, lockListingCapacity } from '../utils/reservationAllocation';
+import { createIsolatedUnverifiedBookingGuest } from '../utils/unverifiedBookingGuest';
+import { assertStayWithinMaximum } from '../utils/stayPricing';
 import { resolveActiveStayQuote } from '../utils/stayQuoteAccess';
+import { assertStayListingMatchesSnapshot, assertStayQuoteMatchesSnapshot } from '../utils/stayQuoteIntegrity';
 
 type CreateStayReservationArgs = {
   quoteToken: string;
@@ -89,13 +95,21 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
           id quoteNumber tokenHash status expiresAt consumedAt checkInDate checkOutDate
           adults children infants pets currencyCode lodgingSubtotalCents feeTotalCents taxTotalCents securityDepositCents totalAmountCents quoteSnapshot
           hostOrganization { id }
-          listing { id title slug status instantBook accommodationUnit { id maxGuests } }
+          ratePlan { id }
+          listing { id title slug status bookingMode instantBook property { id } accommodationUnit { id maxGuests } }
         `,
       });
       return quotes[0] || null;
     },
   });
   if (!quote || quote.listing?.status !== 'published' || !quote.hostOrganization?.id || !quote.listing?.id) throw activeQuoteError();
+  const { listing: originalListingSnapshot } = assertStayQuoteMatchesSnapshot(quote);
+  const originalRatePlanSnapshot = originalListingSnapshot.ratePlans?.[0];
+  assertStayWithinMaximum(
+    quote.checkInDate,
+    quote.checkOutDate,
+    originalRatePlanSnapshot?.maximumStay ?? originalListingSnapshot?.maximumStay,
+  );
 
   const tripToken = createPublicOwnershipToken();
   const agreementToken = createPublicOwnershipToken();
@@ -103,44 +117,30 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
   const reservationId = crypto.randomUUID();
   const agreementId = crypto.randomUUID();
   const depositId = quote.securityDepositCents > 0 ? crypto.randomUUID() : null;
-  const quoteSnapshot = quote.quoteSnapshot || {};
-  const party = {
-    primaryGuest: { name: guestName, email: guestEmail, phone: guestPhone },
-    adults: quote.adults,
-    children: quote.children,
-    infants: quote.infants,
-    pets: quote.pets,
-    invitedGuests: structuredClone(invitedGuests),
-  };
-  const bookingSnapshot = createStayBookingSnapshot({
-    listing: quoteSnapshot.listing || { id: quote.listing.id, title: quote.listing.title, slug: quote.listing.slug },
-    guestParty: party,
-    cancellationPolicy: quoteSnapshot.cancellationPolicy || {},
-    quote: quoteSnapshot.quote || {
-      quoteNumber: quote.quoteNumber,
-      checkIn: quote.checkInDate,
-      checkOut: quote.checkOutDate,
-      numberOfNights: 0,
-      lodgingSubtotalCents: quote.lodgingSubtotalCents,
-      feeTotalCents: quote.feeTotalCents,
-      taxTotalCents: quote.taxTotalCents,
-      securityDepositCents: quote.securityDepositCents,
-      totalAmountCents: quote.totalAmountCents,
-      currencyCode: quote.currencyCode,
-      nights: [],
-      fees: [],
-      taxes: [],
-    },
-  });
-  const lineInputs = createReservationLineItemsFromQuote(reservationId, bookingSnapshot.quote);
   const now = new Date();
   const tokenHash = hashPublicOwnershipToken(args.quoteToken);
 
   const reservation = await withSerializableRetry<any>(() => context.prisma.$transaction(async (tx: any) => {
-    // Serialize all conversions for a listing. The in-transaction overlap query
-    // then provides a definitive capacity decision for the half-open stay range.
-    await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `stay-listing:${quote.listing.id}`);
-
+    // Serialize all conversions for a listing and its physical unit, then lock
+    // their current rows before accepting the guest's immutable quote evidence.
+    const listingId = quote.listing.id;
+    await lockListingCapacity(tx, [listingId]);
+    const preloadedUnitId = quote.listing.accommodationUnit?.id || null;
+    await lockAccommodationUnitCapacity(tx, [preloadedUnitId]);
+    await tx.$queryRawUnsafe('SELECT "id" FROM "Listing" WHERE "id" = $1 FOR UPDATE', listingId);
+    const lockedListing = await tx.listing.findUnique({
+      where: { id: listingId },
+      select: {
+        id: true,
+        hostOrganizationId: true,
+        propertyId: true,
+        accommodationUnitId: true,
+        status: true,
+        bookingMode: true,
+        instantBook: true,
+      },
+    });
+    await tx.$queryRawUnsafe('SELECT "id" FROM "StayQuote" WHERE "id" = $1 FOR UPDATE', quote.id);
     const lockedQuote = await tx.stayQuote.findUnique({ where: { id: quote.id } });
     if (
       !lockedQuote
@@ -148,64 +148,93 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
       || lockedQuote.status !== 'active'
       || lockedQuote.consumedAt
       || lockedQuote.expiresAt.getTime() <= now.getTime()
-      || lockedQuote.listingId !== quote.listing.id
+      || lockedQuote.listingId !== listingId
       || lockedQuote.hostOrganizationId !== quote.hostOrganization.id
+      || !isDeepStrictEqual(lockedQuote.quoteSnapshot, quote.quoteSnapshot)
     ) throw activeQuoteError();
+
+    const { listing: lockedListingSnapshot } = assertStayQuoteMatchesSnapshot(lockedQuote);
+    assertStayListingMatchesSnapshot(lockedListing, lockedListingSnapshot);
+
+    const hostOrganizationId = lockedQuote.hostOrganizationId;
+    const accommodationUnitId = lockedListing.accommodationUnitId;
+    const checkInDate = lockedQuote.checkInDate;
+    const checkOutDate = lockedQuote.checkOutDate;
+    const lockedRatePlanSnapshot = lockedListingSnapshot.ratePlans[0];
+    assertStayWithinMaximum(
+      checkInDate,
+      checkOutDate,
+      lockedRatePlanSnapshot.maximumStay ?? lockedListingSnapshot.maximumStay,
+    );
 
     const overlap = await tx.calendarBlock.findFirst({
       where: {
-        listingId: quote.listing.id,
+        listingId: lockedListing.id,
         status: 'active',
-        startDate: { lt: quote.checkOutDate },
-        endDate: { gt: quote.checkInDate },
+        startDate: { lt: checkOutDate },
+        endDate: { gt: checkInDate },
       },
       select: { id: true },
     });
     if (overlap) throw new Error('This stay became unavailable. Request a new quote for different dates.');
+    await assertAccommodationUnitAvailable(tx, {
+      accommodationUnitId,
+      hostOrganizationId,
+      checkInDate,
+      checkOutDate,
+    });
+
+    const lockedQuoteSnapshot = lockedQuote.quoteSnapshot;
+    const bookingSnapshot = createStayBookingSnapshot({
+      listing: lockedQuoteSnapshot.listing,
+      guestParty: {
+        primaryGuest: { name: guestName, email: guestEmail, phone: guestPhone },
+        adults: lockedQuote.adults,
+        children: lockedQuote.children,
+        infants: lockedQuote.infants,
+        pets: lockedQuote.pets,
+        invitedGuests: structuredClone(invitedGuests),
+      },
+      cancellationPolicy: lockedQuoteSnapshot.cancellationPolicy,
+      quote: lockedQuoteSnapshot.quote,
+    });
+    const lineInputs = createReservationLineItemsFromQuote(reservationId, bookingSnapshot.quote);
 
     const consumed = await tx.stayQuote.updateMany({
-      where: { id: quote.id, tokenHash, status: 'active', consumedAt: null },
+      where: { id: lockedQuote.id, tokenHash, status: 'active', consumedAt: null },
       data: { status: 'consumed', consumedAt: now },
     });
     if (consumed.count !== 1) throw activeQuoteError();
 
-    let guest = await tx.guestProfile.findFirst({
-      where: { hostOrganizationId: quote.hostOrganization.id, email: guestEmail },
+    const guest = await createIsolatedUnverifiedBookingGuest(tx, {
+      hostOrganizationId,
+      name: guestName,
+      email: guestEmail,
+      phone: guestPhone,
     });
-    if (!guest) {
-      guest = await tx.guestProfile.create({
-        data: {
-          hostOrganizationId: quote.hostOrganization.id,
-          name: guestName,
-          email: guestEmail,
-          phone: guestPhone,
-          verificationStatus: 'unverified',
-        },
-      });
-    }
 
     const created = await tx.reservation.create({
       data: {
         id: reservationId,
-        hostOrganizationId: quote.hostOrganization.id,
-        listingId: quote.listing.id,
-        accommodationUnitId: quote.listing.accommodationUnit?.id || null,
+        hostOrganizationId,
+        listingId: lockedListing.id,
+        accommodationUnitId,
         guestId: guest.id,
-        quoteId: quote.id,
+        quoteId: lockedQuote.id,
         confirmationCode: code,
         tripTokenHash: hashPublicOwnershipToken(tripToken),
-        tripTokenExpiresAt: tripTokenExpiry(quote.checkOutDate),
-        status: quote.listing.instantBook ? 'confirmed' : 'pending',
+        tripTokenExpiresAt: tripTokenExpiry(checkOutDate),
+        status: lockedListing.instantBook ? 'confirmed' : 'pending',
         paymentStatus: 'unpaid',
         source: 'direct',
-        checkInDate: quote.checkInDate,
-        checkOutDate: quote.checkOutDate,
-        currencyCode: quote.currencyCode,
-        lodgingSubtotalCents: quote.lodgingSubtotalCents,
-        feeTotalCents: quote.feeTotalCents,
-        taxTotalCents: quote.taxTotalCents,
-        securityDepositCents: quote.securityDepositCents,
-        totalAmountCents: quote.totalAmountCents,
+        checkInDate,
+        checkOutDate,
+        currencyCode: lockedQuote.currencyCode,
+        lodgingSubtotalCents: lockedQuote.lodgingSubtotalCents,
+        feeTotalCents: lockedQuote.feeTotalCents,
+        taxTotalCents: lockedQuote.taxTotalCents,
+        securityDepositCents: lockedQuote.securityDepositCents,
+        totalAmountCents: lockedQuote.totalAmountCents,
         amountPaidCents: 0,
         bookingSnapshot,
         guestNotes,
@@ -216,30 +245,30 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
 
     const createdParty = await tx.guestParty.create({
       data: {
-        hostOrganizationId: quote.hostOrganization.id,
+        hostOrganizationId,
         reservationId,
         primaryGuestId: guest.id,
-        adults: quote.adults,
-        children: quote.children,
-        infants: quote.infants,
-        pets: quote.pets,
+        adults: lockedQuote.adults,
+        children: lockedQuote.children,
+        infants: lockedQuote.infants,
+        pets: lockedQuote.pets,
         invitedGuests,
       },
     });
     if (!createdParty?.id) throw retryableTransactionError('Guest party transaction did not commit.');
     if (lineInputs.length) {
       const createdLines = await tx.reservationLineItem.createMany({
-        data: lineInputs.map((line) => ({ ...line, hostOrganizationId: quote.hostOrganization.id, reservationId })),
+        data: lineInputs.map((line) => ({ ...line, hostOrganizationId, reservationId })),
       });
       if (createdLines?.count !== lineInputs.length) throw retryableTransactionError('Reservation line transaction did not commit.');
     }
     const createdBlock = await tx.calendarBlock.create({
       data: {
-        hostOrganizationId: quote.hostOrganization.id,
-        listingId: quote.listing.id,
+        hostOrganizationId,
+        listingId: lockedListing.id,
         reservationId,
-        startDate: quote.checkInDate,
-        endDate: quote.checkOutDate,
+        startDate: checkInDate,
+        endDate: checkOutDate,
         reason: 'reservation',
         status: 'active',
         source: 'direct',
@@ -251,21 +280,21 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
     const createdAgreement = await tx.stayAgreement.create({
       data: {
         id: agreementId,
-        hostOrganizationId: quote.hostOrganization.id,
+        hostOrganizationId,
         guestId: guest.id,
-        cancellationPolicyId: quoteSnapshot.cancellationPolicy?.id || null,
+        cancellationPolicyId: lockedQuoteSnapshot.cancellationPolicy?.id || null,
         agreementNumber: `AGR-${code}`,
         signingTokenHash: hashPublicOwnershipToken(agreementToken),
         signingTokenExpiresAt: publicTokenExpiry(),
         status: 'sent',
-        title: `Stay terms for ${quote.listing.title}`,
+        title: `Stay terms for ${lockedQuoteSnapshot.listing.title}`,
         signerEmail: guestEmail,
         termsSnapshot: {
           listing: bookingSnapshot.listing,
           houseRules: bookingSnapshot.listing.houseRules || [],
           cancellationPolicy: bookingSnapshot.cancellationPolicy,
-          checkInDate: quote.checkInDate,
-          checkOutDate: quote.checkOutDate,
+          checkInDate,
+          checkOutDate,
         },
       },
     });
@@ -274,11 +303,11 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
       const createdDeposit = await tx.securityDeposit.create({
         data: {
           id: depositId,
-          hostOrganizationId: quote.hostOrganization.id,
+          hostOrganizationId,
           depositNumber: `DEP-${code}`,
           status: 'required',
-          amountCents: quote.securityDepositCents,
-          currencyCode: quote.currencyCode,
+          amountCents: lockedQuote.securityDepositCents,
+          currencyCode: lockedQuote.currencyCode,
         },
       });
       if (!createdDeposit?.id) throw retryableTransactionError('Security deposit transaction did not commit.');

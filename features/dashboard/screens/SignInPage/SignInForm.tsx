@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from "react";
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { RiLoader2Fill } from "@remixicon/react";
 import { Eye, EyeOff } from "lucide-react";
@@ -53,6 +52,16 @@ function SubmitButton() {
 export function SignInForm({ from }: SignInFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [state, formAction] = useActionState(signIn, initialState);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  // A new action result clears the secret even when consecutive failures have
+  // the same message. Never leave a revealed password visible after a failure.
+  useEffect(() => {
+    if (state.message) {
+      if (passwordRef.current) passwordRef.current.value = '';
+      setShowPassword(false);
+    }
+  }, [state]);
 
   return (
     <>
@@ -91,12 +100,15 @@ export function SignInForm({ from }: SignInFormProps) {
               autoComplete="current-password"
               placeholder="••••••••"
               className="pr-10 bg-muted/40"
-              defaultValue={state.formData.password}
+              ref={passwordRef}
+              defaultValue=""
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-controls="password"
               className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500"
             >
               {showPassword ? (

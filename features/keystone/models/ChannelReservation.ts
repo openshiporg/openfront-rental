@@ -1,4 +1,5 @@
 import { list } from '@keystone-6/core';
+import { denyAll } from '@keystone-6/core/access';
 import { integer, json, relationship, select, text, timestamp } from '@keystone-6/core/fields';
 
 import { hostScopedListAccess } from '../access';
@@ -13,7 +14,7 @@ export const ChannelReservation = list({
     hostOrganization: relationship({ ref: 'HostOrganization' }),
     channelConnection: relationship({ ref: 'ChannelConnection.channelReservations' }),
     channelListing: relationship({ ref: 'ChannelListing.channelReservations' }),
-    reservation: relationship({ ref: 'Reservation.channelReservation' }),
+    reservation: relationship({ ref: 'Reservation.channelReservation', access: { create: () => false, update: () => false } }),
     externalReservationId: text({ validation: { isRequired: true }, isIndexed: true }),
     status: select({
       type: 'string',
@@ -35,7 +36,11 @@ export const ChannelReservation = list({
     currencyCode: text({ defaultValue: 'USD' }),
     rawData: json({ defaultValue: {} }),
     lastSyncedAt: timestamp(),
-    calendarBlocks: relationship({ ref: 'CalendarBlock.channelReservation', many: true }),
+    calendarBlocks: relationship({
+      ref: 'CalendarBlock.channelReservation',
+      many: true,
+      access: { create: denyAll, update: denyAll },
+    }),
     syncEvents: relationship({ ref: 'ChannelSyncEvent.channelReservation', many: true }),
     ...trackingFields,
   },

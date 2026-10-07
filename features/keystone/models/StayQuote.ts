@@ -5,15 +5,23 @@ import { hostScopedListAccess, permissions } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
 
+const issuedQuoteAccess = hostScopedListAccess('canReadReservations', 'canManageReservations');
+
 export const StayQuote = list({
-  access: hostScopedListAccess('canReadReservations', 'canManageReservations'),
+  // Issued quote terms are append-only evidence; changes require a fresh quote.
+  // Internal booking consumption continues through the transaction's Prisma client.
+  access: {
+    ...issuedQuoteAccess,
+    operation: { ...issuedQuoteAccess.operation, update: () => false, delete: () => false },
+    filter: { ...issuedQuoteAccess.filter, update: () => false, delete: () => false },
+  },
   hooks: hostScopedHooks('canManageReservations'),
   ui: { listView: { initialColumns: ['quoteNumber', 'listing', 'checkInDate', 'checkOutDate', 'totalAmountCents', 'status', 'expiresAt'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),
     listing: relationship({ ref: 'Listing.quotes' }),
     ratePlan: relationship({ ref: 'RatePlan.quotes' }),
-    reservation: relationship({ ref: 'Reservation.quote' }),
+    reservation: relationship({ ref: 'Reservation.quote', access: { create: () => false, update: () => false } }),
     quoteNumber: text({ validation: { isRequired: true }, isIndexed: 'unique' }),
     tokenHash: text({
       validation: { isRequired: true },

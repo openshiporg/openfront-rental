@@ -1,0 +1,60 @@
+/* Housekind search · image-led component rebuild.
+ * Uses the storefront's existing palette and type; no global/dashboard styles.
+ */
+.stay-search-form { margin-block: 1rem; }
+.stay-search-heading h2 { font-size: clamp(1.9rem, 3vw, 2.6rem); margin-bottom: .5rem; }
+.stay-search-heading p { color: var(--stay-muted); margin-bottom: 1.25rem; }
+.stay-search-surface { background: var(--stay-surface); border: 1px solid var(--stay-rule); border-radius: .75rem; padding: 1rem; }
+.stay-search-bar { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.25fr) minmax(0, 1.1fr) auto; gap: .75rem; align-items: stretch; }
+.stay-search-bar > * { min-width: 0; }
+.stay-search-destination, .stay-search-date, .stay-search-guests { border: 1px solid var(--stay-rule); border-radius: .5rem; background: var(--stay-surface); color: var(--stay-ink); }
+.stay-search-destination, .stay-search-date { display: grid; gap: .5rem; align-content: center; padding: .75rem; font-size: .75rem; min-width: 0; }
+.stay-search-value { display: flex; align-items: center; gap: .6rem; min-width: 0; font-size: 1rem; }
+.stay-search-value svg, .stay-search-guests > svg { flex-shrink: 0; }
+.stay-search-destination input { width: 100%; min-width: 0; border: 0; padding: 0; border-radius: 0; background: transparent; color: var(--stay-ink); }
+.stay-search-destination input::placeholder { color: var(--stay-muted); opacity: 1; }
+.stay-search-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.stay-search-date { position: relative; min-height: 5rem; }
+.stay-search-date .stay-search-value { font-size: .85rem; white-space: nowrap; gap: .4rem; }
+/* Native date pickers stay available to touch, keyboard and assistive tech.
+ * The visible value is separate from WebKit's intrinsic-width date editor. */
+.stay-search-date input { position: absolute; inset: 0; display: block; width: 100%; max-width: 100%; min-width: 0; height: 100%; margin: 0; padding: 0; opacity: 0; cursor: pointer; font-size: 1rem; }
+.stay-search-date:focus-within { outline: 3px solid var(--stay-focus); outline-offset: 4px; }
+.stay-search-date:has([aria-invalid=true]) { border-color: var(--stay-danger); }
+.stay-search-guests { display: flex; align-items: center; gap: .65rem; padding: .75rem; text-align: left; }
+.stay-search-guests > span { flex: 1; min-width: 0; }
+.stay-search-field-label { display: block; font-size: .75rem; }
+.stay-search-guests strong { display: block; font-size: 1rem; line-height: 1.5; font-weight: 500; }
+.stay-search-guests small { display: block; font-size: .7rem; color: var(--stay-muted); }
+.stay-search-guests[aria-expanded=true] > svg:last-child { transform: rotate(180deg); }
+.stay-search-guests:hover, .stay-search-stepper button:hover:not(:disabled) { background: var(--stay-paper); }
+.stay-root .stay-search-submit { border-radius: .5rem; white-space: nowrap; min-height: 56px; }
+.stay-search-submit:active { transform: translateY(1px); }
+.stay-search-filters { border-top: 1px solid var(--stay-rule); margin-top: 1rem; padding-top: 1.5rem; }
+.stay-search-filters[hidden] { display: none; }
+.stay-search-filter-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.stay-search-counter > label, .stay-search-booking { display: grid; gap: .5rem; font-size: .8rem; color: var(--stay-muted); }
+.stay-search-stepper { display: flex; border: 1px solid var(--stay-rule); border-radius: .5rem; margin-top: .5rem; overflow: clip; }
+.stay-search-stepper button { display: grid; place-items: center; border: 0; background: transparent; color: var(--stay-ink); min-width: 44px; min-height: 48px; padding: 0; }
+.stay-search-stepper input { flex: 1; width: 0; min-width: 0; padding: .5rem 0; border: 0; background: transparent; color: var(--stay-ink); text-align: center; appearance: textfield; }
+.stay-search-stepper input::-webkit-inner-spin-button, .stay-search-stepper input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.stay-search-stepper:focus-within { outline: 3px solid var(--stay-focus); outline-offset: 4px; }
+.stay-search-booking select { min-width: 0; width: 100%; min-height: 50px; border: 1px solid var(--stay-rule); border-radius: .5rem; padding: .5rem; background: var(--stay-surface); color: var(--stay-ink); }
+.stay-search-hint { font-size: .8rem; color: var(--stay-muted); margin-block: 1rem; }
+.stay-search-close, .stay-search-foot button { min-height: 44px; background: transparent; border: 0; padding: .5rem 0; color: var(--stay-ink); text-decoration: underline; text-underline-offset: .25em; }
+.stay-search-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 0 1rem; margin-top: .75rem; }
+.stay-search-foot p { font-size: .8rem; color: var(--stay-muted); margin: 0; }
+@media (max-width: 1100px) {
+  .stay-search-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .stay-search-bar { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  .stay-search-destination, .stay-search-date, .stay-search-guests { padding: .75rem; }
+  .stay-search-guests { min-height: 5rem; }
+  .stay-search-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem .75rem; }
+  .stay-search-booking { grid-column: 1 / -1; }
+  .stay-search-date .stay-search-value { font-size: .8rem; }
+}
+@media (max-width: 360px) {
+  .stay-search-date .stay-search-value svg { display: none; }
+}

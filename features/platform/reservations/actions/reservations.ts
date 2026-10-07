@@ -1,9 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 import { keystoneClient } from '@/features/dashboard/lib/keystoneClient';
 import { availableReservationTransitions, type ReservationTransition } from '../lib/presentation';
+import { reservationTransitionErrorPath, reservationTransitionMessages } from '../lib/transitionFeedback';
 
 const reservationSelection = `
   id confirmationCode status paymentStatus source checkInDate checkOutDate
@@ -31,7 +33,7 @@ export async function getReservationWorkspace() {
       }
     }
   `);
-  if (!response.success) return { reservations: [], error: response.error };
+  if (!response.success) return { reservations: [], error: 'Reservation data is temporarily unavailable.' };
   return { reservations: response.data.reservations || [], error: null };
 }
 
@@ -41,7 +43,7 @@ export async function getReservationDetail(id: string) {
       reservation(where: { id: $id }) { ${reservationSelection} }
     }
   `, { id });
-  if (!response.success) return { reservation: null, error: response.error };
+  if (!response.success) return { reservation: null, error: 'Reservation detail is temporarily unavailable.' };
   return { reservation: response.data.reservation || null, error: null };
 }
 
@@ -52,12 +54,14 @@ export async function transitionReservation(formData: FormData): Promise<void> {
   const status = String(formData.get('status') || '');
 
   if (!reservationId || !availableReservationTransitions(status).includes(transition)) {
-    throw new Error('This reservation can no longer take that action. Refresh the workspace and try again.');
+    redirect(reservationTransitionErrorPath(reservationId, reservationTransitionMessages.invalidAction));
   }
   if (transition === 'cancel' && !note) {
-    throw new Error('A cancellation reason is required for the reservation record.');
+    redirect(reservationTransitionErrorPath(reservationId, reservationTransitionMessages.cancellationReason));
   }
-  if (note.length > 2000) throw new Error('Operational note is too long.');
+  if (note.length > 2000) {
+    redirect(reservationTransitionErrorPath(reservationId, reservationTransitionMessages.noteTooLong));
+  }
 
   const response = await keystoneClient<any>(`
     mutation TransitionReservation($reservationId: ID!, $transition: String!, $note: String) {
@@ -66,7 +70,9 @@ export async function transitionReservation(formData: FormData): Promise<void> {
       }
     }
   `, { reservationId, transition, note: note || null });
-  if (!response.success) throw new Error(response.error);
+  if (!response.success) {
+    redirect(reservationTransitionErrorPath(reservationId, reservationTransitionMessages.staleState));
+  }
 
   revalidatePath('/dashboard/platform/reservations');
   revalidatePath(`/dashboard/platform/reservations/${reservationId}`);

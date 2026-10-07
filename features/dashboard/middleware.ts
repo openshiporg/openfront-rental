@@ -10,6 +10,7 @@ async function createMiddlewareGraphQLClient(headers: Record<string, string>): P
   const endpoint = await getGraphQLEndpoint();
   return new GraphQLClient(endpoint, {
     credentials: 'include',
+    redirect: 'error',
     headers,
   });
 }

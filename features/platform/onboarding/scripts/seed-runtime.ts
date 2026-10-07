@@ -1,12 +1,14 @@
 import {
   disconnectAccommodationSeedClient,
+  resolveRuntimeOnboardingUserId,
   seedAccommodationPlatform,
 } from '../lib/seedAccommodationPlatform';
 import { assertCliRuntimeDatabase } from './runtimeDatabaseGuard';
 
 assertCliRuntimeDatabase();
 
-seedAccommodationPlatform()
+resolveRuntimeOnboardingUserId()
+  .then((userId) => seedAccommodationPlatform(undefined, userId))
   .then((summary) => console.log(JSON.stringify(summary, null, 2)))
   .catch((error) => {
     console.error(error);

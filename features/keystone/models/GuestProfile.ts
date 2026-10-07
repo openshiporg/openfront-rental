@@ -1,7 +1,8 @@
 import { list } from '@keystone-6/core';
+import { denyAll } from '@keystone-6/core/access';
 import { checkbox, relationship, select, text } from '@keystone-6/core/fields';
 
-import { hostScopedListAccess } from '../access';
+import { hostScopedListAccess, permissions } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
 
@@ -28,10 +29,18 @@ export const GuestProfile = list({
     preferredLanguage: text({ defaultValue: 'en' }),
     marketingConsent: checkbox({ defaultValue: false }),
     internalNotes: text({ ui: { displayMode: 'textarea' } }),
-    reservations: relationship({ ref: 'Reservation.guest', many: true }),
+    reservations: relationship({
+      ref: 'Reservation.guest',
+      many: true,
+      access: { read: permissions.canReadReservations, update: () => false },
+    }),
     conversations: relationship({ ref: 'Conversation.guest', many: true }),
     reviews: relationship({ ref: 'Review.guest', many: true }),
-    payments: relationship({ ref: 'Payment.guest', many: true }),
+    payments: relationship({
+      ref: 'Payment.guest',
+      many: true,
+      access: { create: denyAll, update: denyAll },
+    }),
     ...trackingFields,
   },
 });

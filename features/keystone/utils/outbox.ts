@@ -3,6 +3,9 @@ import crypto from 'node:crypto';
 const SECRET_KEY = /(password|secret|credential|token|authorization|cookie|rawpayload|webhooksignature)/i;
 
 export function assertSafeOutboxPayload(payload: unknown, path = 'payload'): void {
+  if (typeof payload === 'number' && !Number.isFinite(payload)) {
+    throw new Error('Outbox payload must be JSON-compatible.');
+  }
   if (payload == null || ['string', 'number', 'boolean'].includes(typeof payload)) return;
   if (Array.isArray(payload)) {
     payload.forEach((value, index) => assertSafeOutboxPayload(value, `${path}[${index}]`));
@@ -40,7 +43,7 @@ export async function enqueueOutboxEvent(tx: any, input: {
       aggregateType: input.aggregateType,
       aggregateId: input.aggregateId,
       idempotencyKey,
-      payload: { version: 1, ...structuredClone(input.payload) },
+      payload: { ...structuredClone(input.payload), version: 1 },
       status: 'pending',
       attempts: 0,
       availableAt: input.availableAt || new Date(),

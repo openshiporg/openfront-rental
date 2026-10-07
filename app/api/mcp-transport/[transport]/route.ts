@@ -29,6 +29,7 @@ function getSimpleTypeName(type: any): string {
 async function executeGraphQL(query: string, graphqlEndpoint: string, cookie: string): Promise<any> {
   const response = await fetch(graphqlEndpoint, {
     method: 'POST',
+    redirect: 'error',
     headers: {
       'Content-Type': 'application/json',
       'Cookie': cookie,
@@ -47,6 +48,7 @@ async function executeGraphQL(query: string, graphqlEndpoint: string, cookie: st
 async function getGraphQLSchema(graphqlEndpoint: string, cookie: string): Promise<GraphQLSchema> {
   const response = await fetch(graphqlEndpoint, {
     method: 'POST',
+    redirect: 'error',
     headers: { 
       'Content-Type': 'application/json',
       'Cookie': cookie,

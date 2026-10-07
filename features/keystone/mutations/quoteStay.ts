@@ -1,5 +1,6 @@
-import { dateRangesOverlap, calculateStayQuote } from '../utils/stayPricing';
+import { assertStayNotInPast, assertStayWithinMaximum, calculateStayQuote } from '../utils/stayPricing';
 import { listingBookingSnapshot, STAY_LISTING_SELECTION } from '../utils/stayListing';
+import { assertAccommodationUnitBookable } from '../utils/staySellability';
 import { createStayQuoteToken, hashStayQuoteToken, stayQuoteExpiry } from '../utils/stayQuoteAccess';
 
 type QuoteStayArgs = {
@@ -26,6 +27,8 @@ export async function quoteStay(_root: unknown, args: QuoteStayArgs, context: an
       throw new Error(`Choose a valid number of ${label}.`);
     }
   }
+  assertStayWithinMaximum(args.checkIn, args.checkOut, null);
+  assertStayNotInPast(args.checkIn);
 
   const listing = await context.sudo().query.Listing.findOne({
     where: { id: args.listingId },
@@ -33,19 +36,24 @@ export async function quoteStay(_root: unknown, args: QuoteStayArgs, context: an
   });
   if (!listing || listing.status !== 'published') throw new Error('This stay is not available for booking.');
   if (!listing.hostOrganization?.id || !listing.accommodationUnit?.id) throw new Error('This listing is not ready for booking.');
+  assertAccommodationUnitBookable(listing.accommodationUnit.status);
   if (pets > 0) {
     const petRule = listing.houseRules?.find((rule: any) => rule.ruleType === 'pets');
     if (petRule && petRule.isAllowed === false) throw new Error('This stay does not allow pets.');
   }
 
-  const blocks = await context.sudo().query.CalendarBlock.findMany({
-    where: { listing: { id: { equals: listing.id } }, status: { equals: 'active' } },
-    take: 500,
-    query: 'id startDate endDate',
+  const overlappingBlocks = await context.sudo().query.CalendarBlock.findMany({
+    where: {
+      listing: { accommodationUnit: { id: { equals: listing.accommodationUnit.id } } },
+      status: { equals: 'active' },
+      startDate: { lt: args.checkOut },
+      endDate: { gt: args.checkIn },
+    },
+    orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+    take: 1,
+    query: 'id',
   });
-  if (blocks.some((block: any) => dateRangesOverlap(args.checkIn, args.checkOut, block.startDate, block.endDate))) {
-    throw new Error('This stay is unavailable for the selected dates.');
-  }
+  if (overlappingBlocks.length > 0) throw new Error('This stay is unavailable for the selected dates.');
 
   const ratePlan = listing.ratePlans?.[0];
   if (!ratePlan) throw new Error('This stay does not have an active rate plan.');
@@ -55,6 +63,7 @@ export async function quoteStay(_root: unknown, args: QuoteStayArgs, context: an
     baseNightlyRateCents: ratePlan.baseNightlyRateCents ?? listing.baseNightlyRateCents ?? 0,
     currencyCode: ratePlan.currencyCode || listing.currencyCode || 'USD',
     baseMinimumStay: ratePlan.minimumStay ?? listing.minimumStay ?? 1,
+    maximumStay: ratePlan.maximumStay ?? listing.maximumStay,
     guestCount: adults + children,
     maxGuests: listing.accommodationUnit.maxGuests,
     securityDepositCents: listing.securityDepositCents ?? 0,
@@ -95,7 +104,11 @@ export async function quoteStay(_root: unknown, args: QuoteStayArgs, context: an
     },
   };
 
-  const quote = await context.sudo().query.StayQuote.createOne({
+  // This is the narrow public quote command: all host/listing/date/availability/economics
+  // checks above are authoritative here. Keep raw StayQuote CRUD host-protected, but do not
+  // let an unrelated signed-in customer's session turn this public operation into a host write.
+  const publicQuoteWriteContext = context.sudo().withSession(undefined);
+  const quote = await publicQuoteWriteContext.query.StayQuote.createOne({
     data: {
       hostOrganization: { connect: { id: listing.hostOrganization.id } },
       listing: { connect: { id: listing.id } },

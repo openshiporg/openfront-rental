@@ -5,14 +5,15 @@ import { models } from "./models";
 import { statelessSessions } from "@keystone-6/core/session";
 import { extendGraphqlSchema } from "./mutations";
 import { sendPasswordResetEmail } from "./lib/mail";
-import { resolveSessionSecret } from "./lib/runtimeSecrets";
+import { resolvePostgresDatabaseUrl, resolveSessionSecret } from "./lib/runtimeSecrets";
+import { createKeystoneSessionConfig } from "./sessionPolicy";
+import { withGraphqlListMaxTake } from "./security/graphql-limits";
 
-const databaseURL = process.env.DATABASE_URL || "file:./keystone.db";
+const databaseURL = resolvePostgresDatabaseUrl();
 
-const sessionConfig = {
-  maxAge: 60 * 60 * 24,
-  secret: resolveSessionSecret(),
-};
+const boundedModels = withGraphqlListMaxTake(models);
+
+const sessionConfig = createKeystoneSessionConfig(resolveSessionSecret());
 
 const {
   S3_BUCKET_NAME: bucketName = "keystone-test",
@@ -121,7 +122,7 @@ export default withAuth(
       provider: "postgresql",
       url: databaseURL,
     },
-    lists: models,
+    lists: boundedModels,
     storage: {
       my_images: {
         kind: "s3",

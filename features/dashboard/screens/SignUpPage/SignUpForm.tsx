@@ -58,9 +58,9 @@ export function SignUpForm() {
         <div className="flex items-center space-x-1.5">
           <Logo aria-hidden="true" />
         </div>
-        <h3 className="mt-6 text-lg font-semibold text-foreground dark:text-foreground">
+        <h1 className="mt-6 text-lg font-semibold text-foreground dark:text-foreground">
           Create your account
-        </h3>
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground dark:text-muted-foreground">
           Already have an account?
           <Link

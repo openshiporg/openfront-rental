@@ -1,89 +1,45 @@
 import Link from 'next/link';
-
 import { StorefrontShell } from '../../components/StorefrontShell';
-import { cancelStayAction } from '../../lib/data/stay-actions';
+import { BookingSteps, SectionNav, UnavailableStay } from '../../components/Journey';
+import { CancellationForm } from '../../components/GuestForms';
+import { SaveTripLink } from '../../components/PrivateTripTools';
+import { PolicyDetails } from '../../components/QuoteSummary';
 import { getPublicTrip } from '../../lib/data/stays';
-import { formatMoney } from '../../lib/format';
+import { formatMoney, formatStayDate, formatType } from '../../lib/format';
+import { privateToken, tripPath, type SearchParams } from '../../lib/navigation';
+import { publicActionFailureMessage, publicTokenUnavailableMessage } from '../../lib/public-token-copy';
 
-function stayDate(value?: string) {
-  return value ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${value}T12:00:00.000Z`)) : 'To be confirmed';
-}
-
-export async function TripPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ token: string }>;
-  searchParams?: Promise<Record<string, string | undefined>>;
-}) {
+export async function TripPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<SearchParams> }) {
   const { token } = await params;
   const query = (await searchParams) || {};
-  const { trip, error } = await getPublicTrip(token);
-  if (!trip) return <StorefrontShell><main className="stay-shell stay-token-page"><h1>This trip link is unavailable.</h1><p>{error || 'The link may be expired or revoked.'}</p><Link href="/search">Browse stays</Link></main></StorefrontShell>;
-  const address = trip.listing?.property?.address || trip.listing?.property?.location;
-  const balance = Math.max((trip.totalAmountCents || 0) - (trip.amountPaidCents || 0), 0);
-
-  return (
-    <StorefrontShell>
-      <main className="stay-shell stay-trip-page">
-        {query.booked ? <div className="stay-success" role="status">Reservation {trip.confirmationCode} was created. Keep this private trip link.</div> : null}
-        {query.signed ? <div className="stay-success" role="status">Your stay agreement is signed.</div> : null}
-        {query.cancelled ? <div className="stay-notice" role="status">Cancellation was recorded. Any paid balance is pending host policy review.</div> : null}
-        {query.error ? <div className="stay-form-error" role="alert">{query.error}</div> : null}
-
-        <header className="stay-page-head stay-trip-head">
-          <p className="stay-overline">{trip.confirmationCode} · {String(trip.status).replaceAll('_', ' ')}</p>
-          <h1>{trip.listing?.title}</h1>
-          <p>{stayDate(trip.checkInDate)} – {stayDate(trip.checkOutDate)}</p>
-        </header>
-
-        <div className="stay-trip-grid">
-          <section className="stay-trip-main">
-            <article className="stay-trip-section">
-              <h2>Arrival</h2>
-              <dl className="stay-trip-facts">
-                <div><dt>Check in</dt><dd>{stayDate(trip.checkInDate)} after {trip.listing?.property?.checkInFrom || 'the confirmed time'}</dd></div>
-                <div><dt>Check out</dt><dd>{stayDate(trip.checkOutDate)} by {trip.listing?.property?.checkOutBy || 'the confirmed time'}</dd></div>
-                <div><dt>Address</dt><dd>{[address?.addressLine1, address?.city, address?.region, address?.postalCode].filter(Boolean).join(', ') || address?.publicLocationLabel}</dd></div>
-              </dl>
-            </article>
-
-            <article className="stay-trip-section">
-              <h2>Guest party</h2>
-              <p>{trip.guestParty?.adults || 1} adults · {trip.guestParty?.children || 0} children · {trip.guestParty?.infants || 0} infants · {trip.guestParty?.pets || 0} pets</p>
-            </article>
-
-            <article className="stay-trip-section">
-              <h2>Host messages</h2>
-              {trip.conversation?.messages?.length ? <div className="stay-messages">{trip.conversation.messages.map((message: any) => <div key={message.id} className={`stay-message ${message.direction}`}><span>{message.senderType}</span><p>{message.body}</p></div>)}</div> : <p>Your host can add arrival notes and messages here.</p>}
-            </article>
-
-            {trip.listing?.houseRules?.length ? <article className="stay-trip-section"><h2>House rules</h2><ul className="stay-simple-list">{trip.listing.houseRules.map((rule: any, index: number) => <li key={rule.id || index}><strong>{rule.title}</strong>{rule.description ? ` — ${rule.description}` : ''}</li>)}</ul></article> : null}
-          </section>
-
-          <aside className="stay-trip-aside">
-            <section className="stay-trip-section">
-              <h2>Payment</h2>
-              <dl className="stay-price-lines">
-                <div><dt>Stay total</dt><dd>{formatMoney(trip.totalAmountCents, trip.currencyCode)}</dd></div>
-                <div><dt>Paid</dt><dd>{formatMoney(trip.amountPaidCents, trip.currencyCode)}</dd></div>
-                <div className="stay-price-total"><dt>Balance</dt><dd>{formatMoney(balance, trip.currencyCode)}</dd></div>
-              </dl>
-              <p className="stay-form-note">Status: {String(trip.paymentStatus).replaceAll('_', ' ')}</p>
-            </section>
-
-            <section className="stay-trip-section">
-              <h2>Agreement</h2>
-              <p>{trip.agreement?.status === 'signed' ? `Signed by ${trip.agreement.signatureName}.` : 'Signature is still required.'}</p>
-              {trip.agreement?.status !== 'signed' && query.agreement ? <Link className="stay-action-link" href={`/agreements/${query.agreement}?trip=${token}`}>Review and sign</Link> : null}
-            </section>
-
-            {['pending', 'confirmed'].includes(trip.status) ? <section className="stay-trip-section"><h2>Cancel this stay</h2><form action={cancelStayAction} className="stay-book-form"><input type="hidden" name="tripToken" value={token} /><label>Reason<textarea name="reason" rows={3} /></label><button className="stay-button-secondary" type="submit">Request cancellation</button></form></section> : null}
-          </aside>
-        </div>
-      </main>
-    </StorefrontShell>
-  );
+  const { trip } = await getPublicTrip(token);
+  if (!trip) return <StorefrontShell activeNav="trips"><UnavailableStay title="This trip link is unavailable.">{publicTokenUnavailableMessage('trip')} Use the complete saved link, or contact support. A confirmation code alone cannot unlock a trip.</UnavailableStay></StorefrontShell>;
+  const agreementToken = privateToken(query.agreement);
+  const signed = trip.agreement?.status === 'signed';
+  const cancelled = trip.status === 'cancelled';
+  const canCancel = ['pending', 'confirmed'].includes(trip.status);
+  const statusCopy: Record<string, string> = { pending: 'Your request is awaiting host approval.', confirmed: 'Your reservation is confirmed. Review payment and arrival arrangements below.', in_stay: 'Your stay is in progress. Your host is your contact for help with the home.', completed: 'Your stay is complete. Payment and deposit records remain below.', cancelled: 'Your stay is cancelled. Refund decisions and deposit returns are separate.', no_show: 'The host recorded this stay as a no-show. Contact support to discuss this record.' };
+  return <StorefrontShell activeNav="trips"><main id="stay-main" className="stay-shell stay-trip-page">
+    {query.booked ? <><BookingSteps step={3} /><div className="stay-success" role="status">Reservation {trip.confirmationCode} is on record. {statusCopy[trip.status] || 'Check its current status below.'}</div></> : null}
+    {query.signed && signed ? <div className="stay-success" role="status">Your agreement signature is on record.</div> : null}
+    {query.cancelled && cancelled ? <div className="stay-notice" role="status">Your reservation is cancelled. Cancellation is not confirmation of a refund.</div> : null}
+    {query.error ? <div className="stay-form-error" role="alert">{publicActionFailureMessage('cancellation')}</div> : null}
+    <header className="stay-page-head stay-trip-head"><p className="stay-overline">Your trip · {trip.confirmationCode}</p><h1>{trip.listing?.title || 'Your stay'}</h1><p>{formatStayDate(trip.checkInDate)} — {formatStayDate(trip.checkOutDate)}</p><div className="stay-status-line"><span className="stay-status">{formatType(trip.status)}</span><span>{statusCopy[trip.status] || 'Contact the host to confirm the next step for this stay.'}</span></div></header>
+    <SaveTripLink path={tripPath(token, agreementToken)} />
+    <SectionNav label="Trip sections" items={[{ id: 'next', label: 'Next steps' }, { id: 'arrival', label: 'Arrival & departure' }, { id: 'payment', label: 'Payment' }, { id: 'agreement', label: 'Agreement' }, { id: 'changes', label: 'Changes & support' }]} />
+    <div className="stay-trip-grid"><div className="stay-trip-main">
+      <section id="next" className="stay-trip-section"><p className="stay-overline">From booking to coming home</p><h2>Your stay, step by step.</h2><ol className="stay-timeline"><li><span className="stay-timeline-number">01</span><div><h3>{trip.status === 'pending' ? 'Host decision pending' : `Reservation · ${formatType(trip.status)}`}</h3><p>{trip.status === 'pending' ? 'Wait for host approval before making travel or payment arrangements based on a confirmed stay.' : statusCopy[trip.status]}</p></div></li><li><span className="stay-timeline-number">02</span><div><h3>Agreement · {signed ? 'signed' : trip.agreement ? formatType(trip.agreement.status) : 'not available'}</h3><p>{signed ? 'Your signature is recorded below.' : cancelled ? 'Contact the host about any remaining agreement questions.' : 'Review the terms and complete any required signature.'}</p><a href="#agreement">Agreement details</a></div></li><li><span className="stay-timeline-number">03</span><div><h3>Payment · {formatType(trip.paymentStatus)}</h3><p>Payments are arranged separately with the host. Confirm the method, timing, and any separate deposit.</p><a href="#payment">View payment records</a></div></li><li><span className="stay-timeline-number">04</span><div><h3>{trip.checkedInAt ? 'Arrival recorded' : 'Plan your arrival'}</h3><p>{cancelled ? 'This cancelled booking does not provide arrival access.' : 'Before travelling, confirm address, entry instructions, and arrival arrangements with the host.'}</p><a href="#arrival">Arrival information</a></div></li><li><span className="stay-timeline-number">05</span><div><h3>{trip.checkedOutAt ? 'Departure recorded' : 'Departure & deposit follow-up'}</h3><p>Confirm key return and checkout instructions. A deposit status is separate from evidence of money returned.</p></div></li></ol></section>
+      <section id="arrival" className="stay-trip-section"><h2>Arrival & departure.</h2><dl className="stay-trip-facts"><div><dt>Check in</dt><dd>{formatStayDate(trip.checkInDate)} · {trip.scheduledCheckInTime || trip.listing?.property?.checkInFrom || 'Confirm the time with your host'}</dd></div><div><dt>Check out</dt><dd>{formatStayDate(trip.checkOutDate)} · {trip.scheduledCheckOutTime || trip.listing?.property?.checkOutBy || 'Confirm the time with your host'}</dd></div><div><dt>Area</dt><dd>{trip.listing?.property?.location?.publicLocationLabel || 'Confirm the location with your host'}</dd></div><div><dt>Timezone</dt><dd>{trip.listing?.property?.timezone || 'Property local time; confirm with your host'}</dd></div><div><dt>Your party</dt><dd>{trip.guestParty?.adults ?? '—'} adults · {trip.guestParty?.children ?? 0} children · {trip.guestParty?.infants ?? 0} infants · {trip.guestParty?.pets ?? 0} pets</dd></div></dl><div className="stay-notice"><h3>Entry instructions require host confirmation</h3><p>Exact address, keys, parking and entry codes are not released on this page. Use the published support contact before arrival. There is no online check-in or key issuance here.</p><Link href="/help#arrival">Arrival help ↗</Link></div>{trip.listing?.houseRules?.length ? <details><summary>House rules for your stay</summary><ul className="stay-simple-list">{trip.listing.houseRules.map((rule: any, index: number) => <li key={rule.id || index}><strong>{rule.title}</strong>{rule.description ? ` — ${rule.description}` : ''}</li>)}</ul></details> : null}</section>
+      <section id="payment" className="stay-trip-section"><h2>Payment & records.</h2><p>Payment status: <strong>{formatType(trip.paymentStatus)}</strong>. These are host-recorded amounts, not independent bank settlement evidence.</p><dl className="stay-price-lines"><div><dt>Stay total</dt><dd>{formatMoney(trip.totalAmountCents, trip.currencyCode)}</dd></div><div><dt>Recorded paid amount</dt><dd>{formatMoney(trip.amountPaidCents, trip.currencyCode)}</dd></div><div><dt>Balance due</dt><dd>{formatMoney(trip.balanceDueCents ?? Math.max(trip.totalAmountCents - trip.amountPaidCents, 0), trip.currencyCode)}</dd></div><div className="stay-price-total"><dt>Refund due</dt><dd>{formatMoney(trip.refundDueCents || 0, trip.currencyCode)}</dd></div></dl><p className="stay-form-note">Any refund due is tracked separately from collected payments. Confirm its reconciliation and timing with your host.</p>
+      {trip.lineItems?.length ? <details><summary>Itemized stay charges</summary><dl className="stay-price-lines">{trip.lineItems.map((line: any) => <div key={line.id}><dt>{line.description}{line.serviceDate ? <small>{formatStayDate(line.serviceDate)}</small> : null}</dt><dd>{formatMoney(line.totalAmountCents, line.currencyCode)}</dd></div>)}</dl></details> : null}
+      <h3>Payment records</h3>{trip.payments?.length ? <ul className="stay-record-list">{trip.payments.map((payment: any) => <li key={payment.id}><span>{formatType(payment.status)} · {formatType(payment.paymentMethod)}</span><strong>{formatMoney(payment.amountCents, payment.currencyCode)}</strong>{payment.refundedAmountCents > 0 ? <p>Recorded refunded: {formatMoney(payment.refundedAmountCents, payment.currencyCode)}</p> : null}</li>)}</ul> : <p>No payment records are available. No online payment is taken on this page.</p>}
+      <h3>Refunds</h3>{trip.refunds?.length ? <ul className="stay-record-list">{trip.refunds.map((refund: any) => <li key={refund.id}><span>{refund.refundNumber} · {refund.status === 'succeeded' ? 'Recorded succeeded' : formatType(refund.status)}</span><strong>{formatMoney(refund.amountCents, refund.currencyCode)}</strong></li>)}</ul> : <p>No refund records are available.</p>}<p className="stay-form-note">Refund statuses are host-recorded ledger entries. Pending is a liability, not a transfer; “Recorded succeeded” is not independent proof funds arrived. Confirm any return with your host. Cancellation alone does not promise a refund.</p>
+      <h3>Security deposit & damage</h3>{trip.securityDeposit ? <><p>{formatMoney(trip.securityDeposit.amountCents, trip.securityDeposit.currencyCode)} · recorded status: <strong>{formatType(trip.securityDeposit.status)}</strong></p>{trip.securityDeposit.capturedAmountCents > 0 ? <p>Recorded captured amount: {formatMoney(trip.securityDeposit.capturedAmountCents, trip.securityDeposit.currencyCode)}</p> : null}</> : <p>{trip.securityDepositCents > 0 ? `${formatMoney(trip.securityDepositCents, trip.currencyCode)} specified; a deposit record is not available.` : 'No deposit requirement is shown.'}</p>}<p>Deposit status does not confirm a bank hold or transfer. For a damage question or disputed deduction, contact the host with your booking reference and supporting details. There is no online claim-response form.</p><Link href="/help#payments">Payment & deposit help ↗</Link></section>
+    </div><aside className="stay-trip-aside">
+      <section id="agreement" className="stay-trip-section"><h2>Your agreement.</h2>{signed ? <><p>Signed by {trip.agreement.signatureName}.</p>{trip.agreement.signedAt ? <p className="stay-form-note">Recorded {new Date(trip.agreement.signedAt).toLocaleString('en-US', { timeZone: 'UTC' })} UTC</p> : null}</> : <p>{trip.agreement ? `Status: ${formatType(trip.agreement.status)}.` : 'An agreement record is not available.'}</p>}{agreementToken && trip.agreement && trip.agreement.status !== 'voided' ? <Link className="stay-button" href={`/agreements/${agreementToken}?trip=${encodeURIComponent(token)}`}>{signed ? 'Read signed agreement' : 'Review & sign'} ↗</Link> : <p className="stay-form-note">Open your original saved agreement link. Link recovery and reissue are not available online; contact support if it is missing or expired.</p>}</section>
+      <section id="changes" className="stay-trip-section"><h2>Plans can change.</h2><h3>Change dates, guests, or home</h3><p>Online amendments are not available. Contact the host before making a second booking. A message or new search does not change this reservation.</p><Link className="stay-text-link" href="/help#changes">Change & support options ↗</Link><h3>Cancellation policy</h3><PolicyDetails policy={trip.cancellationPolicy} />{canCancel ? <CancellationForm token={token} agreementToken={agreementToken} /> : <p>Online cancellation is unavailable for a stay marked {formatType(trip.status).toLowerCase()}. Contact the host about any remaining questions.</p>}</section>
+      <section className="stay-trip-section"><h2>A question for your host?</h2><p>Use the published email or phone contact. Guest messaging and delivery tracking are not available in this trip page.</p><Link className="stay-button" href="/help">Contact & help ↗</Link></section>
+    </aside></div>
+  </main></StorefrontShell>;
 }
-
 export default TripPage;

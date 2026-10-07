@@ -1,0 +1,6 @@
+import Link from 'next/link';
+import { PrivateTripEntry } from '../../components/PrivateTripTools';
+import { StorefrontShell } from '../../components/StorefrontShell';
+export async function TripEntryPage() {
+  return <StorefrontShell activeNav="trips"><main id="stay-main" className="stay-shell stay-search-page"><header className="stay-page-head"><p className="stay-overline">Welcome back</p><h1>Your stay,<br />close at hand.</h1><p>Open the private trip link saved after booking to see your reservation, agreement, payment records, and next steps.</p></header><div className="stay-help-layout"><section className="stay-entry-panel"><h2>Open your trip.</h2><PrivateTripEntry /></section><section className="stay-help-note"><h2>One link. Your whole stay.</h2><p>Housekind uses private booking links. A guest sign-in account and searchable booking history are not available.</p><h3>Can’t find the link?</h3><p>Check your saved booking confirmation or browser history. Use the full URL, including agreement details. A confirmation code or email address alone cannot retrieve a booking online.</p><Link className="stay-text-link" href="/help#trip-links">Help with a missing link ↗</Link><h3>Still planning?</h3><Link href="/search">Explore the homes ↗</Link></section></div></main></StorefrontShell>;
+}

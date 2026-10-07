@@ -15,6 +15,11 @@ export async function captureStayPayment(_root: unknown, args: { paymentId: stri
   });
   if (!payment?.hostOrganization?.id) throw new Error('Payment not found.');
   await assertHostOrganizationAccess({ context, hostOrganizationId: payment.hostOrganization.id, permission: 'canManagePayments' });
+  const operatorUserId = context.session?.itemId;
+  if (typeof operatorUserId !== 'string' || !operatorUserId) throw new Error('An authenticated operator is required to attest manual payment receipt.');
+  if (['cancelled', 'no_show'].includes(payment.reservation?.status || '')) {
+    throw new Error('A payment cannot be newly captured for a cancelled or no-show reservation.');
+  }
   const transition = assertCaptureTransition(payment.status);
   if (transition === 'already_succeeded') return payment;
   if (payment.provider !== 'pp_system_default' || payment.paymentProvider?.code !== 'pp_system_default') {
@@ -33,8 +38,14 @@ export async function captureStayPayment(_root: unknown, args: { paymentId: stri
       paymentId: payment.id,
       expectedAmountCents: payment.amountCents,
       expectedCurrencyCode: payment.currencyCode,
-      evidence: { kind: 'operator_manual_capture', capture: captureResult?.data || captureResult },
+      evidence: {
+        kind: 'operator_manual_capture',
+        attestedByUserId: operatorUserId,
+        attestedAt: processedAt.toISOString(),
+        capture: captureResult?.data || captureResult,
+      },
       processedAt,
+      processedByUserId: operatorUserId,
     }),
     { maxWait: 5000, timeout: 10000, isolationLevel: 'ReadCommitted' },
   );

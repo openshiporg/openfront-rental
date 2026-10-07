@@ -1,8 +1,6 @@
-# Builds are immutable. Committed migrations run once before the web replica
-# starts, so a failed migration blocks the release without replica races.
+# Canonical E-commerce/Restaurant lifecycle: migrate when runtime starts.
 [build]
-buildCommand = "NEXT_PHASE=phase-production-build keystone build --no-ui && next build"
+buildCommand = "keystone build --no-ui && next build"
 
 [deploy]
-preDeployCommand = "npm run release:migrate"
-startCommand = "next start"
+startCommand = "npm run migrate && next start"

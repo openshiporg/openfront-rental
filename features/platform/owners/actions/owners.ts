@@ -24,7 +24,7 @@ export async function getOwnerWorkspace() {
       }
     }
   `);
-  if (!response.success) return { owners: [], statements: [], payouts: [], error: response.error };
+  if (!response.success) return { owners: [], statements: [], payouts: [], error: 'Owner finance data is temporarily unavailable.' };
   return { owners: response.data.propertyOwners || [], statements: response.data.ownerStatements || [], payouts: response.data.payouts || [], error: null };
 }
 

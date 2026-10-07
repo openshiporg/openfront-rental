@@ -1,51 +1,14 @@
 'use server';
 
-import { getBaseUrl } from '@/features/dashboard/lib/getBaseUrl';
+export type SharedKeysResult =
+  | { success: true; keys: { apiKey: string; model: string; maxTokens: number } }
+  | { success: false; error: string };
 
-interface LocalKeys {
-  apiKey: string;
-  model: string;
-  maxTokens: string;
-}
-
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-// Check if shared keys ENV variables are configured
-export async function checkSharedKeysAvailable() {
+// Shared server credentials must never be returned to a browser action caller.
+// Until chat requests are proxied and authorized server-side, env-key mode stays disabled.
+export async function getSharedKeys(): Promise<SharedKeysResult> {
   return {
-    available: !!(process.env.OPENROUTER_API_KEY && process.env.OPENROUTER_MODEL),
-    missing: {
-      apiKey: !process.env.OPENROUTER_API_KEY,
-      model: !process.env.OPENROUTER_MODEL,
-      maxTokens: !process.env.OPENROUTER_MAX_TOKENS,
-    }
-  };
-}
-
-// Server action to get shared keys (returns plain object)
-export async function getSharedKeys() {
-  if (!process.env.OPENROUTER_API_KEY) {
-    return {
-      success: false,
-      error: 'OPENROUTER_API_KEY is not configured'
-    };
-  }
-  if (!process.env.OPENROUTER_MODEL) {
-    return {
-      success: false,
-      error: 'OPENROUTER_MODEL is not configured'
-    };
-  }
-  
-  return {
-    success: true,
-    keys: {
-      apiKey: process.env.OPENROUTER_API_KEY,
-      model: process.env.OPENROUTER_MODEL,
-      maxTokens: process.env.OPENROUTER_MAX_TOKENS ? parseInt(process.env.OPENROUTER_MAX_TOKENS) : 4000,
-    }
+    success: false,
+    error: 'Shared provider-key mode is disabled. Configure a personal API key.',
   };
 }

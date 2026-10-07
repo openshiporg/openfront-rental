@@ -13,14 +13,20 @@ import { notFound } from 'next/navigation'
 import { ListPageClient } from './ListPageClient'
 
 interface PageProps {
-  params: Promise<{ listKey: string }>;
+  params?: Promise<{ listKey: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  listKey?: string;
 }
 
-export async function ListPage({ params, searchParams }: PageProps) {
-  const resolvedParams = await params;
+export async function ListPage({ params, searchParams, listKey }: PageProps) {
+  const resolvedParams = params ? await params : undefined;
   const resolvedSearchParams = await searchParams;
-  const { listKey: listKeyParam } = resolvedParams;
+  const listKeyParam = listKey || resolvedParams?.listKey;
+
+  if (!listKeyParam) {
+    notFound()
+  }
+
   const searchParamsObj = Object.fromEntries(
     Object.entries(resolvedSearchParams).map(([key, value]) => [
       key,

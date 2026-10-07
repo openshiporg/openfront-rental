@@ -37,6 +37,7 @@ export async function buildStorefrontMetadata({
     const status = settings.status === 'published' ? 'error' : settings.status;
     const unavailable = unavailableMetadata[status];
     return {
+      referrer: 'no-referrer',
       title: unavailable.title,
       description: unavailable.description,
       robots: { index: false, follow: false, noarchive: true },
@@ -47,6 +48,7 @@ export async function buildStorefrontMetadata({
   const pageDescription = description || brand.description || 'Independent short-term accommodation, booked directly with the host.';
 
   return {
+    referrer: 'no-referrer',
     title: pageTitle,
     description: pageDescription,
     alternates: index ? { canonical: path } : undefined,

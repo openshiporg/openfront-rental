@@ -1,4 +1,5 @@
 import { list } from '@keystone-6/core';
+import { denyAll } from '@keystone-6/core/access';
 import { checkbox, json, relationship, text } from '@keystone-6/core/fields';
 
 import { hostScopedListAccess } from '../access';
@@ -32,8 +33,16 @@ export const PaymentProvider = list({
       defaultValue: {},
       ui: { description: 'Non-secret provider configuration only. Provider secrets are read from server environment variables.' },
     }),
-    payments: relationship({ ref: 'Payment.paymentProvider', many: true }),
-    webhookEvents: relationship({ ref: 'PaymentWebhookEvent.paymentProvider', many: true }),
+    payments: relationship({
+      ref: 'Payment.paymentProvider',
+      many: true,
+      access: { create: denyAll, update: denyAll },
+    }),
+    webhookEvents: relationship({
+      ref: 'PaymentWebhookEvent.paymentProvider',
+      many: true,
+      access: { create: denyAll, update: denyAll },
+    }),
     ...trackingFields,
   },
 });

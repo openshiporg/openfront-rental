@@ -1,50 +1,32 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-
-import { getAuthenticatedUser } from '@/features/dashboard/actions/auth';
 import { keystoneClient } from '@/features/dashboard/lib/keystoneClient';
-import {
-  disconnectAccommodationSeedClient,
-  seedAccommodationPlatform,
-} from '../lib/seedAccommodationPlatform';
-import {
-  runAccommodationOnboardingWorkflow,
-  type AccommodationOnboardingResult,
-  type AccommodationOnboardingStatus,
-} from '../lib/runAccommodationOnboardingWorkflow';
+import type { RentalOnboardingInput } from '@/features/keystone/onboarding/rentalOnboarding';
 
-export type { AccommodationOnboardingResult } from '../lib/runAccommodationOnboardingWorkflow';
+function revalidateOnboarding() {
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/(admin)');
+  revalidatePath('/', 'layout');
+}
 
-const statusMutation = `
-  mutation UpdateOnboardingStatus($status: String!) {
-    updateOnboardingStatus(status: $status) {
-      id
-      onboardingStatus
-    }
+async function updateStatus(status: 'in_progress' | 'dismissed') {
+  try {
+    const response = await keystoneClient(`mutation UpdateOnboardingStatus($status: String!) { updateOnboardingStatus(status: $status) { id onboardingStatus } }`, { status });
+    if (!response.success) return { success: false, error: response.error || 'Could not update onboarding status.' };
+    revalidateOnboarding();
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Could not update onboarding status.' };
   }
-`;
+}
 
-export async function runAccommodationOnboarding(
-  _previousState: AccommodationOnboardingResult,
-  _formData: FormData,
-): Promise<AccommodationOnboardingResult> {
-  return runAccommodationOnboardingWorkflow({
-    getAuthenticatedUser: async () => {
-      const auth = await getAuthenticatedUser();
-      return auth.success ? auth.data?.authenticatedItem ?? null : null;
-    },
-    updateStatus: async (status: AccommodationOnboardingStatus) => {
-      const response = await keystoneClient(statusMutation, { status });
-      return response.success ? { ok: true } : { ok: false, error: response.error };
-    },
-    seedPlatform: seedAccommodationPlatform,
-    disconnectSeedClient: disconnectAccommodationSeedClient,
-    revalidate: () => {
-      revalidatePath('/dashboard');
-      revalidatePath('/search');
-      revalidatePath('/stays');
-      revalidatePath('/', 'layout');
-    },
-  });
+export async function startOnboarding() { return updateStatus('in_progress'); }
+export async function dismissOnboarding() { return updateStatus('dismissed'); }
+
+export async function completeOnboarding(input: RentalOnboardingInput) {
+  const response = await keystoneClient(`mutation CompleteRentalOnboarding($input: JSON!) { rentalOnboarding(input: $input, mode: "complete") }`, { input });
+  if (!response.success) return { success: false, error: response.error || 'Could not complete onboarding.' };
+  revalidateOnboarding();
+  return { success: true };
 }

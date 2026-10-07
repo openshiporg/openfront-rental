@@ -5,9 +5,20 @@ import { hostScopedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
 
+const scopedHooks = hostScopedHooks('canManageCalendar');
+const reservationBlockMutationError = 'Reservation-backed capacity blocks can only be changed by reservation lifecycle operations.';
+
 export const CalendarBlock = list({
   access: hostScopedListAccess('canReadCalendar', 'canManageCalendar'),
-  hooks: hostScopedHooks('canManageCalendar'),
+  hooks: {
+    ...scopedHooks,
+    validate: async (args: any) => {
+      await scopedHooks.validate(args);
+      if (args.item?.reservationId || args.resolvedData?.reservation) {
+        args.addValidationError(reservationBlockMutationError);
+      }
+    },
+  },
   ui: { listView: { initialColumns: ['listing', 'startDate', 'endDate', 'reason', 'status', 'source'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),

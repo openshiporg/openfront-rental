@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { getAuthenticatedUser } from '@/features/dashboard/actions/auth';
 import { keystoneClient } from '@/features/dashboard/lib/keystoneClient';
+import { canManageStoreSettings, type StoreSettingsActor } from '../lib/authorization';
 import { parseMarketplaceSettingsForm } from '../lib/validation';
 
 export type OperatorMarketplaceSettings = {
@@ -40,10 +40,15 @@ const SETTINGS_FIELDS = `
 `;
 
 async function authorizeSettingsManager() {
-  const auth = await getAuthenticatedUser();
+  const auth = await keystoneClient<{ authenticatedItem: StoreSettingsActor }>(`
+    query StoreSettingsAuthorization {
+      authenticatedItem {
+        ... on User { id isActive role { canManageSettings } }
+      }
+    }
+  `);
   if (!auth.success) return { ok: false as const, message: 'Storefront settings authorization could not be verified.' };
-  const user = auth.data?.authenticatedItem;
-  if (!user?.id || user.isActive !== true || !user.role?.canManageSettings) {
+  if (!canManageStoreSettings(auth.data.authenticatedItem)) {
     return { ok: false as const, message: 'You do not have permission to manage storefront settings.' };
   }
   return { ok: true as const };

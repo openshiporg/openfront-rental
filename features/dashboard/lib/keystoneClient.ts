@@ -5,11 +5,18 @@
 import { getAuthHeaders } from '@/features/dashboard/lib/cookies';
 import { GraphQLClient, ClientError } from 'graphql-request';
 import { getGraphQLEndpoint } from '@/features/dashboard/lib/getBaseUrl';
+import {
+  formatSafeGraphQLClientError,
+  SAFE_GRAPHQL_FAILURE_MESSAGE,
+  safeErrorLogContext,
+  safeGraphQLErrorCount,
+  type SafeGraphQLError,
+} from './safeGraphqlError';
 
 // Define response type for keystoneClient
 export type KeystoneResponse<T = any> =
   | { success: true; data: T; error?: never }
-  | { success: false; error: string; errors?: any[]; data?: never };
+  | { success: false; error: string; errors?: SafeGraphQLError[]; data?: never };
 
 /**
  * Create a GraphQL client with authentication headers
@@ -19,61 +26,9 @@ async function createGraphQLClient(): Promise<GraphQLClient> {
   const authHeaders = await getAuthHeaders();
   return new GraphQLClient(endpoint, {
     credentials: 'include',
+    redirect: 'error',
     headers: authHeaders || {},
   });
-}
-
-/**
- * Format GraphQL error messages in a more readable way
- */
-function formatGraphQLErrors(error: ClientError): { message: string; errors?: any[] } {
-  if (!error.response) {
-    return { message: error.message };
-  }
-
-  const errors = error.response.errors;
-  if (!errors) {
-    return { message: error.message };
-  }
-
-  // Extract detailed error information
-  const formattedErrors = errors.map(err => {
-    const extensions = err.extensions || {};
-    const path = err.path?.join('.') || '';
-    const code = extensions.code || '';
-    
-    // Get original error if available
-    const originalError = (extensions.originalError as any)?.message || (extensions.exception as any)?.message || '';
-    
-    // Include validation errors if present
-    const validation = extensions.validation || {};
-    const validationErrors = Object.entries(validation)
-      .map(([field, error]) => `${field}: ${error}`)
-      .join(', ');
-
-    // Build detailed error message
-    const details = [
-      originalError && `Original Error: ${originalError}`,
-      path && `Path: ${path}`,
-      code && `Code: ${code}`,
-      validationErrors && `Validation: ${validationErrors}`
-    ].filter(Boolean).join(' | ');
-
-    return {
-      message: err.message,
-      details: details || undefined
-    };
-  });
-
-  // Create a detailed error message
-  const message = formattedErrors
-    .map(err => `${err.message}${err.details ? ` (${err.details})` : ''}`)
-    .join('\n');
-
-  return { 
-    message,
-    errors: errors 
-  };
 }
 
 /**
@@ -111,21 +66,14 @@ export async function keystoneClient<T = any>(
     };
 
   } catch (error) {
-    console.error("Error fetching GraphQL data:", error);
+    console.error("Error fetching GraphQL data:", safeErrorLogContext(error));
 
     if (error instanceof ClientError) {
-      const { message, errors } = formatGraphQLErrors(error);
-      return {
-        success: false,
-        error: message,
-        errors
-      };
+      const safeError = formatSafeGraphQLClientError(error);
+      return { success: false, error: safeError.message, ...(safeError.errors ? { errors: safeError.errors } : {}) };
     }
 
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
+    return { success: false, error: SAFE_GRAPHQL_FAILURE_MESSAGE };
   }
 }
 
@@ -183,26 +131,23 @@ async function _fetchGraphQLWithFiles(
       method: "POST",
       headers,
       credentials: "include",
+      redirect: "error",
       body: formData,
     });
 
     if (!response.ok) {
       return {
         success: false,
-        error: `GraphQL request failed: ${response.statusText}`
+        error: 'The upload request could not be completed. Please try again.'
       };
     }
 
     const json = await response.json();
 
     if (json.errors) {
-      console.error("GraphQL Errors:", json.errors);
-      return {
-        success: false,
-        error: `GraphQL Error: ${json.errors
-          .map((e: { message: string }) => e.message)
-          .join(", ")}`
-      };
+      console.error("GraphQL Errors:", { count: safeGraphQLErrorCount(json.errors) });
+      const safeError = formatSafeGraphQLClientError({ response: { errors: json.errors } });
+      return { success: false, error: safeError.message, ...(safeError.errors ? { errors: safeError.errors } : {}) };
     }
 
     return {
@@ -210,11 +155,8 @@ async function _fetchGraphQLWithFiles(
       data: json.data
     };
   } catch (error) {
-    console.error("Error uploading files:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
+    console.error("Error uploading files:", safeErrorLogContext(error));
+    return { success: false, error: SAFE_GRAPHQL_FAILURE_MESSAGE };
   }
 }
 

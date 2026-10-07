@@ -1,7 +1,7 @@
 import { list } from '@keystone-6/core';
 import { integer, relationship, select, text } from '@keystone-6/core/fields';
 
-import { hostScopedListAccess } from '../access';
+import { hostScopedListAccess, permissions } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
 
@@ -46,7 +46,11 @@ export const AccommodationUnit = list({
     floorLabel: text(),
     listings: relationship({ ref: 'Listing.accommodationUnit', many: true }),
     bedrooms: relationship({ ref: 'Bedroom.accommodationUnit', many: true }),
-    reservations: relationship({ ref: 'Reservation.accommodationUnit', many: true }),
+    reservations: relationship({
+      ref: 'Reservation.accommodationUnit',
+      many: true,
+      access: { read: permissions.canReadReservations, update: () => false },
+    }),
     ...trackingFields,
   },
 });

@@ -1,7 +1,7 @@
-export async function createPaymentFunction({ reservation, amount, currency }: { reservation: any; amount: number; currency: string }) {
+export async function createPaymentFunction({ reservation, amount, currency }: { reservation: { id: string; confirmationCode?: string | null }; amount: number; currency: string }) {
   const providerPaymentId = `manual_${reservation?.confirmationCode || reservation?.id || Date.now()}`;
   return {
-    status: 'pending',
+    status: 'pending' as const,
     providerPaymentId,
     data: {
       providerPaymentId,
@@ -16,15 +16,25 @@ export async function createPaymentFunction({ reservation, amount, currency }: {
 }
 
 export async function capturePaymentFunction({ paymentId, amount }: { paymentId: string; amount: number }) {
-  return { status: 'captured', amount, data: { paymentId, status: 'captured', amount, capturedAt: new Date().toISOString() } };
+  return { status: 'captured' as const, amount, data: { paymentId, status: 'captured', amount, capturedAt: new Date().toISOString() } };
 }
 
 export async function refundPaymentFunction({ paymentId, amount }: { paymentId: string; amount: number }) {
-  return { status: 'refunded', amount, data: { paymentId, status: 'refunded', amount, refundedAt: new Date().toISOString() } };
+  return {
+    status: 'pending' as const,
+    amount,
+    data: {
+      paymentId,
+      status: 'pending',
+      amount,
+      mode: 'manual',
+      instructions: 'This adapter does not transfer funds. Record a refund liability, then reconcile only after an operator confirms the external or cash refund has already been completed.',
+    },
+  };
 }
 
 export async function getPaymentStatusFunction({ paymentId }: { paymentId: string }) {
-  return { status: 'pending', data: { paymentId, status: 'pending' } };
+  return { status: 'pending' as const, data: { paymentId, status: 'pending' } };
 }
 
 export async function generatePaymentLinkFunction() {

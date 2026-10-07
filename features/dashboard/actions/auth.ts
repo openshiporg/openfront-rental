@@ -5,6 +5,9 @@ import { keystoneClient } from '@/features/dashboard/lib/keystoneClient';
 import { redirect } from 'next/navigation';
 import { removeAuthToken } from '@/features/dashboard/lib/cookies';
 import { revalidatePath } from 'next/cache';
+import { platformNavPermissions } from '@/features/platform/lib/navigation';
+import { safeDashboardRedirect } from '../lib/safeRedirect';
+import { createDashboardSessionCookieOptions } from '../../keystone/sessionPolicy';
 
 // Define types for GraphQL responses
 interface RedeemTokenResponse {
@@ -21,7 +24,10 @@ interface SendLinkResponse {
 export async function signIn(prevState: { message: string | null, formData: { email: string, password: string } }, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const from = formData.get('from') as string || '/dashboard';
+  const from = safeDashboardRedirect(formData.get('from'));
+  // Action results are serialized back to the browser. Preserve the identity,
+  // never the submitted secret, on every authentication failure path.
+  const failure = (message: string) => ({ message, formData: { email, password: '' } });
 
   const query = `
     mutation($email: String!, $password: String!) {
@@ -45,47 +51,31 @@ export async function signIn(prevState: { message: string | null, formData: { em
     const response = await keystoneClient(query, { email, password });
 
     if (!response.success) {
-      return {
-        message: `Authentication failed: ${response.error}`,
-        formData: { email, password }
-      };
+      return failure('Unable to sign in. Check your credentials or try again later.');
     }
 
     // If we have a message, it's an authentication failure
     if (response.data?.authenticate?.message) {
-      return {
-        message: response.data.authenticate.message,
-        formData: { email, password }
-      };
+      return failure('The email or password is incorrect.');
     }
 
     // Check if we have a sessionToken in the response
     if (!response.data?.authenticate?.sessionToken) {
-      return {
-        message: 'An unexpected error occurred',
-        formData: { email, password }
-      };
+      return failure('An unexpected error occurred');
     }
 
     // Set the auth token cookie
     const cookieStore = await cookies();
-    cookieStore.set('keystonejs-session', response.data.authenticate.sessionToken, {
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-    });
-  } catch (error) {
-    return {
-      message: error instanceof Error ? error.message : 'Failed to authenticate',
-      formData: { email, password }
-    };
+    cookieStore.set(
+      'keystonejs-session',
+      response.data.authenticate.sessionToken,
+      createDashboardSessionCookieOptions(process.env.NODE_ENV === 'production'),
+    );
+  } catch {
+    return failure('Unable to sign in. Check your credentials or try again later.');
   }
 
-  // Validate and sanitize the from URL to prevent open redirect vulnerabilities
-
-  // Redirect must be outside of try/catch
+  // Keep Next's redirect signal outside the catch while constraining it to local dashboard routes.
   redirect(from);
 }
 
@@ -110,19 +100,19 @@ export async function signUp(prevState: { message: string | null, formData: { em
 
     if (!response.success) {
       return {
-        message: `Failed to create user: ${response.error}`,
-        formData: { email, password }
+        message: 'Unable to create the account. Review the information and try again.',
+        formData: { email, password: '' }
       };
     }
 
     // Sign them in after creation
     return signIn({ message: null, formData: { email, password } }, formData);
-  } catch (error) {
+  } catch {
     return {
-      message: error instanceof Error ? error.message : 'An error occurred',
+      message: 'Unable to create the account. Review the information and try again.',
       formData: {
         email: formData.get('email') as string,
-        password: formData.get('password') as string
+        password: ''
       }
     };
   }
@@ -186,19 +176,19 @@ export async function createInitialUser(prevState: { message: string | null, for
 
     if (!response.success) {
       return {
-        message: `Failed to create initial user: ${response.error}`,
-        formData: { name, email, password }
+        message: 'Unable to create the initial account. Review the information and try again.',
+        formData: { name, email, password: '' }
       };
     }
 
     return {
       data: response.data,
-      formData: { name, email, password }
+      formData: { name, email, password: '' }
     };
-  } catch (error) {
+  } catch {
     return {
-      message: error instanceof Error ? error.message : 'Failed to create initial user',
-      formData: { name, email, password }
+      message: 'Unable to create the initial account. Review the information and try again.',
+      formData: { name, email, password: '' }
     };
   }
 }
@@ -228,26 +218,26 @@ export async function resetPassword(prevState: { message: string | null, success
 
       if (!response.success) {
         return {
-          message: `Password reset failed: ${response.error}`,
-          formData: { email, password }
+          message: 'Unable to reset the password. The link may be invalid or expired.',
+          formData: { email, password: '' }
         };
       }
 
       if (response.data?.redeemUserPasswordResetToken?.code) {
         return {
-          message: response.data.redeemUserPasswordResetToken.message,
-          formData: { email, password }
+          message: 'The password reset link is invalid or expired.',
+          formData: { email, password: '' }
         };
       }
 
       return {
         success: 'Password has been reset. You can now sign in.',
-        formData: { email, password }
+        formData: { email, password: '' }
       };
-    } catch (error) {
+    } catch {
       return {
-        message: error instanceof Error ? error.message : 'Reset operation failed',
-        formData: { email, password }
+        message: 'Unable to reset the password. The link may be invalid or expired.',
+        formData: { email, password: '' }
       };
     }
   } else {
@@ -263,25 +253,18 @@ export async function resetPassword(prevState: { message: string | null, success
 
       if (!response.success) {
         return {
-          message: `Password reset request failed: ${response.error}`,
+          message: 'If an account is eligible, a password reset link will be sent.',
           formData: { email, password: '' }
         };
       }
 
-      if (response.data?.sendUserPasswordResetLink === true) {
-        return {
-          success: 'Password reset link has been sent to your email.',
-          formData: { email, password: '' }
-        };
-      } else {
-        return {
-          message: 'Password reset request failed',
-          formData: { email, password: '' }
-        };
-      }
-    } catch (error) {
       return {
-        message: error instanceof Error ? error.message : 'Reset operation failed',
+        success: 'If an account is eligible, a password reset link will be sent.',
+        formData: { email, password: '' }
+      };
+    } catch {
+      return {
+        message: 'If an account is eligible, a password reset link will be sent.',
         formData: { email, password: '' }
       };
     }
@@ -300,7 +283,7 @@ export async function getAuthenticatedUser() {
           role {
             canAccessDashboard
             canManageOnboarding
-            canManageSettings
+            ${platformNavPermissions.join('\n')}
           }
         }
       }

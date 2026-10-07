@@ -4,11 +4,18 @@ import { keystoneClient } from '@/features/dashboard/lib/keystoneClient';
 
 async function workspaceQuery<T>(query: string) {
   const response = await keystoneClient<T>(query);
-  return response.success ? { data: response.data, error: null } : { data: null, error: response.error };
+  return response.success ? { data: response.data, error: null } : { data: null, error: 'Workspace data is temporarily unavailable.' };
+}
+
+export async function getPropertyCreateCapability() {
+  return workspaceQuery<any>(`query PropertyCreateCapability {
+    actor: authenticatedItem { ... on User { id role { canManageProperties } } }
+  }`);
 }
 
 export async function getPropertyReadinessWorkspace() {
   return workspaceQuery<any>(`query PropertyReadinessWorkspace {
+    actor: authenticatedItem { ... on User { id role { canManageProperties } } }
     properties(orderBy: [{ name: asc }], take: 150) {
       id name internalCode propertyType status timezone registrationNumber checkInFrom checkOutBy
       address { publicLocationLabel city region countryCode }
@@ -21,6 +28,7 @@ export async function getPropertyReadinessWorkspace() {
 
 export async function getListingReadinessWorkspace() {
   return workspaceQuery<any>(`query ListingReadinessWorkspace {
+    actor: authenticatedItem { ... on User { id role { canManageListings } } }
     listings(orderBy: [{ title: asc }], take: 150) {
       id title slug subtitle description status bookingMode instantBook currencyCode baseNightlyRateCents minimumStay maximumStay advanceNoticeHours bookingWindowDays
       property { id name status registrationNumber address { publicLocationLabel } }

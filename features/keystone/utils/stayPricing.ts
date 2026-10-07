@@ -1,5 +1,6 @@
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
+export const MAX_SUPPORTED_STAY_NIGHTS = 365;
 
 export type SeasonalRateInput = {
   name: string;
@@ -31,6 +32,7 @@ export type StayQuoteCalculationInput = {
   baseNightlyRateCents: number;
   currencyCode?: string;
   baseMinimumStay?: number;
+  maximumStay?: number | null;
   guestCount: number;
   maxGuests: number;
   securityDepositCents?: number;
@@ -70,18 +72,54 @@ function basisPointAmount(amountCents: number, basisPoints: number) {
   return Math.round((amountCents * basisPoints) / 10_000);
 }
 
-export function enumerateStayNights(checkIn: string, checkOut: string) {
+export function assertStayNotInPast(checkIn: string, now = new Date()) {
+  const start = parseDateOnly(checkIn, 'Check-in');
+  const todayTimestamp = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  if (start.getTime() < todayTimestamp) {
+    throw new Error('Check-in cannot be in the past.');
+  }
+}
+
+function checkedStayRange(checkIn: string, checkOut: string) {
   const start = parseDateOnly(checkIn, 'Check-in');
   const end = parseDateOnly(checkOut, 'Check-out');
-  if (end.getTime() <= start.getTime()) {
-    throw new Error('Check-out must be after check-in.');
-  }
+  const elapsed = end.getTime() - start.getTime();
+  if (elapsed <= 0) throw new Error('Check-out must be after check-in.');
+  const nightCount = elapsed / DAY_MS;
+  if (!Number.isSafeInteger(nightCount)) throw new Error('Stay dates exceed the supported calendar range.');
+  return { startTimestamp: start.getTime(), nightCount };
+}
 
-  const nights: string[] = [];
-  for (let timestamp = start.getTime(); timestamp < end.getTime(); timestamp += DAY_MS) {
-    nights.push(new Date(timestamp).toISOString().slice(0, 10));
+function assertSupportedStayRange(nightCount: number) {
+  if (nightCount > MAX_SUPPORTED_STAY_NIGHTS) {
+    throw new Error(`This stay exceeds the maximum supported length of ${MAX_SUPPORTED_STAY_NIGHTS} nights.`);
   }
-  return nights;
+}
+
+function stayNightDates(startTimestamp: number, nightCount: number) {
+  return Array.from({ length: nightCount }, (_, index) => new Date(startTimestamp + index * DAY_MS).toISOString().slice(0, 10));
+}
+
+export function enumerateStayNights(checkIn: string, checkOut: string) {
+  const range = checkedStayRange(checkIn, checkOut);
+  assertSupportedStayRange(range.nightCount);
+  return stayNightDates(range.startTimestamp, range.nightCount);
+}
+
+function assertMaximumStayNights(nights: number, maximumStay: number | null | undefined) {
+  if (maximumStay == null) return;
+  if (!Number.isSafeInteger(maximumStay) || maximumStay < 1) {
+    throw new Error('Maximum stay must be a positive integer number of nights.');
+  }
+  if (nights > maximumStay) {
+    throw new Error(`This listing allows a maximum stay of ${maximumStay} nights for the selected dates.`);
+  }
+}
+
+export function assertStayWithinMaximum(checkIn: string, checkOut: string, maximumStay: number | null | undefined) {
+  const range = checkedStayRange(checkIn, checkOut);
+  assertMaximumStayNights(range.nightCount, maximumStay);
+  assertSupportedStayRange(range.nightCount);
 }
 
 export function assertGuestCapacity(guestCount: number, maxGuests: number) {
@@ -148,7 +186,11 @@ export function calculateStayQuote(input: StayQuoteCalculationInput) {
   assertNonNegativeInteger(input.securityDepositCents ?? 0, 'Security deposit');
   assertGuestCapacity(input.guestCount, input.maxGuests);
 
-  const nightDates = enumerateStayNights(input.checkIn, input.checkOut);
+  const stayRange = checkedStayRange(input.checkIn, input.checkOut);
+  assertMaximumStayNights(stayRange.nightCount, input.maximumStay);
+  assertSupportedStayRange(stayRange.nightCount);
+  const nightDates = stayNightDates(stayRange.startTimestamp, stayRange.nightCount);
+
   const seasonalRates = input.seasonalRates ?? [];
   const nights = nightDates.map((date) => ({ date, ...rateForNight(date, input.baseNightlyRateCents, seasonalRates) }));
   const minimumStay = Math.max(

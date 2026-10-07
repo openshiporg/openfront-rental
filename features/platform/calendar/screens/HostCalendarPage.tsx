@@ -24,6 +24,7 @@ function cellTone(reason?: string) {
 export async function HostCalendarPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   const params = (await searchParams) || {};
   const month = typeof params.month === 'string' ? params.month : undefined;
+  const actionError = typeof params.error === 'string' ? params.error : null;
   const { listings, blocks, tasks, month: activeMonth, error } = await getHostCalendar({ month });
   const days = monthDays(activeMonth);
   const reservationBlocks = blocks.filter((block: any) => block.reason === 'reservation' && block.status === 'active');
@@ -33,6 +34,7 @@ export async function HostCalendarPage({ searchParams }: { searchParams?: Promis
 
   return <Workspace>
     <WorkspaceHeader sectionLabel="Calendar" sectionHref="/platform/calendar" eyebrow="Occupancy control" title="Calendar & turnover" description="One date-only view for occupied nights, owner holds, preparation, maintenance, and the work required between stays." actions={<><Button asChild size="sm" variant="outline"><Link href="/dashboard/platform/reservations">Reservation desk</Link></Button><Button asChild size="sm" variant="outline"><Link href="/dashboard/platform/tasks">Task board</Link></Button></>} />
+    {actionError ? <div role="alert" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">{actionError}</div> : null}
     {error ? <div role="alert" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Calendar could not be loaded: {error}</div> : null}
     <MetricStrip items={[{ label: 'Published homes', value: listings.length, detail: 'calendar rows', icon: Home }, { label: 'Occupied stays', value: reservationBlocks.length, detail: 'active reservation blocks', icon: CalendarDays }, { label: 'Turnovers', value: turnover.length, detail: `${turnover.filter((task: any) => !['completed', 'cancelled'].includes(task.status)).length} open`, tone: 'warning', icon: ClipboardCheck }, { label: 'Out-of-service work', value: maintenance.length, detail: `${ownerBlocks.length} owner holds`, tone: maintenance.length ? 'danger' : 'success', icon: Wrench }]} />
     <WorkspaceBody aside={<><Panel title="Turnover run" description={`${activeMonth} · due-time order`}>

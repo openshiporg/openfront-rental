@@ -37,19 +37,20 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { AdminMeta } from '../hooks/useAdminMeta'
 import { Home, Database, ChevronRight, Package } from 'lucide-react'
-import { platformNavigation } from '@/features/platform/lib/navigation'
+import { getPlatformNavItemsWithBasePath, type PlatformPermission } from '@/features/platform/lib/navigation'
 import { Logo, LogoIcon } from '@/features/dashboard/components/Logo'
 import { UserProfileClient } from './UserProfileClient'
 import { OnboardingCards } from '@/features/platform/onboarding/components/OnboardingCards'
+import { dismissOnboarding } from '@/features/platform/onboarding/actions/onboarding'
 
 interface User {
   id: string;
   email: string;
   name?: string;
   onboardingStatus?: string | null;
-  role?: {
+  role?: (Partial<Record<PlatformPermission, boolean>> & {
     canManageOnboarding?: boolean;
-  } | null;
+  }) | null;
 }
 
 interface SidebarProps {
@@ -91,7 +92,7 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
     href: `/dashboard/${list.path}`
   }))
 
-  const operationsLinks = platformNavigation.filter((link) => link.href !== '/dashboard')
+  const operationsLinks = getPlatformNavItemsWithBasePath('/dashboard', user)
 
   // Dashboard items for the collapsible menu
   const dashboardItems = [
@@ -246,11 +247,25 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
       
       <SidebarFooter>
         {onOpenDialog ? (
-          <OnboardingCards
-            onboardingStatus={user?.onboardingStatus}
-            canManageOnboarding={user?.role?.canManageOnboarding}
-            onOpenDialog={onOpenDialog}
-          />
+          <div className="mb-2 w-full overflow-visible">
+            <OnboardingCards
+              steps={[{
+                href: '#onboarding',
+                title: 'Welcome to Housekind',
+                description: 'Your rental is empty. Get started to configure properties, listings, availability, and rates.',
+              }]}
+              onboardingStatus={user?.onboardingStatus ?? undefined}
+              userRole={user?.role}
+              onDismiss={async () => {
+                try {
+                  await dismissOnboarding();
+                } catch (error) {
+                  console.error('Error dismissing onboarding:', error);
+                }
+              }}
+              onOpenDialog={onOpenDialog}
+            />
+          </div>
         ) : null}
         {user && <UserProfileClient user={user} />}
       </SidebarFooter>

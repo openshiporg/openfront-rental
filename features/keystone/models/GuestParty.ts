@@ -11,7 +11,7 @@ export const GuestParty = list({
   ui: { listView: { initialColumns: ['reservation', 'primaryGuest', 'adults', 'children', 'infants', 'pets'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),
-    reservation: relationship({ ref: 'Reservation.guestParty' }),
+    reservation: relationship({ ref: 'Reservation.guestParty', access: { create: () => false, update: () => false } }),
     primaryGuest: relationship({ ref: 'GuestProfile' }),
     adults: integer({ defaultValue: 1, validation: { min: 1 } }),
     children: integer({ defaultValue: 0, validation: { min: 0 } }),

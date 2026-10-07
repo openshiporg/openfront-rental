@@ -20,8 +20,15 @@ function Meta({ label, value }: { label: string; value: string | number | null |
   return <div><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-sm font-medium">{value || '—'}</p></div>;
 }
 
-export async function ReservationDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export async function ReservationDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ error?: string }>;
+}) {
   const { id } = await params;
+  const query = (await searchParams) || {};
   const { reservation, error } = await getReservationDetail(id);
   if (!reservation && !error) notFound();
   if (!reservation) return <><PlatformBreadcrumbs sectionLabel="Reservations" sectionHref="/platform/reservations" currentLabel="Unavailable reservation" /><main className="p-6"><div role="alert" className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Reservation could not be loaded: {error}</div></main></>;
@@ -40,6 +47,8 @@ export async function ReservationDetailPage({ params }: { params: Promise<{ id: 
         <Button asChild variant="ghost" size="sm" className="-ml-2"><Link href="/dashboard/platform/reservations"><ArrowLeft className="mr-2 h-4 w-4" />Back to reservations</Link></Button>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-sm font-medium text-muted-foreground">Stay record · {reservation.confirmationCode}</p><h1 className="text-3xl font-semibold tracking-tight">{reservation.guest?.name || 'Guest details pending'}</h1><p className="mt-2 text-sm text-muted-foreground">{reservation.listing?.title || 'Listing unavailable'} · {formatStayRange(reservation.checkInDate, reservation.checkOutDate)}</p></div><div className="flex flex-wrap gap-2"><Badge variant={statusVariant(reservation.status)}>{reservationLabel(reservation.status)}</Badge><Badge variant={statusVariant(reservation.paymentStatus)}>{reservationLabel(reservation.paymentStatus)} payment</Badge><Badge variant="outline">{reservation.source}</Badge></div></div>
       </header>
+
+      {query.error ? <div role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">{query.error}</div> : null}
 
       <section aria-label="Stay lifecycle" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Stay total</p><p className="mt-1 text-xl font-semibold">{formatMoney(reservation.totalAmountCents, reservation.currencyCode)}</p></CardContent></Card>
