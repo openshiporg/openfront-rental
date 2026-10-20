@@ -18,7 +18,7 @@ type ActionState = {
   formData: {
     name: string;
     email: string;
-    password: string;
+
   };
 };
 
@@ -45,7 +45,7 @@ const initialState: ActionState = {
   formData: {
     name: "",
     email: "",
-    password: "",
+
   },
 };
 
@@ -61,7 +61,6 @@ export function InitPage() {
           formData: {
             name: formData.get("name") as string,
             email: formData.get("email") as string,
-            password: formData.get("password") as string,
           },
         };
       }
@@ -72,7 +71,6 @@ export function InitPage() {
           message: null,
           formData: {
             email: formData.get("email") as string,
-            password: formData.get("password") as string,
           },
         },
         formData
@@ -83,7 +81,6 @@ export function InitPage() {
         formData: {
           name: formData.get("name") as string,
           email: formData.get("email") as string,
-          password: formData.get("password") as string,
         },
       };
     },
@@ -96,9 +93,9 @@ export function InitPage() {
         <div className="flex items-center space-x-1.5">
           <Logo aria-hidden="true" />
         </div>
-        <h1 className="mt-6 text-lg font-semibold text-foreground dark:text-foreground">
+        <h3 className="mt-6 text-lg font-semibold text-foreground dark:text-foreground">
           Create admin account
-        </h1>
+        </h3>
         <p className="mt-2 text-sm text-muted-foreground dark:text-muted-foreground">
           Set up your admin account to get started.
         </p>
@@ -155,7 +152,7 @@ export function InitPage() {
                 autoComplete="new-password"
                 placeholder="••••••••"
                 className="pr-10 bg-muted/40"
-                defaultValue={state.formData.password}
+
                 required
               />
               <button

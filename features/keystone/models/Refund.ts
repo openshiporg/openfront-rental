@@ -20,6 +20,9 @@ export const Refund = list({
     status: select({
       type: 'string',
       options: [
+        // A refund the cancellation policy couldn't assess: a candidate for the host's review,
+        // not money owed until the host assesses it (it then becomes pending) or declines it.
+        { label: 'Under review (not owed yet)', value: 'review' },
         { label: 'Pending', value: 'pending' },
         { label: 'Processing', value: 'processing' },
         { label: 'Succeeded (recorded)', value: 'succeeded' },

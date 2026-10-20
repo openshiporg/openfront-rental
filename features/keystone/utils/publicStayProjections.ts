@@ -1,3 +1,5 @@
+import { stayTermsVersion } from './stayBookingSnapshot';
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -32,6 +34,8 @@ export function publicStayQuoteProjection(quote: unknown): Record<string, unknow
     ...publicQuote,
     breakdown: snapshot?.quote || null,
     cancellationPolicy: snapshot?.cancellationPolicy || null,
+    // The checkout sends this back with the guest's acceptance of exactly these terms.
+    termsVersion: snapshot ? stayTermsVersion(snapshot) : null,
     listing: publicBookingListingProjection(listingSnapshot),
   };
 }

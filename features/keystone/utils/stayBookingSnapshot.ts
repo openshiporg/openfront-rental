@@ -16,12 +16,21 @@ type StayQuoteSnapshot = {
   taxes: Array<{ name: string; rateBasisPoints: number; amountCents: number }>;
 };
 
+export type StayConsentEvidence = {
+  termsVersion: string;
+  acceptedAt: string;
+  acceptedBy: { kind: 'guest'; email: string; userId: string | null };
+  statement: string;
+};
+
 export type StayBookingSnapshotInput = {
   capturedAt?: Date;
   listing: JsonObject;
   guestParty: JsonObject;
   cancellationPolicy: JsonObject;
   quote: StayQuoteSnapshot;
+  consent?: StayConsentEvidence;
+  conversion?: { receiptKeyHash: string };
 };
 
 export type StayBookingSnapshot = {
@@ -31,7 +40,19 @@ export type StayBookingSnapshot = {
   guestParty: JsonObject;
   cancellationPolicy: JsonObject;
   quote: StayQuoteSnapshot;
+  consent?: StayConsentEvidence;
+  conversion?: { receiptKeyHash: string };
 };
+
+/**
+ * Identifies the exact terms a checkout showed: the quote and its captured cancellation
+ * policy. The guest's acceptance is recorded against this value.
+ */
+export function stayTermsVersion(quoteSnapshot: any) {
+  const quoteNumber = quoteSnapshot?.quote?.quoteNumber || 'unquoted';
+  const policy = quoteSnapshot?.cancellationPolicy || {};
+  return `${quoteNumber}/${policy.id || 'no-policy'}@${policy.version || 'unversioned'}`;
+}
 
 export type ReservationLineSnapshot = {
   snapshotKey: string;
@@ -53,6 +74,8 @@ export function createStayBookingSnapshot(input: StayBookingSnapshotInput): Stay
     guestParty: structuredClone(input.guestParty),
     cancellationPolicy: structuredClone(input.cancellationPolicy),
     quote: structuredClone(input.quote),
+    ...(input.consent ? { consent: structuredClone(input.consent) } : {}),
+    ...(input.conversion ? { conversion: { ...input.conversion } } : {}),
   };
 }
 

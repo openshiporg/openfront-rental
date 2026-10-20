@@ -1,12 +1,13 @@
 import { list } from '@keystone-6/core';
 import { json, relationship, select, text, timestamp } from '@keystone-6/core/fields';
 
-import { hostScopedListAccess } from '../access';
+import { hostScopedDomainOwnedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
 
 export const Message = list({
-  access: hostScopedListAccess('canReadMessages', 'canManageMessages'),
+  // Written only by domain commands, so authors, delivery, moderation and history can't be forged.
+  access: hostScopedDomainOwnedListAccess('canReadMessages'),
   hooks: hostScopedHooks('canManageMessages'),
   ui: { listView: { initialColumns: ['conversation', 'direction', 'senderType', 'status', 'sentAt'] } },
   fields: {

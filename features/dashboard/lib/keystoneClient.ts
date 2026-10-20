@@ -3,20 +3,14 @@
  */
 
 import { getAuthHeaders } from '@/features/dashboard/lib/cookies';
-import { GraphQLClient, ClientError } from 'graphql-request';
+import { GraphQLClient } from 'graphql-request';
+import { PUBLIC_REQUEST_ERROR, safeErrorSummary } from './security';
 import { getGraphQLEndpoint } from '@/features/dashboard/lib/getBaseUrl';
-import {
-  formatSafeGraphQLClientError,
-  SAFE_GRAPHQL_FAILURE_MESSAGE,
-  safeErrorLogContext,
-  safeGraphQLErrorCount,
-  type SafeGraphQLError,
-} from './safeGraphqlError';
 
 // Define response type for keystoneClient
 export type KeystoneResponse<T = any> =
   | { success: true; data: T; error?: never }
-  | { success: false; error: string; errors?: SafeGraphQLError[]; data?: never };
+  | { success: false; error: string; errors?: any[]; data?: never };
 
 /**
  * Create a GraphQL client with authentication headers
@@ -66,14 +60,8 @@ export async function keystoneClient<T = any>(
     };
 
   } catch (error) {
-    console.error("Error fetching GraphQL data:", safeErrorLogContext(error));
-
-    if (error instanceof ClientError) {
-      const safeError = formatSafeGraphQLClientError(error);
-      return { success: false, error: safeError.message, ...(safeError.errors ? { errors: safeError.errors } : {}) };
-    }
-
-    return { success: false, error: SAFE_GRAPHQL_FAILURE_MESSAGE };
+    console.error("Error fetching GraphQL data:", safeErrorSummary(error));
+    return { success: false, error: PUBLIC_REQUEST_ERROR };
   }
 }
 
@@ -138,16 +126,15 @@ async function _fetchGraphQLWithFiles(
     if (!response.ok) {
       return {
         success: false,
-        error: 'The upload request could not be completed. Please try again.'
+        error: PUBLIC_REQUEST_ERROR
       };
     }
 
     const json = await response.json();
 
     if (json.errors) {
-      console.error("GraphQL Errors:", { count: safeGraphQLErrorCount(json.errors) });
-      const safeError = formatSafeGraphQLClientError({ response: { errors: json.errors } });
-      return { success: false, error: safeError.message, ...(safeError.errors ? { errors: safeError.errors } : {}) };
+      console.error("GraphQL Errors:", safeErrorSummary({ response: { errors: json.errors } }));
+      return { success: false, error: PUBLIC_REQUEST_ERROR };
     }
 
     return {
@@ -155,8 +142,8 @@ async function _fetchGraphQLWithFiles(
       data: json.data
     };
   } catch (error) {
-    console.error("Error uploading files:", safeErrorLogContext(error));
-    return { success: false, error: SAFE_GRAPHQL_FAILURE_MESSAGE };
+    console.error("Error uploading files:", safeErrorSummary(error));
+    return { success: false, error: PUBLIC_REQUEST_ERROR };
   }
 }
 

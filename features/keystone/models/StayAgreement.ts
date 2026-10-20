@@ -38,6 +38,10 @@ export const StayAgreement = list({
     signatureName: text(),
     signedAt: timestamp(),
     termsSnapshot: json({ access: { update: () => false }, ui: { itemView: { fieldMode: 'read' } } }),
+    signatureEvidence: json({
+      access: { create: () => false, update: () => false },
+      ui: { description: 'What the guest accepted when signing: time, statement and terms fingerprint.', itemView: { fieldMode: 'read' }, createView: { fieldMode: 'hidden' } },
+    }),
     ...trackingFields,
   },
 });

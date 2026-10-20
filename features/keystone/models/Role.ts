@@ -9,13 +9,13 @@ export const Role = list({
   access: {
     operation: {
       ...allOperations(permissions.canManageRoles),
-      query: isSignedIn,
+      query: (args) => isSignedIn(args) && permissions.canAccessDashboard(args),
     },
   },
   ui: {
     hideCreate: (args) => !permissions.canManageRoles(args),
     hideDelete: (args) => !permissions.canManageRoles(args),
-    listView: { initialColumns: ['name', 'assignedTo'] },
+    listView: { initialColumns: ['name'] },
     itemView: { defaultFieldMode: (args) => (permissions.canManageRoles(args) ? 'edit' : 'read') },
   },
   fields: {
@@ -51,7 +51,7 @@ export const Role = list({
     canManageRoles: checkbox({ defaultValue: false }),
     canManageOnboarding: checkbox({ defaultValue: false }),
     canManageSettings: checkbox({ defaultValue: false }),
-    assignedTo: relationship({ ref: 'User.role', many: true, ui: { itemView: { fieldMode: 'read' } } }),
+    assignedTo: relationship({ ref: 'User.role', many: true, ui: { displayMode: 'count', itemView: { fieldMode: 'read' } } }),
     ...trackingFields,
   },
 });

@@ -1,38 +1,33 @@
-import { handleDashboardRoutes, getAuthenticatedUser } from '@/features/dashboard/middleware';
-import { NextRequest, NextResponse } from 'next/server';
-import {
-  getFreshInstallPublicRedirect,
-  getFreshInstallRootRedirect,
-} from '@/features/platform/routing/rootRouting';
+import type { NextRequest } from "next/server";
+import { handleDashboardRoutes, getAuthenticatedUser } from "@/features/dashboard/middleware";
+import { handleStorefrontRoutes } from "@/features/storefront/middleware";
+import { NextResponse } from "next/server";
 
+const dashboardPath = "/dashboard";
+
+// Main middleware function that handles all routes
 export async function proxy(request: NextRequest) {
   // Get authenticated user once
   const { user, redirectToInit } = await getAuthenticatedUser(request);
-  
-  const rootRedirect = getFreshInstallRootRedirect(request.nextUrl.pathname, redirectToInit);
-  if (rootRedirect) return NextResponse.redirect(new URL(rootRedirect, request.url));
 
-  const publicRedirect = getFreshInstallPublicRedirect(request.nextUrl.pathname, redirectToInit);
-  if (publicRedirect) return NextResponse.redirect(new URL(publicRedirect, request.url));
+  // If redirectToInit is true (no users exist) and user is on storefront, redirect to dashboard init
+  if (redirectToInit && !request.nextUrl.pathname.startsWith(`${dashboardPath}/init`)) {
+    return NextResponse.redirect(new URL(`${dashboardPath}/init`, request.url));
+  }
 
-  // Let the shared dashboard handler own /dashboard → /dashboard/init.
-  const dashboardResponse = await handleDashboardRoutes(request, user, redirectToInit);
-  if (dashboardResponse) return dashboardResponse;
+  // Let each handler manage its own routes and logic
+  const response = await handleDashboardRoutes(request, user, redirectToInit);
   
-  // Continue with existing middleware logic {
-  // Add any middleware logic here if needed
-  return NextResponse.next();
+  // If dashboard handler didn't handle the route, pass to storefront
+  if (!response) {
+    return handleStorefrontRoutes(request, user);
+  }
+  
+  return response;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.svg (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.svg).*)',
+    "/((?!api|_next/static|_next/image|favicon.svg|images|assets|png|svg|jpg|jpeg|gif|webp).*)",
   ],
 };

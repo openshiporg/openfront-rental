@@ -15,17 +15,25 @@ export type PendingCancellationRefund = {
 export function allocatePendingCancellationRefunds({
   reservationId,
   netAmountPaidCents,
+  refundCents = netAmountPaidCents,
   payments,
 }: {
   reservationId: string;
   netAmountPaidCents: number;
+  /** The policy refund to allocate; defaults to everything paid (host-assessed refunds). */
+  refundCents?: number;
   payments: RefundablePayment[];
 }): PendingCancellationRefund[] {
   if (!Number.isSafeInteger(netAmountPaidCents) || netAmountPaidCents < 0) {
     throw new Error('Reservation paid amount must use non-negative integer cents.');
   }
+  if (!Number.isSafeInteger(refundCents) || refundCents < 0 || refundCents > netAmountPaidCents) {
+    throw new Error('The cancellation refund must be within the amount paid.');
+  }
+  const available = payments.reduce((sum, payment) => sum + payment.amountCents - payment.refundedAmountCents, 0);
+  if (available !== netAmountPaidCents) throw new Error('Reservation payment evidence does not reconcile to the refundable balance.');
 
-  let remaining = netAmountPaidCents;
+  let remaining = refundCents;
   const allocations: PendingCancellationRefund[] = [];
   for (const payment of payments) {
     const available = payment.amountCents - payment.refundedAmountCents;

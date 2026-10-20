@@ -54,8 +54,10 @@ export async function reassignStayReservation(_root: unknown, args: ReassignStay
         checkInDate: true,
         checkOutDate: true,
         internalNotes: true,
+        testMode: true,
       },
     });
+    if (locked?.testMode) throw new Error('This is a test booking: it holds no unit, so it can’t be reassigned.');
     if (!beforeLock?.hostOrganizationId || beforeLock.hostOrganizationId !== current.hostOrganizationId) {
       throw new Error('Reservation not found.');
     }
@@ -69,12 +71,18 @@ export async function reassignStayReservation(_root: unknown, args: ReassignStay
 
     const targetUnit = await tx.accommodationUnit.findUnique({
       where: { id: targetAccommodationUnitId },
-      select: { id: true, hostOrganizationId: true, status: true },
+      select: { id: true, hostOrganizationId: true, status: true, maxGuests: true },
     });
     if (!targetUnit || targetUnit.hostOrganizationId !== beforeLock.hostOrganizationId) {
       throw new Error('The target accommodation unit must belong to the same host organization.');
     }
     if (targetUnit.status !== 'available') throw new Error('The target accommodation unit is not available for stays.');
+    // The party actually booked must fit the home it's moved to.
+    const party = await tx.guestParty.findFirst({ where: { reservationId }, select: { adults: true, children: true } });
+    const partySize = (party?.adults ?? 0) + (party?.children ?? 0);
+    if (!party || !Number.isSafeInteger(targetUnit.maxGuests) || partySize > targetUnit.maxGuests) {
+      throw new Error(`The target home sleeps ${targetUnit.maxGuests ?? 'an unknown number of'} guests; this stay has ${partySize}.`);
+    }
 
     const targetListing = await tx.listing.findFirst({
       where: {

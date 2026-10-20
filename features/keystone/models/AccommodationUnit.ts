@@ -7,11 +7,12 @@ import { trackingFields } from './trackingFields';
 
 export const AccommodationUnit = list({
   access: hostScopedListAccess('canReadProperties', 'canManageProperties'),
-  hooks: hostScopedHooks('canManageProperties'),
+  hooks: hostScopedHooks('canManageProperties', { parent: 'property' }),
   ui: { listView: { initialColumns: ['name', 'property', 'accommodationType', 'maxGuests', 'bedroomCount', 'bathroomCountHalfUnits'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),
-    property: relationship({ ref: 'Property.units' }),
+    // A unit's property is fixed once created: its listings and stays depend on it.
+    property: relationship({ ref: 'Property.units', access: { update: () => false } }),
     name: text({ validation: { isRequired: true } }),
     accommodationType: select({
       type: 'string',
@@ -44,13 +45,14 @@ export const AccommodationUnit = list({
     bathroomCountHalfUnits: integer({ defaultValue: 2, validation: { min: 1 }, ui: { description: 'Bathrooms in half-units; 3 = 1.5 bathrooms.' } }),
     squareFeet: integer({ validation: { min: 0 } }),
     floorLabel: text(),
-    listings: relationship({ ref: 'Listing.accommodationUnit', many: true }),
+    // A listing's unit is changed on the listing, where live capacity is checked.
+    listings: relationship({ ref: 'Listing.accommodationUnit', many: true, access: { create: () => false, update: () => false }, ui: { displayMode: 'count' } }),
     bedrooms: relationship({ ref: 'Bedroom.accommodationUnit', many: true }),
     reservations: relationship({
       ref: 'Reservation.accommodationUnit',
       many: true,
-      access: { read: permissions.canReadReservations, update: () => false },
-    }),
+      // Reservations move only through allocation and lifecycle commands, never from a parent's form.
+      access: { read: permissions.canReadReservations, create: () => false, update: () => false }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

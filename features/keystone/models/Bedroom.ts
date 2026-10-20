@@ -8,7 +8,7 @@ import { trackingFields } from './trackingFields';
 export const Bedroom = list({
   access: hostScopedListAccess('canReadProperties', 'canManageProperties'),
   hooks: hostScopedHooks('canManageProperties'),
-  ui: { listView: { initialColumns: ['name', 'accommodationUnit', 'order', 'beds'] } },
+  ui: { listView: { initialColumns: ['name', 'accommodationUnit', 'order'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),
     accommodationUnit: relationship({ ref: 'AccommodationUnit.bedrooms' }),

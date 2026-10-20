@@ -157,6 +157,34 @@ const hostScopedRelationshipDelegates: Record<string, string> = {
   reviews: 'review',
   tasks: 'propertyTask',
   messages: 'message',
+  // Reverse and remaining forward relationships: every connect/set target is checked too.
+  refund: 'refund',
+  channelReservations: 'channelReservation',
+  listings: 'listing',
+  units: 'accommodationUnit',
+  bedrooms: 'bedroom',
+  beds: 'bed',
+  media: 'listingMedia',
+  houseRules: 'houseRule',
+  ratePlans: 'ratePlan',
+  seasonalRates: 'seasonalRate',
+  feeDefinitions: 'feeDefinition',
+  taxRules: 'taxRule',
+  quotes: 'stayQuote',
+  channelListings: 'channelListing',
+  syncEvents: 'channelSyncEvent',
+  dataExchangeJobs: 'dataExchangeJob',
+  conversations: 'conversation',
+  taskRules: 'taskRule',
+  ownerAssignments: 'propertyOwnerAssignment',
+  assignments: 'propertyOwnerAssignment',
+  statements: 'ownerStatement',
+  payouts: 'payout',
+  lines: 'ownerStatementLine',
+  agreements: 'stayAgreement',
+  amendments: 'reservationAmendment',
+  securityDeposits: 'securityDeposit',
+  webhookEvents: 'paymentWebhookEvent',
 };
 
 function relationshipWriteIds(value: any): string[] {
@@ -190,8 +218,58 @@ async function assertSubmittedRelationshipsBelongToHost(context: any, resolvedDa
   }
 }
 
-export function hostScopedHooks(permission: keyof RolePermissions) {
+/**
+ * A record created by an operator under an existing parent (for example a photo
+ * added from its listing) inherits that parent's host organization when it does
+ * not name one. Validation below still checks permission, membership and that
+ * every submitted relationship belongs to the same host.
+ */
+async function inheritParentHostOrganization({ operation, resolvedData, context }: any) {
+  if (operation !== 'create' || !context.session?.itemId || resolvedData?.hostOrganization) return resolvedData;
+  const hostOrganizationIds = new Set<string>();
+  for (const [field, delegateName] of Object.entries(hostScopedRelationshipDelegates)) {
+    const ids = relationshipWriteIds(resolvedData?.[field]);
+    if (!ids.length) continue;
+    const delegate = context.prisma?.[delegateName];
+    if (!delegate?.findMany) continue;
+    const related = await delegate.findMany({ where: { id: { in: ids } }, select: { hostOrganizationId: true } });
+    for (const record of related) if (record.hostOrganizationId) hostOrganizationIds.add(record.hostOrganizationId);
+  }
+  if (hostOrganizationIds.size === 0) {
+    // Inline-created child records (a photo added from its listing) are created before the parent links
+    // them. An operator who belongs to exactly one host organization creates them for that host.
+    const memberships = await membershipsForSession(context);
+    if (memberships.length === 1) hostOrganizationIds.add(memberships[0].hostOrganizationId);
+  }
+  if (hostOrganizationIds.size !== 1) return resolvedData;
+  return { ...resolvedData, hostOrganization: { connect: { id: [...hostOrganizationIds][0] } } };
+}
+
+/**
+ * Setup records of an archived property or listing (photos, rules, pricing, units, address)
+ * are history too: writes that would change them are refused. `foreignKeyOnParent` names the
+ * parent's column when the parent holds the link (a property's address).
+ */
+type ArchivedParent = { parent: 'listing' | 'property'; foreignKeyOnParent?: string };
+
+async function archivedParentProblem(context: any, item: any, resolvedData: any, { parent, foreignKeyOnParent }: ArchivedParent) {
+  const ids = new Set<string>();
+  if (foreignKeyOnParent) {
+    if (item?.id) {
+      const owner = await context.prisma[parent].findFirst({ where: { [foreignKeyOnParent]: item.id }, select: { id: true } });
+      if (owner) ids.add(owner.id);
+    }
+  } else if (item?.[`${parent}Id`]) ids.add(item[`${parent}Id`]);
+  const submitted = resolvedData?.[parent]?.connect?.id;
+  if (submitted) ids.add(submitted);
+  if (!ids.size) return null;
+  const archived = await context.prisma[parent].findFirst({ where: { id: { in: [...ids] }, status: 'archived' }, select: { id: true } });
+  return archived ? `This ${parent} is archived; its setup is read-only.` : null;
+}
+
+export function hostScopedHooks(permission: keyof RolePermissions, archivedParent?: ArchivedParent) {
   return {
+    resolveInput: inheritParentHostOrganization,
     validate: async ({ operation, resolvedData, item, context, addValidationError }: any) => {
       // Anonymous raw CRUD is denied by list operation access. Sessionless writes
       // reaching this hook originate from narrow public domain mutations that
@@ -210,6 +288,10 @@ export function hostScopedHooks(permission: keyof RolePermissions) {
           memberships: await membershipsForSession(context),
         });
         await assertSubmittedRelationshipsBelongToHost(context, resolvedData, targetHostOrganizationId!);
+        if (archivedParent && operation !== 'delete') {
+          const problem = await archivedParentProblem(context, item, resolvedData, archivedParent);
+          if (problem) throw new Error(problem);
+        }
       } catch (error) {
         addValidationError(error instanceof Error ? error.message : 'Host organization validation failed.');
       }

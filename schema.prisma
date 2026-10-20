@@ -23,6 +23,7 @@ model User {
   onboardingStatus              String?          @default("not_started")
   hostMemberships               HostMembership[] @relation("HostMembership_user")
   guestProfile                  GuestProfile?    @relation("GuestProfile_user")
+  customerReservations          Reservation[]    @relation("Reservation_bookedBy")
   sentMessages                  Message[]        @relation("Message_senderUser")
   authoredReviews               Review[]         @relation("Review_authorUser")
   assignedPropertyTasks         PropertyTask[]   @relation("PropertyTask_assignee")
@@ -85,12 +86,18 @@ model MarketplaceSettings {
   publicDescription   String   @default("")
   supportEmail        String   @default("")
   supportPhone        String   @default("")
+  supportHours        String   @default("")
+  officeAddress       String   @default("")
+  privacyPolicyUrl    String   @default("")
+  termsUrl            String   @default("")
   currencyCode        String   @default("USD")
   locale              String   @default("en-US")
   timezone            String   @default("America/New_York")
   defaultMapLatitude  Float?
   defaultMapLongitude Float?
   accentHue           Int      @default(155)
+  logoIcon            String   @default("<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" height=\"100%\" width=\"100%\" viewBox=\"0 0 42 48\"><path fill=\"#155eef\" fill-rule=\"evenodd\" d=\"m22.102 20.86 9.9-9.9L29.88 8.84l-7.339 7.339V3h-3v13.178l-7.339-7.34-2.121 2.122 9.9 9.9 1.06 1.06zm2.12 2.121 9.9-9.9 2.121 2.122-7.339 7.339H42v3H28.904l7.34 7.339L34.121 35l-9.9-9.899-1.06-1.06zM7.96 35.001l9.9-9.899 1.06-1.06-1.06-1.061-9.9-9.9-2.121 2.122 7.339 7.339H.002v3h13.176l-7.34 7.339zm12.02-7.777-9.9 9.9 2.122 2.12 7.339-7.338V45h3V31.906l7.339 7.338L32 37.124l-9.9-9.9-1.06-1.061z\" clip-rule=\"evenodd\"/></svg>")
+  logoColor           String   @default("0")
   isPublished         Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @default(now()) @updatedAt
@@ -110,6 +117,8 @@ model HostOrganization {
   federationId                              String                    @unique @default("")
   dataCustody                               String?                   @default("self_hosted")
   isPublic                                  Boolean                   @default(true)
+  onboardingAnchorDate                      String                    @default("")
+  onboardingFingerprint                     String                    @default("")
   memberships                               HostMembership[]          @relation("HostMembership_hostOrganization")
   properties                                Property[]                @relation("Property_hostOrganization")
   listings                                  Listing[]                 @relation("Listing_hostOrganization")
@@ -175,28 +184,29 @@ model HostMembership {
 }
 
 model Property {
-  id                 String                    @id @default(cuid())
-  hostOrganization   HostOrganization?         @relation("Property_hostOrganization", fields: [hostOrganizationId], references: [id])
-  hostOrganizationId String?                   @map("hostOrganization")
-  name               String                    @default("")
-  internalCode       String                    @unique @default("")
-  propertyType       String?                   @default("house")
-  status             String?                   @default("onboarding")
-  timezone           String                    @default("America/New_York")
-  checkInFrom        String                    @default("16:00")
-  checkInUntil       String                    @default("22:00")
-  checkOutBy         String                    @default("11:00")
-  registrationNumber String                    @default("")
-  internalNotes      String                    @default("")
-  address            PropertyAddress?          @relation("Property_address", fields: [addressId], references: [id])
-  addressId          String?                   @unique @map("address")
-  units              AccommodationUnit[]       @relation("AccommodationUnit_property")
-  listings           Listing[]                 @relation("Listing_property")
-  ownerAssignments   PropertyOwnerAssignment[] @relation("PropertyOwnerAssignment_property")
-  tasks              PropertyTask[]            @relation("PropertyTask_property")
-  taskRules          TaskRule[]                @relation("TaskRule_property")
-  createdAt          DateTime                  @default(now())
-  updatedAt          DateTime                  @default(now()) @updatedAt
+  id                  String                    @id @default(cuid())
+  hostOrganization    HostOrganization?         @relation("Property_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId  String?                   @map("hostOrganization")
+  name                String                    @default("")
+  internalCode        String                    @unique @default("")
+  propertyType        String?                   @default("house")
+  status              String?                   @default("onboarding")
+  timezone            String                    @default("America/New_York")
+  checkInFrom         String                    @default("16:00")
+  checkInUntil        String                    @default("22:00")
+  checkOutBy          String                    @default("11:00")
+  registrationNumber  String                    @default("")
+  arrivalInstructions String                    @default("")
+  internalNotes       String                    @default("")
+  address             PropertyAddress?          @relation("Property_address", fields: [addressId], references: [id])
+  addressId           String?                   @unique @map("address")
+  units               AccommodationUnit[]       @relation("AccommodationUnit_property")
+  listings            Listing[]                 @relation("Listing_property")
+  ownerAssignments    PropertyOwnerAssignment[] @relation("PropertyOwnerAssignment_property")
+  tasks               PropertyTask[]            @relation("PropertyTask_property")
+  taskRules           TaskRule[]                @relation("TaskRule_property")
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @default(now()) @updatedAt
 
   @@index([hostOrganizationId])
 }
@@ -402,7 +412,7 @@ model ListingMedia {
   image_width        Int?
   image_height       Int?
   image_extension    String?
-  imagePath          String            @unique @default("")
+  imagePath          String?           @unique
   altText            String            @default("")
   caption            String            @default("")
   order              Int?              @default(0)
@@ -670,6 +680,8 @@ model Reservation {
   guest                               GuestProfile?          @relation("Reservation_guest", fields: [guestId], references: [id])
   guestId                             String?                @map("guest")
   guestParty                          GuestParty?            @relation("GuestParty_reservation")
+  bookedBy                            User?                  @relation("Reservation_bookedBy", fields: [bookedById], references: [id])
+  bookedById                          String?                @map("bookedBy")
   quote                               StayQuote?             @relation("Reservation_quote", fields: [quoteId], references: [id])
   quoteId                             String?                @unique @map("quote")
   confirmationCode                    String                 @unique @default("")
@@ -677,6 +689,7 @@ model Reservation {
   tripTokenExpiresAt                  DateTime
   tripTokenRevokedAt                  DateTime?
   status                              String?                @default("pending")
+  testMode                            Boolean                @default(false)
   paymentStatus                       String?                @default("unpaid")
   source                              String?                @default("direct")
   checkInDate                         String                 @default("")
@@ -722,6 +735,7 @@ model Reservation {
   @@index([listingId])
   @@index([accommodationUnitId])
   @@index([guestId])
+  @@index([bookedById])
 }
 
 model ReservationAmendment {
@@ -792,6 +806,7 @@ model StayAgreement {
   signatureName         String              @default("")
   signedAt              DateTime?
   termsSnapshot         Json?
+  signatureEvidence     Json?
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @default(now()) @updatedAt
 
@@ -840,6 +855,7 @@ model DamageClaim {
   approvedAmountCents Int?              @default(0)
   currencyCode        String            @default("USD")
   evidence            Json?
+  settlementEvidence  Json?
   submittedAt         DateTime?
   resolvedAt          DateTime?
   createdAt           DateTime          @default(now())
@@ -977,7 +993,7 @@ model Payout {
   managerFeeCents                Int?                 @default(0)
   refundAmountCents              Int?                 @default(0)
   netAmountCents                 Int?                 @default(0)
-  providerPayoutId               String               @unique @default("")
+  providerPayoutId               String?              @unique
   scheduledAt                    DateTime?
   paidAt                         DateTime?
   data                           Json?
@@ -1059,24 +1075,28 @@ model OwnerStatementLine {
 }
 
 model Conversation {
-  id                  String             @id @default(cuid())
-  hostOrganization    HostOrganization?  @relation("Conversation_hostOrganization", fields: [hostOrganizationId], references: [id])
-  hostOrganizationId  String?            @map("hostOrganization")
-  reservation         Reservation?       @relation("Conversation_reservation", fields: [reservationId], references: [id])
-  reservationId       String?            @unique @map("reservation")
-  listing             Listing?           @relation("Conversation_listing", fields: [listingId], references: [id])
-  listingId           String?            @map("listing")
-  guest               GuestProfile?      @relation("Conversation_guest", fields: [guestId], references: [id])
-  guestId             String?            @map("guest")
-  channelConnection   ChannelConnection? @relation("Conversation_channelConnection", fields: [channelConnectionId], references: [id])
-  channelConnectionId String?            @map("channelConnection")
-  subject             String             @default("")
-  status              String?            @default("open")
-  externalThreadId    String             @default("")
-  lastMessageAt       DateTime?
-  messages            Message[]          @relation("Message_conversation")
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @default(now()) @updatedAt
+  id                        String             @id @default(cuid())
+  hostOrganization          HostOrganization?  @relation("Conversation_hostOrganization", fields: [hostOrganizationId], references: [id])
+  hostOrganizationId        String?            @map("hostOrganization")
+  reservation               Reservation?       @relation("Conversation_reservation", fields: [reservationId], references: [id])
+  reservationId             String?            @unique @map("reservation")
+  listing                   Listing?           @relation("Conversation_listing", fields: [listingId], references: [id])
+  listingId                 String?            @map("listing")
+  guest                     GuestProfile?      @relation("Conversation_guest", fields: [guestId], references: [id])
+  guestId                   String?            @map("guest")
+  channelConnection         ChannelConnection? @relation("Conversation_channelConnection", fields: [channelConnectionId], references: [id])
+  channelConnectionId       String?            @map("channelConnection")
+  subject                   String             @default("")
+  status                    String?            @default("open")
+  externalThreadId          String             @default("")
+  guestAccessTokenHash      String?            @unique
+  guestAccessTokenExpiresAt DateTime?
+  guestAccessTokenRevokedAt DateTime?
+  guestEmail                String             @default("")
+  lastMessageAt             DateTime?
+  messages                  Message[]          @relation("Message_conversation")
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @default(now()) @updatedAt
 
   @@index([hostOrganizationId])
   @@index([listingId])

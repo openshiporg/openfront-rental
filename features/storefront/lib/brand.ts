@@ -1,4 +1,5 @@
-import { normalizeStorefrontAccentHue } from '@/features/platform/store-settings/lib/theme';
+import { DEFAULT_STORE_LOGO_ICON, normalizeStoreLogoColor } from '@/features/platform/store-settings/lib/store-logo';
+import { storefrontAccentHueFromLogoColor } from '@/features/platform/store-settings/lib/theme';
 import type { PublicMarketplaceSettingsState } from './data/marketplace';
 
 function clean(value?: string | null) {
@@ -25,7 +26,11 @@ export function resolveStorefrontBrand(settings: PublicMarketplaceSettingsState)
     currencyCode,
     locale,
     timezone,
-    accentHue: normalizeStorefrontAccentHue(settings.accentHue),
+    // The accent follows the logo colour (Restaurant MainLayout's brandHue).
+    // StoreLogoMark sanitizes the SVG again before it reaches the page.
+    accentHue: storefrontAccentHueFromLogoColor(settings.logoColor),
+    logoIcon: settings.logoIcon || DEFAULT_STORE_LOGO_ICON,
+    logoColor: normalizeStoreLogoColor(settings.logoColor),
   };
 }
 

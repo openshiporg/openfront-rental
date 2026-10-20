@@ -7,7 +7,7 @@ import { trackingFields } from './trackingFields';
 
 export const HouseRule = list({
   access: hostScopedListAccess('canReadListings', 'canManageListings'),
-  hooks: hostScopedHooks('canManageListings'),
+  hooks: hostScopedHooks('canManageListings', { parent: 'listing' }),
   ui: { listView: { initialColumns: ['listing', 'ruleType', 'title', 'isAllowed'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),

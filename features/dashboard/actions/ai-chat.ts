@@ -1,14 +1,21 @@
 'use server';
 
-export type SharedKeysResult =
-  | { success: true; keys: { apiKey: string; model: string; maxTokens: number } }
-  | { success: false; error: string };
-
-// Shared server credentials must never be returned to a browser action caller.
-// Until chat requests are proxied and authorized server-side, env-key mode stays disabled.
-export async function getSharedKeys(): Promise<SharedKeysResult> {
+// Configuration metadata only. Shared credentials are resolved inside /api/completion.
+export async function checkSharedKeysAvailable() {
   return {
-    success: false,
-    error: 'Shared provider-key mode is disabled. Configure a personal API key.',
+    available: !!(process.env.OPENROUTER_API_KEY && process.env.OPENROUTER_MODEL),
+    missing: {
+      apiKey: !process.env.OPENROUTER_API_KEY,
+      model: !process.env.OPENROUTER_MODEL,
+      maxTokens: !process.env.OPENROUTER_MAX_TOKENS,
+    }
+  };
+}
+
+export async function getSharedKeys() {
+  const available = !!(process.env.OPENROUTER_API_KEY && process.env.OPENROUTER_MODEL);
+  return {
+    available,
+    model: available ? process.env.OPENROUTER_MODEL : undefined,
   };
 }

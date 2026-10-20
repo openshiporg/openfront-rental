@@ -19,12 +19,19 @@ export type FeeInput = {
   amountCents?: number | null;
   percentageBasisPoints?: number | null;
   taxable?: boolean;
+  /** `false` marks an optional extra; it's only charged when the guest selects it (not offered online yet). */
+  required?: boolean;
 };
 
 export type TaxInput = {
   name: string;
   rateBasisPoints: number;
+  /** Already included in prices: disclosed as an included component, never added again. */
+  inclusive?: boolean;
 };
+
+/** Persisted money columns and GraphQL Int are 32-bit; totals must fit before anything is saved. */
+export const MAX_STORED_CENTS = 2_147_483_647;
 
 export type StayQuoteCalculationInput = {
   checkIn: string;
@@ -34,6 +41,8 @@ export type StayQuoteCalculationInput = {
   baseMinimumStay?: number;
   maximumStay?: number | null;
   guestCount: number;
+  /** Pets travelling; pet fees apply only when there are pets, per pet for per-guest pet fees. */
+  pets?: number;
   maxGuests: number;
   securityDepositCents?: number;
   seasonalRates?: SeasonalRateInput[];
@@ -72,9 +81,15 @@ function basisPointAmount(amountCents: number, basisPoints: number) {
   return Math.round((amountCents * basisPoints) / 10_000);
 }
 
+/**
+ * Coarse guard before a property is known: rejects dates already past everywhere on
+ * Earth (UTC-12). The exact rule is the property's local date, checked with the
+ * arrival rules (stayArrivalProblem) in search, quote, booking and amendment.
+ */
 export function assertStayNotInPast(checkIn: string, now = new Date()) {
   const start = parseDateOnly(checkIn, 'Check-in');
-  const todayTimestamp = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const earliest = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+  const todayTimestamp = Date.UTC(earliest.getUTCFullYear(), earliest.getUTCMonth(), earliest.getUTCDate());
   if (start.getTime() < todayTimestamp) {
     throw new Error('Check-in cannot be in the past.');
   }
@@ -169,8 +184,11 @@ function rateForNight(
     return { amountCents: baseNightlyRateCents, source: 'Base rate', minimumStay: 1 };
   }
 
+  // Seasonal adjustments are signed: -1000 is a 10% seasonal reduction.
+  const adjustment = selected.adjustmentBasisPoints ?? 0;
+  if (!Number.isSafeInteger(adjustment) || adjustment < -10_000) throw new Error(`${selected.name} adjustment must be a whole number of basis points no lower than -10000.`);
   const amountCents = selected.nightlyRateCents == null
-    ? baseNightlyRateCents + basisPointAmount(baseNightlyRateCents, selected.adjustmentBasisPoints ?? 0)
+    ? baseNightlyRateCents + Math.round((baseNightlyRateCents * adjustment) / 10_000)
     : selected.nightlyRateCents;
   assertNonNegativeInteger(amountCents, `${selected.name} nightly rate`);
 
@@ -202,12 +220,17 @@ export function calculateStayQuote(input: StayQuoteCalculationInput) {
   }
 
   const lodgingSubtotalCents = nights.reduce((sum, night) => sum + night.amountCents, 0);
-  const fees = (input.fees ?? []).map((fee) => {
+  const pets = input.pets ?? 0;
+  if (!Number.isSafeInteger(pets) || pets < 0) throw new Error('Pets must be a whole number.');
+  // Only fees that apply to this stay: optional extras aren't charged unselected, and pet
+  // fees only when pets travel (per pet for a per-guest pet fee).
+  const applicableFees = (input.fees ?? []).filter((fee) => fee.required !== false && (fee.feeType !== 'pet' || pets > 0));
+  const fees = applicableFees.map((fee) => {
     const amountCents = (() => {
       switch (fee.kind) {
         case 'fixed': return fee.amountCents ?? 0;
         case 'per_night': return (fee.amountCents ?? 0) * nightDates.length;
-        case 'per_guest': return (fee.amountCents ?? 0) * input.guestCount;
+        case 'per_guest': return (fee.amountCents ?? 0) * (fee.feeType === 'pet' ? pets : input.guestCount);
         case 'percentage': return basisPointAmount(lodgingSubtotalCents, fee.percentageBasisPoints ?? 0);
       }
     })();
@@ -217,12 +240,25 @@ export function calculateStayQuote(input: StayQuoteCalculationInput) {
   const feeTotalCents = fees.reduce((sum, fee) => sum + fee.amountCents, 0);
   const taxableSubtotalCents = lodgingSubtotalCents
     + fees.filter((fee) => fee.taxable).reduce((sum, fee) => sum + fee.amountCents, 0);
-  const taxes = (input.taxes ?? []).map((tax) => ({
+  const taxes = (input.taxes ?? []).filter((tax) => !tax.inclusive).map((tax) => ({
     name: tax.name,
     rateBasisPoints: tax.rateBasisPoints,
     amountCents: basisPointAmount(taxableSubtotalCents, tax.rateBasisPoints),
   }));
   const taxTotalCents = taxes.reduce((sum, tax) => sum + tax.amountCents, 0);
+  // An inclusive tax is extracted from the taxable prices for disclosure; the total is unchanged.
+  const includedTaxes = (input.taxes ?? []).filter((tax) => tax.inclusive).map((tax) => {
+    if (!Number.isSafeInteger(tax.rateBasisPoints) || tax.rateBasisPoints < 0) throw new Error('Basis points must be a non-negative integer.');
+    return {
+      name: tax.name,
+      rateBasisPoints: tax.rateBasisPoints,
+      amountCents: taxableSubtotalCents - Math.round((taxableSubtotalCents * 10_000) / (10_000 + tax.rateBasisPoints)),
+    };
+  });
+  const totalAmountCents = lodgingSubtotalCents + feeTotalCents + taxTotalCents;
+  if (![lodgingSubtotalCents, feeTotalCents, taxTotalCents, totalAmountCents, input.securityDepositCents ?? 0].every((value) => value <= MAX_STORED_CENTS)) {
+    throw new Error('This stay’s total is too large to book online. Choose fewer nights or contact the host.');
+  }
 
   return {
     checkIn: input.checkIn,
@@ -238,7 +274,8 @@ export function calculateStayQuote(input: StayQuoteCalculationInput) {
     taxableSubtotalCents,
     taxes,
     taxTotalCents,
+    includedTaxes,
     securityDepositCents: input.securityDepositCents ?? 0,
-    totalAmountCents: lodgingSubtotalCents + feeTotalCents + taxTotalCents,
+    totalAmountCents,
   };
 }

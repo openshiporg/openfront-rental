@@ -1,12 +1,13 @@
 import { list } from '@keystone-6/core';
 import { integer, relationship, select, text, timestamp } from '@keystone-6/core/fields';
 
-import { hostScopedListAccess } from '../access';
+import { hostScopedDomainOwnedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
 
 export const Review = list({
-  access: hostScopedListAccess('canReadReviews', 'canManageReviews'),
+  // Written only by domain commands, so authors, delivery, moderation and history can't be forged.
+  access: hostScopedDomainOwnedListAccess('canReadReviews'),
   hooks: hostScopedHooks('canManageReviews'),
   ui: { listView: { initialColumns: ['reservation', 'listing', 'direction', 'overallRating', 'status', 'publishedAt'] } },
   fields: {

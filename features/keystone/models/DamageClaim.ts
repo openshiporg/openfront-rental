@@ -34,6 +34,10 @@ export const DamageClaim = list({
     approvedAmountCents: integer({ defaultValue: 0, validation: { min: 0 } }),
     currencyCode: text({ defaultValue: 'USD' }),
     evidence: json({ ui: { description: 'Ordered evidence references and captions; media storage remains provider-owned.' } }),
+    settlementEvidence: json({
+      access: { create: () => false, update: () => false },
+      ui: { description: 'How the approved amount was actually settled: method, reference, amount, who recorded it and when.', itemView: { fieldMode: 'read' }, createView: { fieldMode: 'hidden' } },
+    }),
     submittedAt: timestamp(),
     resolvedAt: timestamp(),
     ...trackingFields,

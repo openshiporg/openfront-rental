@@ -1,9 +1,13 @@
 import crypto from 'node:crypto';
 
 import * as manual from './manual';
+import * as stripe from './stripe';
+import type { PaymentAttemptIdentity } from './errors';
 
-export type PaymentProviderCode = 'pp_system_default' | 'pp_signed_test';
-export type PaymentProviderMode = 'manual' | 'signed_test';
+export { ProviderDefiniteRejection, ProviderOutcomeUnknown, type PaymentAttemptIdentity } from './errors';
+
+export type PaymentProviderCode = 'pp_system_default' | 'pp_signed_test' | 'pp_stripe_stripe';
+export type PaymentProviderMode = 'manual' | 'signed_test' | 'stripe';
 export type PaymentCapability =
   | 'createPayment'
   | 'capturePayment'
@@ -23,10 +27,13 @@ export type CreatePaymentInput = {
   reservation: { id: string; confirmationCode?: string | null };
   amount: number;
   currency: string;
+  idempotencyKey?: string;
+  metadata?: Record<string, string>;
 };
 export type CapturePaymentInput = { paymentId: string; amount: number };
 export type RefundInstructionInput = { paymentId: string; amount: number; currency: string };
 export type PaymentReferenceInput = { paymentId: string };
+
 export type VerifiedPaymentEvent = { id: string; type: string; data?: Record<string, unknown> };
 
 export type PaymentAdapter = {
@@ -40,6 +47,23 @@ export type PaymentAdapter = {
   getPaymentStatus: (args: PaymentReferenceInput) => Promise<PaymentOperationResult>;
   generatePaymentLink: (args: PaymentReferenceInput) => Promise<string | null>;
   verifyWebhook?: (args: { rawBody: string; headers: Headers }) => VerifiedPaymentEvent;
+  /** Provider-executed refunds (card). Manual refunds are attested by the host instead. */
+  createRefund?: (args: { providerPaymentId: string; amount: number; idempotencyKey: string; metadata: Record<string, string>; expected: { rentalPaymentId: string; reservationId: string | null }; firstSubmittedAt: string }) => Promise<ProviderRefundResult>;
+  getRefund?: (args: { providerRefundId: string; providerPaymentId: string }) => Promise<ProviderRefundResult>;
+  /** Cancels a provider attempt that can no longer be paid; returns its authoritative state. */
+  cancelPayment?: (args: PaymentReferenceInput & { expected: PaymentAttemptIdentity }) => Promise<PaymentOperationResult>;
+  /** Recovers an attempt the provider created but this store never attached, by server-written metadata. */
+  findPayment?: (args: { rentalPaymentId: string }) => Promise<PaymentOperationResult | null>;
+};
+
+export type ProviderRefundResult = {
+  providerRefundId: string;
+  status: 'succeeded' | 'pending' | 'failed';
+  providerStatus: string | null;
+  amountCents: number;
+  currencyCode: string;
+  rentalRefundId: string | null;
+  failureReason: string | null;
 };
 
 export function verifySignedWebhook({ rawBody, signature, secret }: { rawBody: string; signature: string; secret: string }) {
@@ -96,15 +120,35 @@ const signedTestAdapter: PaymentAdapter = {
   },
 };
 
+const stripeAdapter: PaymentAdapter = {
+  code: 'pp_stripe_stripe',
+  mode: 'stripe',
+  capabilities: ['createPayment', 'getPaymentStatus', 'verifyWebhook'],
+  createPayment: stripe.createPaymentFunction,
+  createRefund: stripe.createRefundFunction,
+  getRefund: stripe.getRefundFunction,
+  getPaymentStatus: stripe.getPaymentStatusFunction,
+  cancelPayment: stripe.cancelPaymentFunction,
+  findPayment: stripe.findPaymentFunction,
+  verifyWebhook: stripe.verifyWebhook,
+  async capturePayment() { throw new Error('Card payment is confirmed by Stripe.'); },
+  async refundPayment() { throw new Error('Card refunds require host review.'); },
+  async generatePaymentLink() { return null; },
+};
+
 const paymentProviderAdapters = {
   pp_system_default: manualAdapter,
   pp_signed_test: signedTestAdapter,
+  pp_stripe_stripe: stripeAdapter,
 } satisfies Record<PaymentProviderCode, PaymentAdapter>;
 
+export function isSupportedPaymentProviderCode(providerCode: unknown): providerCode is PaymentProviderCode {
+  return typeof providerCode === 'string' && Object.prototype.hasOwnProperty.call(paymentProviderAdapters, providerCode);
+}
+
 export function getPaymentAdapter(providerCode: string): PaymentAdapter {
-  const adapter = paymentProviderAdapters[providerCode as PaymentProviderCode];
-  if (!adapter) throw new Error(`Unsupported payment provider: ${providerCode}`);
-  return adapter;
+  if (!isSupportedPaymentProviderCode(providerCode)) throw new Error('Unsupported payment provider.');
+  return paymentProviderAdapters[providerCode];
 }
 
 export { paymentProviderAdapters };

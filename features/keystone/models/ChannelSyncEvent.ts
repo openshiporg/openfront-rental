@@ -1,12 +1,13 @@
 import { list } from '@keystone-6/core';
 import { integer, json, relationship, select, text, timestamp } from '@keystone-6/core/fields';
 
-import { hostScopedListAccess } from '../access';
+import { hostScopedDomainOwnedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
 
 export const ChannelSyncEvent = list({
-  access: hostScopedListAccess('canReadChannels', 'canManageChannels'),
+  // Written only by domain commands, so authors, delivery, moderation and history can't be forged.
+  access: hostScopedDomainOwnedListAccess('canReadChannels'),
   hooks: hostScopedHooks('canManageChannels'),
   ui: { listView: { initialColumns: ['channelConnection', 'action', 'status', 'attempts', 'occurredAt'] } },
   fields: {
@@ -32,6 +33,7 @@ export const ChannelSyncEvent = list({
       options: [
         { label: 'Processing', value: 'processing' },
         { label: 'Succeeded', value: 'succeeded' },
+        { label: 'Partially succeeded', value: 'partially_succeeded' },
         { label: 'Failed', value: 'failed' },
       ],
       defaultValue: 'processing',

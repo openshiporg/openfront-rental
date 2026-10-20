@@ -7,7 +7,7 @@ import { trackingFields } from './trackingFields';
 
 export const TaxRule = list({
   access: hostScopedListAccess('canReadPricing', 'canManagePricing'),
-  hooks: hostScopedHooks('canManagePricing'),
+  hooks: hostScopedHooks('canManagePricing', { parent: 'listing' }),
   ui: { listView: { initialColumns: ['name', 'listing', 'jurisdiction', 'rateBasisPoints', 'isActive'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),

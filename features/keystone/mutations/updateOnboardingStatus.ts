@@ -1,4 +1,5 @@
-const allowedStatuses = new Set(['not_started', 'in_progress', 'completed', 'dismissed']);
+// `completed` is only set by rentalOnboarding(mode: "complete") after every item verifies.
+const allowedStatuses = new Set(['not_started', 'in_progress', 'dismissed']);
 
 export async function updateOnboardingStatus(
   _root: unknown,

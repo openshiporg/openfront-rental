@@ -58,18 +58,20 @@ function passwordResetEmail({ url }: { url: string }): string {
   `;
 }
 
-export async function sendPasswordResetEmail(resetToken: string, to: string, baseUrl?: string): Promise<void> {
+export async function sendPasswordResetEmail(resetToken: string, to: string, baseUrl?: string, audience: 'dashboard' | 'guest' = 'dashboard'): Promise<void> {
   // Use provided baseUrl or fall back to utility function
   const frontendUrl = baseUrl || getBaseUrlForEmails();
+  // Guest accounts reset on the storefront; host staff reset in the dashboard.
+  const url = audience === 'guest'
+    ? `${frontendUrl}/account/reset?token=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(to)}`
+    : `${frontendUrl}/dashboard/reset?token=${resetToken}`;
   
   // email the user a token
   const info = await transport.sendMail({
     to,
     from: process.env.SMTP_FROM,
     subject: "Your password reset token!",
-    html: passwordResetEmail({
-      url: `${frontendUrl}/dashboard/reset?token=${resetToken}`,
-    }),
+    html: passwordResetEmail({ url }),
   });
   if (process.env.MAIL_USER?.includes("ethereal.email")) {
     console.log(`📧 Message Sent!  Preview it at ${getTestMessageUrl(info as any)}`);

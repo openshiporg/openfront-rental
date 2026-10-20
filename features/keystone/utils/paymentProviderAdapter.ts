@@ -3,6 +3,7 @@ import {
   type CapturePaymentInput,
   type CreatePaymentInput,
   type PaymentAdapter,
+  type PaymentAttemptIdentity,
   type PaymentCapability,
   type PaymentReferenceInput,
   type RefundInstructionInput,
@@ -41,15 +42,19 @@ export async function createPayment({
   reservation,
   amount,
   currency,
+  idempotencyKey,
+  metadata,
 }: {
   provider: PaymentProviderSelection;
   reservation: CreatePaymentInput['reservation'];
   amount: number;
   currency: string;
+  idempotencyKey?: string;
+  metadata?: Record<string, string>;
 }) {
   const adapter = adapterFor(provider);
   requireCapability(adapter, 'createPayment');
-  return adapter.createPayment({ reservation, amount, currency });
+  return adapter.createPayment({ reservation, amount, currency, idempotencyKey, metadata });
 }
 
 export async function capturePayment({
@@ -120,4 +125,53 @@ export function verifyPaymentWebhook({
   requireCapability(adapter, 'verifyWebhook');
   if (!adapter.verifyWebhook) throw new Error(`Payment provider ${adapter.code} has no webhook verifier.`);
   return adapter.verifyWebhook({ rawBody, headers });
+}
+
+/** Provider-executed refund (card). Throws for adapters that only support host attestation. */
+export async function createProviderRefund({
+  provider,
+  providerPaymentId,
+  amount,
+  idempotencyKey,
+  metadata,
+  expected,
+  firstSubmittedAt,
+}: {
+  provider: PaymentProviderSelection;
+  providerPaymentId: string;
+  amount: number;
+  idempotencyKey: string;
+  metadata: Record<string, string>;
+  expected: { rentalPaymentId: string; reservationId: string | null };
+  firstSubmittedAt: string;
+}) {
+  const adapter = adapterFor(provider);
+  if (!adapter.createRefund) throw new Error('This payment method doesn’t support refunds through the store. Record the refund after returning the money.');
+  return adapter.createRefund({ providerPaymentId, amount, idempotencyKey, metadata, expected, firstSubmittedAt });
+}
+
+export async function getProviderRefund({
+  provider,
+  providerRefundId,
+  providerPaymentId,
+}: {
+  provider: PaymentProviderSelection;
+  providerRefundId: string;
+  providerPaymentId: string;
+}) {
+  const adapter = adapterFor(provider);
+  if (!adapter.getRefund) throw new Error('This payment method has no refund status to check.');
+  return adapter.getRefund({ providerRefundId, providerPaymentId });
+}
+
+export async function cancelProviderPayment({ provider, paymentId, expected }: { provider: PaymentProviderSelection; paymentId: string; expected: PaymentAttemptIdentity }) {
+  const adapter = adapterFor(provider);
+  if (!adapter.cancelPayment) throw new Error('This payment method has no provider attempt to cancel.');
+  return adapter.cancelPayment({ paymentId, expected });
+}
+
+export async function findProviderPayment({ provider, rentalPaymentId }: { provider: PaymentProviderSelection; rentalPaymentId: string }) {
+  const adapter = adapterFor(provider);
+  if (!adapter.findPayment) return null;
+  return adapter.findPayment({ rentalPaymentId });
 }

@@ -1,15 +1,103 @@
+import { Building2, Clock, Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
-import { StorefrontShell } from '../../components/StorefrontShell';
+
+import { InquiryForm } from '../../components/GuestJourneyForms';
 import { SectionNav } from '../../components/Journey';
-import { resolveStorefrontBrand, phoneHref } from '../../lib/brand';
+import { StorefrontShell } from '../../components/StorefrontShell';
+import { phoneHref, resolveStorefrontBrand } from '../../lib/brand';
 import { getPublicMarketplaceSettings } from '../../lib/data/marketplace';
-export async function HelpPage() {
-  const brand = resolveStorefrontBrand(await getPublicMarketplaceSettings());
-  return <StorefrontShell activeNav="help"><main id="stay-main" className="stay-shell stay-search-page"><header className="stay-page-head"><p className="stay-overline">Here for the details</p><h1>A little help<br />along the way.</h1><p>From finding a home to finding the front door, start with the next step for your stay.</p></header><div className="stay-contact-band"><div><h2>Contact & stay support</h2><p>Have your booking reference ready. Keep private trip links and entry codes out of public messages.</p></div><div className="stay-contact-links">{brand?.email ? <a href={`mailto:${brand.email}`}>{brand.email} ↗</a> : null}{brand?.phone && phoneHref(brand.phone) ? <a href={phoneHref(brand.phone)}>{brand.phone}</a> : null}{!brand?.email && !phoneHref(brand?.phone || '') ? <p>No public support contact has been published. Use the contact details already provided by your host. Online messages cannot be sent from here.</p> : null}</div></div><SectionNav items={[{ id: 'booking', label: 'Booking' }, { id: 'trip-links', label: 'Trip links' }, { id: 'arrival', label: 'Arrival' }, { id: 'changes', label: 'Changes' }, { id: 'payments', label: 'Payments & deposits' }]} />
-    <div className="stay-help-articles"><section id="booking"><span className="stay-overline">01 / Before booking</span><h2>Choose with the details in view.</h2><p>Browse homes with or without dates. Add check-in, check-out, and everyone travelling for a price preview, then request a saved quote from the home’s page. Review the rooms, rules, cancellation policy, full price and any separate deposit before reserving.</p><p>A quote lasts 30 minutes. It does not hold inventory. The home is checked again when the reservation is submitted. Instant confirmation and host approval are different booking modes, shown before you commit.</p><Link href="/search">Find a stay ↗</Link></section>
-    <section id="trip-links"><span className="stay-overline">02 / Returning to your stay</span><h2>Keep the complete private link.</h2><p>After a successful booking, save the trip link including its agreement details. It grants access to your reservation. There is no guest account, email lookup, or online link reissue. An email confirmation is not guaranteed.</p><p>If a booking submission is interrupted, check the saved trip link or contact support before reserving again. A used quote cannot recover its original booking result online.</p><Link href="/trips">Open your trip ↗</Link></section>
-    <section id="arrival"><span className="stay-overline">03 / Arrival & during your stay</span><h2>Make the arrival arrangements.</h2><p>Confirm your address, arrival time, parking and entry instructions directly with the host before travelling. Your trip page shows the published times and area; it does not issue entry codes or complete check-in.</p><p>For a lockout, accessibility question, problem with the home, or a change to your arrival time, use the published host contact. No in-app message is sent by visiting this page.</p></section>
-    <section id="changes"><span className="stay-overline">04 / When plans change</span><h2>Talk through a change first.</h2><p>Date changes, extensions, a different home, or guest-party amendments need host assistance. An enquiry or a new reservation does not amend an existing booking.</p><p>Eligible pending and confirmed stays offer cancellation in the private trip page. The final confirmation immediately cancels the reservation and releases its dates. Any refund or deposit return is a separate policy review; an amount and timeline are not promised by cancelling.</p><Link href="/trips">Manage your trip ↗</Link></section>
-    <section id="payments"><span className="stay-overline">05 / Payment, deposit & refunds</span><h2>Know what each record means.</h2><p>There is no online card checkout. Payment method, timing, receipts and any deposit are arranged with the host. Never enter card numbers or identity documents into arrival notes.</p><p>Your trip shows host-recorded payment, refund and deposit ledger entries. A refund status does not prove that funds reached your account; a pending refund is a liability, not a transfer. A deposit marked held, captured or released is also a recorded status. Ask the host for supporting payment or transfer evidence.</p><p>For a disputed charge or damage deduction, contact the host with your booking reference and supporting information. An online claim or dispute submission is not available.</p><Link href="/policies">Booking & policy guide ↗</Link></section></div>
+import { getPublicStay } from '../../lib/data/stays';
+import { single, type SearchParams } from '../../lib/navigation';
+import { depositPolicyCopy, paymentPolicyCopy, refundPolicyCopy } from '../../lib/payment-copy';
+
+const topics = [{ id: 'booking', label: 'Booking' }, { id: 'trip-links', label: 'Finding your trip' }, { id: 'arrival', label: 'Arrival' }, { id: 'changes', label: 'Changes' }, { id: 'payments', label: 'Payments & deposits' }];
+
+export async function HelpPage({ searchParams }: { searchParams?: Promise<SearchParams> } = {}) {
+  const query = (await searchParams) || {};
+  const settings = await getPublicMarketplaceSettings();
+  const brand = resolveStorefrontBrand(settings);
+  const phone = brand?.phone ? phoneHref(brand.phone) : '';
+  const published = settings.status === 'published' ? settings : null;
+  const supportHours = published?.supportHours?.trim() || '';
+  const officeAddress = published?.officeAddress?.trim() || '';
+  // The requested home is kept with its resolution: a stale or unknown home is never turned
+  // into a general question for some other host.
+  const staySlug = single(query.stay).slice(0, 200);
+  const lookup = staySlug && /^[a-z0-9-]+$/.test(staySlug) ? await getPublicStay(staySlug) : null;
+  const stay = lookup?.stay || null;
+  const stayState: 'none' | 'found' | 'unavailable' | 'error' = !staySlug ? 'none' : stay ? 'found' : lookup?.error ? 'error' : 'unavailable';
+  const cardEnabled = published?.testBookingsAvailable === true;
+
+  return <StorefrontShell servicing activeNav="help"><main id="stay-main" className="stay-shell">
+    <header className="stay-page-head">
+      <p className="stay-overline">Here for the details</p>
+      <h1>A little help <em>along the way</em></h1>
+      <p>From finding a home to finding the front door, start with the next step for your stay.</p>
+    </header>
+    <section id="message-host" className="stay-contact-band" aria-labelledby="contact-title">
+      <div>
+        <h2 id="contact-title">Message the host</h2>
+        <p>Ask about a home before booking, or about anything else. Already booked? Message from your trip page so the host sees your booking.</p>
+        <div className="stay-contact-links">
+          {brand?.email ? <a href={`mailto:${brand.email}`}><Mail size={18} aria-hidden="true" />{brand.email}</a> : null}
+          {brand?.phone && phone ? <a href={phone}><Phone size={18} aria-hidden="true" />{brand.phone}</a> : null}
+          {supportHours ? <p><Clock size={18} aria-hidden="true" /> <span style={{ whiteSpace: 'pre-line' }}>{supportHours}</span></p> : null}
+          {officeAddress ? <p><Building2 size={18} aria-hidden="true" /> <span style={{ whiteSpace: 'pre-line' }}>{officeAddress}</span></p> : null}
+        </div>
+      </div>
+      {stayState === 'found' && stay
+        ? <InquiryForm stay={staySlug} stayTitle={stay.title} />
+        : <div className="stay-form" role={stayState === 'none' ? undefined : 'status'}>
+          <p className="stay-form-note">{stayState === 'unavailable'
+            ? 'That home isn’t listed right now, so a message about it can’t be sent here. If you’ve booked it, message the host from your trip page.'
+            : stayState === 'error'
+              ? 'That home couldn’t be loaded, so your message wasn’t started. Refresh to try again.'
+              : 'To reach the right host, open the home your question is about and choose “Message the host” there. Already booked? Use your trip page.'}</p>
+          {brand?.email || brand?.phone ? <p className="stay-form-note">For anything else, use the store’s contact details shown here.</p> : null}
+          <Link className="stay-text-link" href={stayState === 'error' ? `/help?stay=${encodeURIComponent(staySlug)}#message-host` : '/search'}>{stayState === 'error' ? 'Try again' : 'Find the home'}</Link>
+        </div>}
+    </section>
+    <div className="stay-help-layout">
+      <div className="stay-help-toc"><p>Topics</p><SectionNav items={topics} label="Help topics" /></div>
+      <div className="stay-articles">
+        <section id="booking" className="stay-article">
+          <p className="stay-overline">01 · Before booking</p>
+          <h2>Choose with the details in view</h2>
+          <p>Browse homes with or without dates. Add check-in, checkout, and everyone travelling for a price preview, then pick dates on a home’s calendar to see each night’s rate, fees, and taxes. Review the rooms, rules, cancellation policy, full price, and any separate deposit before reserving.</p>
+          <p>A saved quote lasts 30 minutes. It doesn’t hold the home; availability is checked again when the reservation is submitted. Instant confirmation and host approval are different booking modes, shown before you commit.</p>
+          <p>You can book as a guest or <Link href="/account/register">create an account</Link> to keep your trips together.</p>
+          <Link className="stay-text-link" href="/search">Find a stay</Link>
+        </section>
+        <section id="trip-links" className="stay-article">
+          <p className="stay-overline">02 · Returning to your stay</p>
+          <h2>Get back to your booking</h2>
+          <p>After booking, your private trip link opens the reservation, agreement, payments, and messages with your host. Save it somewhere only you can reach.</p>
+          <p>Lost it, or a booking submission was interrupted? Use Find my trip with your confirmation code and booking email for a fresh link before reserving again. Signed-in guests can also open saved trips from their account.</p>
+          <Link className="stay-text-link" href="/trips#find-trip">Find my trip</Link>
+        </section>
+        <section id="arrival" className="stay-article">
+          <p className="stay-overline">03 · Arrival & during your stay</p>
+          <h2>Make the arrival arrangements</h2>
+          <p>Once your stay is confirmed, your trip page shows the exact address, check-in and checkout times, and any entry, parking, or access instructions from the host.</p>
+          <p>For a lockout, an accessibility question, a problem with the home, or a change to your arrival time, message the host from your trip page.</p>
+        </section>
+        <section id="changes" className="stay-article">
+          <p className="stay-overline">04 · When plans change</p>
+          <h2>Ask for a change first</h2>
+          <p>Use Request a change on your trip page for new dates, an extension, a different party, or another home. Your booking stays as it is until the host confirms the change and any price difference.</p>
+          <p>Eligible pending and confirmed stays can be cancelled on the private trip page. The final confirmation immediately cancels the reservation and releases its dates.</p>
+          <Link className="stay-text-link" href="/trips">Manage your trip</Link>
+        </section>
+        <section id="payments" className="stay-article">
+          <p className="stay-overline">05 · Payment, deposit & refunds</p>
+          <h2>Know what each record means</h2>
+          <p>{paymentPolicyCopy(cardEnabled)} Never put card numbers or identity documents in messages or arrival notes.</p>
+          <p>{depositPolicyCopy}</p>
+          <p>{refundPolicyCopy}</p>
+          <p>To question a deposit deduction or damage claim, message the host from your trip page and choose that topic.</p>
+          <Link className="stay-text-link" href="/policies">Booking & policy guide</Link>
+        </section>
+      </div>
+    </div>
   </main></StorefrontShell>;
 }

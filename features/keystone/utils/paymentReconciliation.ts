@@ -14,7 +14,16 @@ export type PaymentEvidence = {
   amountCents: number;
   refundedAmountCents?: number | null;
   currencyCode: string;
+  /** Tender identity: test-card money is told apart from real money per payment, never per booking. */
+  provider: string | null;
+  data?: unknown;
 };
+
+/** Stripe tender in this store is always TEST money (the adapter refuses live mode). */
+export function isTestTender(payment: { provider?: string | null; data?: unknown }) {
+  const data = payment.data && typeof payment.data === 'object' ? payment.data as Record<string, unknown> : {};
+  return payment.provider === 'pp_stripe_stripe' || data.mode === 'test';
+}
 
 export type RefundEvidence = {
   id: string;
@@ -28,20 +37,29 @@ export type RefundEvidence = {
  * Reconcile the reservation's collection summary from durable payment and refund
  * facts. Pending/failed refund obligations are returned separately: they are not
  * completed transfers and must not reduce retained money.
+ *
+ * Tender whose mode differs from the booking's (test-card money on a real stay, or real money
+ * recorded on a test booking) never counts toward this booking's balance: a test payment can't
+ * settle a real debt. It isn't hidden either: it is returned in `segregatedTender`, with its
+ * refunds, so real money stays reportable and test money stays visibly separate.
  */
 export function reconcileReservationPaymentEvidence({
   payments,
   refunds,
   currencyCode,
+  testMode,
 }: {
   payments: PaymentEvidence[];
   refunds: RefundEvidence[];
   currencyCode: string;
+  testMode: boolean;
 }) {
   const expectedCurrency = currencyCode?.toUpperCase();
   if (!expectedCurrency || !/^[A-Z]{3}$/.test(expectedCurrency)) {
     throw new Error('Reservation currency code is invalid.');
   }
+  const segregatedIds = new Set(payments.filter((payment) => isTestTender(payment) !== testMode).map((payment) => payment.id));
+  const segregatedTender = { count: segregatedIds.size, grossCents: 0, netCents: 0, completedRefundCents: 0, openRefundCents: 0, pendingCents: 0 };
 
   const refundTotals = new Map<string, number>();
   let completedRefundCents = 0;
@@ -51,6 +69,13 @@ export function reconcileReservationPaymentEvidence({
     assertCents(refund.amountCents, `Refund ${refund.id} amount`, false);
     if (refund.currencyCode?.toUpperCase() !== expectedCurrency) {
       throw new Error('Refund currency does not match the reservation currency.');
+    }
+    if (refund.paymentId && segregatedIds.has(refund.paymentId)) {
+      if (completedRefundStatuses.has(refund.status || '')) {
+        segregatedTender.completedRefundCents += refund.amountCents;
+        refundTotals.set(refund.paymentId, (refundTotals.get(refund.paymentId) || 0) + refund.amountCents);
+      } else if (openRefundStatuses.has(refund.status || '')) segregatedTender.openRefundCents += refund.amountCents;
+      continue;
     }
     if (completedRefundStatuses.has(refund.status || '')) {
       if (!refund.paymentId) throw new Error('A successful refund is missing its payment link.');
@@ -70,6 +95,7 @@ export function reconcileReservationPaymentEvidence({
     if (seenPaymentIds.has(payment.id)) throw new Error('Reservation payment evidence contains a duplicate payment.');
     seenPaymentIds.add(payment.id);
     const ledgerRefundCents = refundTotals.get(payment.id) || 0;
+    const segregated = segregatedIds.has(payment.id);
     if (!settledPaymentStatuses.has(payment.status || '')) {
       if ((payment.refundedAmountCents || 0) > 0 || ledgerRefundCents > 0) {
         throw new Error('Payment status and refund evidence do not reconcile.');
@@ -79,7 +105,8 @@ export function reconcileReservationPaymentEvidence({
         if (payment.currencyCode?.toUpperCase() !== expectedCurrency) {
           throw new Error('Payment currency does not match the reservation currency.');
         }
-        pendingTenderCents += payment.amountCents;
+        if (segregated) segregatedTender.pendingCents += payment.amountCents;
+        else pendingTenderCents += payment.amountCents;
       }
       continue;
     }
@@ -97,8 +124,13 @@ export function reconcileReservationPaymentEvidence({
       || (payment.status === 'refunded' && ledgerRefundCents !== payment.amountCents)) {
       throw new Error('Payment status and refund evidence do not reconcile.');
     }
-    grossCollectedCents += payment.amountCents;
-    netPaidCents += payment.amountCents - ledgerRefundCents;
+    if (segregated) {
+      segregatedTender.grossCents += payment.amountCents;
+      segregatedTender.netCents += payment.amountCents - ledgerRefundCents;
+    } else {
+      grossCollectedCents += payment.amountCents;
+      netPaidCents += payment.amountCents - ledgerRefundCents;
+    }
     refundTotals.delete(payment.id);
   }
 
@@ -111,7 +143,7 @@ export function reconcileReservationPaymentEvidence({
   assertCents(pendingTenderCents, 'Pending tender amount');
   assertCents(openRefundCents, 'Open refund liability amount');
 
-  return { grossCollectedCents, completedRefundCents, netPaidCents, pendingTenderCents, openRefundCents, hasRefunds };
+  return { grossCollectedCents, completedRefundCents, netPaidCents, pendingTenderCents, openRefundCents, hasRefunds, segregatedTender };
 }
 
 export function unreservedReservationBalance({ totalAmountCents, netPaidCents, pendingTenderCents }: {

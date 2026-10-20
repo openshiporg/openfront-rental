@@ -1,3 +1,5 @@
+import { effectiveStayRatePlan } from './stayBookingRules';
+
 export const STAY_LISTING_SELECTION = `
   id
   title
@@ -18,10 +20,19 @@ export const STAY_LISTING_SELECTION = `
   reviewAverageHundredths
   reviewCount
   thumbnail
-  hostOrganization { id name slug publicBio }
+  hostOrganization {
+    id
+    name
+    slug
+    status
+    isPublic
+    publicBio
+    cancellationPolicies(orderBy: [{ createdAt: asc }], take: 1) { id name version policyType summary fullTerms freeCancellationHours rules }
+  }
   property {
     id
     name
+    status
     propertyType
     timezone
     checkInFrom
@@ -86,6 +97,16 @@ export const STAY_LISTING_SELECTION = `
   }
 `;
 
+/** Active plans, or the base-rate plan a listing sells under; notice/window values are the enforced ones. */
+function publicRatePlans(listing: any) {
+  const plans = listing.ratePlans?.length ? listing.ratePlans : [effectiveStayRatePlan(listing)].filter(Boolean);
+  return plans.map((plan: any) => ({
+    ...plan,
+    advanceNoticeHours: plan.advanceNoticeHours ?? listing.advanceNoticeHours ?? null,
+    bookingWindowDays: plan.bookingWindowDays ?? listing.bookingWindowDays ?? null,
+  }));
+}
+
 function coarseCoordinate(value: unknown) {
   return typeof value === 'number' ? Math.round(value * 1000) / 1000 : null;
 }
@@ -113,6 +134,8 @@ export function toPublicListing(listing: any) {
     securityDepositCents: listing.securityDepositCents,
     minimumStay: listing.minimumStay,
     maximumStay: listing.maximumStay,
+    advanceNoticeHours: listing.advanceNoticeHours,
+    bookingWindowDays: listing.bookingWindowDays,
     reviewAverageHundredths: listing.reviewAverageHundredths,
     reviewCount: listing.reviewCount,
     thumbnail: listing.thumbnail || mediaUrl(listing.media?.[0]),
@@ -159,7 +182,7 @@ export function toPublicListing(listing: any) {
     amenities: listing.amenities || [],
     collections: listing.collections || [],
     houseRules: listing.houseRules || [],
-    ratePlans: listing.ratePlans || [],
+    ratePlans: publicRatePlans(listing),
     feeDefinitions: listing.feeDefinitions || [],
     taxRules: listing.taxRules || [],
   };

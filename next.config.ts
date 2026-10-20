@@ -1,5 +1,18 @@
 import type { NextConfig } from 'next';
 
+import { parseStorageEndpoint } from './features/keystone/lib/storage-endpoint';
+
+// Image host from the same parsed endpoint the storage config uses; none when it isn't set or valid
+// (the server itself refuses an invalid endpoint at startup).
+function storageImagePattern() {
+  try {
+    const endpoint = process.env.S3_ENDPOINT ? parseStorageEndpoint(process.env.S3_ENDPOINT) : null;
+    return endpoint ? [{ protocol: endpoint.protocol, hostname: endpoint.hostname, port: endpoint.port, pathname: '/**' }] : [];
+  } catch {
+    return [];
+  }
+}
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   serverExternalPackages: ['graphql'],
@@ -8,14 +21,7 @@ const nextConfig: NextConfig = {
   //   ignoreBuildErrors: true,
   // },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: process.env.S3_ENDPOINT ? process.env.S3_ENDPOINT.replace(/^https?:\/\//, '').replace(/:\d+$/, '') : '/',
-        port: '',
-        pathname: '/**',
-      },
-    ],
+    remotePatterns: storageImagePattern(),
   },
 };
 

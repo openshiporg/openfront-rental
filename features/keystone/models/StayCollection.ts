@@ -13,13 +13,14 @@ export const StayCollection = list({
       delete: permissions.canManageListings,
     },
   },
-  ui: { listView: { initialColumns: ['name', 'slug', 'isActive', 'listings'] } },
+  ui: { listView: { initialColumns: ['name', 'slug', 'isActive'] } },
   fields: {
     name: text({ validation: { isRequired: true } }),
     slug: text({ validation: { isRequired: true }, isIndexed: 'unique' }),
     description: text({ ui: { displayMode: 'textarea' } }),
     isActive: checkbox({ defaultValue: true }),
-    listings: relationship({ ref: 'Listing.collections', many: true }),
+    // Listings join collections from their own side, under host validation.
+    listings: relationship({ ref: 'Listing.collections', many: true, access: { create: () => false, update: () => false }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

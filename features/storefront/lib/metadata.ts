@@ -4,6 +4,8 @@ import { storefrontThemeColor } from '@/features/platform/store-settings/lib/the
 import { resolveStorefrontBrand } from './brand';
 import { getPublicMarketplaceSettings } from './data/marketplace';
 
+export const STOREFRONT_ICON = '/storefront-icon.svg';
+
 const unavailableMetadata = {
   unconfigured: {
     title: 'Storefront not configured',
@@ -32,11 +34,14 @@ export async function buildStorefrontMetadata({
 }): Promise<Metadata> {
   const settings = await getPublicMarketplaceSettings();
   const brand = resolveStorefrontBrand(settings);
+  // The storefront's own icon and install identity, kept apart from the dashboard's product mark.
+  const storefrontIdentity = { icons: { icon: STOREFRONT_ICON }, manifest: '/manifest.webmanifest' };
 
   if (!brand) {
     const status = settings.status === 'published' ? 'error' : settings.status;
     const unavailable = unavailableMetadata[status];
     return {
+      ...storefrontIdentity,
       referrer: 'no-referrer',
       title: unavailable.title,
       description: unavailable.description,
@@ -48,6 +53,8 @@ export async function buildStorefrontMetadata({
   const pageDescription = description || brand.description || 'Independent short-term accommodation, booked directly with the host.';
 
   return {
+    ...storefrontIdentity,
+    applicationName: brand.name,
     referrer: 'no-referrer',
     title: pageTitle,
     description: pageDescription,

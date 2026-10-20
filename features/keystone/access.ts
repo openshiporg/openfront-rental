@@ -184,6 +184,17 @@ export const rules = {
   canManageHostScopedRecords: hostScopedFilter,
 };
 
+/**
+ * Host-scoped records written only by domain commands (sent messages, moderated reviews,
+ * execution receipts): readable within the host, never created or rewritten as raw CRUD.
+ */
+export function hostScopedDomainOwnedListAccess(readPermission: PermissionName) {
+  return {
+    operation: { query: isSignedIn, create: () => false, update: () => false, delete: () => false },
+    filter: { query: hostScopedFilter(readPermission) },
+  };
+}
+
 export function hostScopedListAccess(
   readPermission: PermissionName,
   managePermission: PermissionName,

@@ -59,6 +59,11 @@ export const CalendarBlock = list({
       defaultValue: 'operator',
     }),
     externalUid: text({ isIndexed: true }),
+    fixtureOrigin: text({
+      db: { isNullable: true },
+      access: { create: () => false, update: () => false },
+      ui: { description: 'Set only for onboarding sample holds and sample stays: they never block real bookings.', itemView: { fieldMode: 'read' }, createView: { fieldMode: 'hidden' } },
+    }),
     notes: text({ ui: { displayMode: 'textarea' } }),
     ...trackingFields,
   },

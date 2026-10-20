@@ -9,7 +9,7 @@ const unavailableMessages: Record<PublicTokenSurface, string> = {
 
 const actionFailureMessages: Record<PublicAction, string> = {
   quote: 'This stay could not be quoted for those dates or guest details. Review availability and restrictions and try again.',
-  booking: 'We couldn’t confirm the booking result. Your details are still here. If you already submitted this quote, check your trip link or contact support before reserving again.',
+  booking: 'We couldn’t confirm the booking result. Your details are still here. If you already submitted this quote, use Find my trip with your confirmation code and email before reserving again.',
   cancellation: 'The cancellation request could not be recorded. Refresh the private trip link and try again.',
   signature: 'The agreement could not be signed. Refresh the private agreement link and try again.',
 };

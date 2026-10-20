@@ -28,8 +28,10 @@ export const ChannelListing = list({
     }),
     mapping: json({ defaultValue: {} }),
     lastSyncedAt: timestamp(),
-    channelReservations: relationship({ ref: 'ChannelReservation.channelListing', many: true }),
-    syncEvents: relationship({ ref: 'ChannelSyncEvent.channelListing', many: true }),
+    // This mapping's own availability-import health: `open` while its last import needs review (job, status, conflicts).
+    lastImportIssue: json({ access: { create: () => false, update: () => false }, ui: { itemView: { fieldMode: 'read' }, createView: { fieldMode: 'hidden' } } }),
+    channelReservations: relationship({ ref: 'ChannelReservation.channelListing', many: true, ui: { displayMode: 'count' } }),
+    syncEvents: relationship({ ref: 'ChannelSyncEvent.channelListing', many: true, access: { create: () => false, update: () => false }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

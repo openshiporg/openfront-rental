@@ -5,6 +5,7 @@ import { enqueueOutboxEvent } from '../utils/outbox';
 import { reconcileReservationPaymentEvidence, reservationPaymentStatus } from '../utils/paymentReconciliation';
 import { findAccommodationUnitCapacityConflict, lockAccommodationUnitCapacity, lockListingCapacity } from '../utils/reservationAllocation';
 import { assertStayNotInPast, calculateStayQuote } from '../utils/stayPricing';
+import { zonedTodayIso } from '../utils/stayBookingRules';
 
 const settledPaymentStatuses = ['succeeded', 'partially_refunded', 'refunded'];
 const pendingMoneyStatuses = ['pending', 'processing'];
@@ -76,12 +77,15 @@ function validateDateRange(checkInDate: string, checkOutDate: string) {
 
 function buildAmendedQuote({
   bookingSnapshot,
+  currentParty,
   checkInDate,
   checkOutDate,
   currencyCode,
   securityDepositCents,
 }: {
   bookingSnapshot: any;
+  /** The party on record now (after any host party change); the booked party is the fallback. */
+  currentParty?: { adults: number; children: number; pets: number } | null;
   checkInDate: string;
   checkOutDate: string;
   currencyCode: string;
@@ -89,15 +93,22 @@ function buildAmendedQuote({
 }) {
   const listing = bookingSnapshot?.listing;
   const guestParty = bookingSnapshot?.guestParty;
-  const ratePlan = listing?.ratePlans?.[0];
-  if (!listing?.accommodationUnit || !ratePlan || !guestParty) {
+  // A listing sold on its base nightly rate has no rate plan in the snapshot.
+  const ratePlan = listing?.ratePlans?.[0] || {};
+  // Booking snapshots record the unit as `accommodation` (public projection); older
+  // snapshots used `accommodationUnit`. Both are read as captured, never rewritten.
+  const unit = listing?.accommodation || listing?.accommodationUnit;
+  if (!unit || !guestParty) {
     throw new Error('The original booking snapshot does not contain enough pricing evidence to amend this stay safely.');
   }
   if ((ratePlan.currencyCode || listing.currencyCode || currencyCode).toUpperCase() !== currencyCode.toUpperCase()) {
     throw new Error('The original booking currency does not match the reservation currency.');
   }
 
-  const guestCount = (guestParty.adults || 0) + (guestParty.children || 0);
+  // Prices use the captured terms (snapshot) with the party as it stands now: a party change
+  // made since booking carries into later date changes; the booked party stays in the snapshot.
+  const party = currentParty || guestParty;
+  const guestCount = (party.adults || 0) + (party.children || 0);
   const calculation = calculateStayQuote({
     checkIn: checkInDate,
     checkOut: checkOutDate,
@@ -105,7 +116,8 @@ function buildAmendedQuote({
     currencyCode,
     baseMinimumStay: ratePlan.minimumStay ?? listing.minimumStay ?? 1,
     guestCount,
-    maxGuests: listing.accommodationUnit.maxGuests,
+    pets: party.pets || 0,
+    maxGuests: unit.maxGuests,
     securityDepositCents,
     seasonalRates: ratePlan.seasonalRates || [],
     fees: (listing.feeDefinitions || []).map((fee: any) => ({
@@ -115,10 +127,9 @@ function buildAmendedQuote({
       amountCents: fee.amountCents,
       percentageBasisPoints: fee.percentageBasisPoints,
       taxable: fee.taxable,
+      required: fee.required,
     })),
-    taxes: (listing.taxRules || [])
-      .filter((tax: any) => !tax.isInclusive)
-      .map((tax: any) => ({ name: tax.name, rateBasisPoints: tax.rateBasisPoints })),
+    taxes: (listing.taxRules || []).map((tax: any) => ({ name: tax.name, rateBasisPoints: tax.rateBasisPoints, inclusive: tax.isInclusive === true })),
   });
   const maximumStay = ratePlan.maximumStay ?? listing.maximumStay;
   if (maximumStay != null && calculation.numberOfNights > maximumStay) {
@@ -142,7 +153,7 @@ function amendmentRefundAllocations(refundDueCents: number, payments: any[]) {
     const available = payment.amountCents - (payment.refundedAmountCents || 0);
     const amountCents = Math.min(available, remaining);
     if (amountCents <= 0) continue;
-    if (payment.provider !== 'pp_system_default') {
+    if (!['pp_system_default', 'pp_stripe_stripe'].includes(payment.provider)) {
       throw new Error('The amended total is below a payment from an unsupported provider; no refund transfer is available in this workflow, so the amendment cannot be applied.');
     }
     allocations.push({ paymentId: payment.id, amountCents });
@@ -278,6 +289,13 @@ export async function amendConfirmedStayOperation(
       throw new Error('The amended dates must differ from the current reservation dates.');
     }
     assertStayNotInPast(args.checkInDate);
+    // "Past" is judged where the stay is actually served now (the allocated unit's property,
+    // which can differ from the purchased one after re-accommodation), as at booking.
+    const serviceUnit = locked.accommodationUnitId
+      ? await tx.accommodationUnit.findUnique({ where: { id: locked.accommodationUnitId }, select: { property: { select: { timezone: true } } } })
+      : null;
+    const serviceTimeZone = serviceUnit?.property?.timezone || locked.bookingSnapshot?.listing?.property?.timezone;
+    if (args.checkInDate < zonedTodayIso(serviceTimeZone)) throw new Error('Check-in cannot be in the past.');
     validateDateRange(args.expectedCheckInDate, args.expectedCheckOutDate);
     validateDateRange(args.checkInDate, args.checkOutDate);
 
@@ -313,6 +331,7 @@ export async function amendConfirmedStayOperation(
           bookingSnapshot: true,
           tripTokenExpiresAt: true,
           tripTokenRevokedAt: true,
+          testMode: true,
         },
       }),
       tx.listing.findUnique({ where: { id: listingId }, select: { id: true, hostOrganizationId: true, accommodationUnitId: true } }),
@@ -324,7 +343,10 @@ export async function amendConfirmedStayOperation(
       || current.status !== 'confirmed') {
       throw new Error('Reservation allocation or dates changed; reload the stay before submitting an amendment.');
     }
-    if (!listing || listing.hostOrganizationId !== hostOrganizationId || listing.accommodationUnitId !== accommodationUnitId
+    if (current.testMode) throw new Error('This is a test booking: it holds no dates, so it can’t be amended. Cancel it and make a new test booking.');
+    // The purchased listing prices the change (from the booking snapshot); the allocated unit,
+    // which can differ after a re-accommodation, is what must hold the new dates.
+    if (!listing || listing.hostOrganizationId !== hostOrganizationId
       || !unit || unit.hostOrganizationId !== hostOrganizationId || unit.status !== 'available') {
       throw new Error('The reservation listing and accommodation unit are no longer a valid available allocation.');
     }
@@ -334,10 +356,17 @@ export async function amendConfirmedStayOperation(
       orderBy: [{ id: 'asc' }],
       select: { id: true, listingId: true, startDate: true, endDate: true },
     });
-    if (capacityBlocks.length !== 1 || capacityBlocks[0].listingId !== listingId
+    if (capacityBlocks.length !== 1
       || capacityBlocks[0].startDate !== current.checkInDate || capacityBlocks[0].endDate !== current.checkOutDate) {
       throw new Error('The reservation does not have exactly one matching active capacity block.');
     }
+    const blockListing = capacityBlocks[0].listingId === listingId
+      ? listing
+      : await tx.listing.findUnique({ where: { id: capacityBlocks[0].listingId }, select: { id: true, hostOrganizationId: true, accommodationUnitId: true } });
+    if (!blockListing || blockListing.hostOrganizationId !== hostOrganizationId || blockListing.accommodationUnitId !== accommodationUnitId) {
+      throw new Error('The reservation’s capacity block isn’t on its allocated accommodation unit.');
+    }
+    if (blockListing.id !== listingId) await lockListingCapacity(tx, [blockListing.id]);
     const conflict = await findAccommodationUnitCapacityConflict(tx, {
       accommodationUnitId,
       hostOrganizationId,
@@ -396,7 +425,7 @@ export async function amendConfirmedStayOperation(
     const payments = await tx.payment.findMany({
       where: { reservationId: current.id },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-      select: { id: true, status: true, amountCents: true, refundedAmountCents: true, currencyCode: true, provider: true },
+      select: { id: true, status: true, amountCents: true, refundedAmountCents: true, currencyCode: true, provider: true, data: true },
     });
     const unsettledRefund = await tx.refund.findFirst({
       where: { reservationId: current.id, status: { in: pendingMoneyStatuses } },
@@ -419,14 +448,17 @@ export async function amendConfirmedStayOperation(
       payments,
       refunds: refundEvidence,
       currencyCode: current.currencyCode,
+      testMode: current.testMode === true,
     });
     const { netPaidCents, hasRefunds } = reconciliation;
     if (netPaidCents !== amountsBefore.amountPaidCents) {
       throw new Error('Reservation paid amount does not reconcile to settled payment evidence.');
     }
 
+    const currentParty = await tx.guestParty.findUnique({ where: { reservationId: current.id }, select: { adults: true, children: true, pets: true } });
     const quote = buildAmendedQuote({
       bookingSnapshot,
+      currentParty,
       checkInDate: args.checkInDate,
       checkOutDate: args.checkOutDate,
       currencyCode: current.currencyCode,
@@ -461,11 +493,21 @@ export async function amendConfirmedStayOperation(
       amounts: amountsBefore,
       pricingQuote: pricingBefore,
     };
+    // The signed agreement is never edited: the change is a dated addendum to it, and the
+    // guest's acceptance of the new dates is an explicit, separately recorded state.
+    const agreement = await tx.stayAgreement.findFirst({ where: { reservation: { id: current.id } }, select: { id: true, agreementNumber: true, status: true, signedAt: true } });
     const afterSnapshot = {
       checkInDate: args.checkInDate,
       checkOutDate: args.checkOutDate,
       amounts: amountsAfter,
       pricingQuote,
+      agreementAddendum: {
+        agreementId: agreement?.id || null,
+        agreementNumber: agreement?.agreementNumber || null,
+        originalStatus: agreement?.status || null,
+        originalSignedAt: agreement?.signedAt ? new Date(agreement.signedAt).toISOString() : null,
+        guestAcceptance: 'not_recorded',
+      },
     };
     const delta = {
       lodgingSubtotalCents: amountsAfter.lodgingSubtotalCents - amountsBefore.lodgingSubtotalCents,
@@ -543,7 +585,7 @@ export async function amendConfirmedStayOperation(
         id: capacityBlocks[0].id,
         reservationId: current.id,
         hostOrganizationId,
-        listingId,
+        listingId: blockListing.id,
         status: 'active',
         startDate: current.checkInDate,
         endDate: current.checkOutDate,

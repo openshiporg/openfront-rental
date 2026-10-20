@@ -11,7 +11,8 @@ const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(100);
 const money = z.number().int().min(0).max(10_000_000);
 
 const bedSchema = z.object({
-  bedType: z.enum(['king', 'queen', 'double', 'single', 'sofa_bed', 'bunk_bed', 'crib']),
+  // Same vocabulary as the Bed model; the older `bunk_bed` spelling is accepted as `bunk`.
+  bedType: z.preprocess((value) => value === 'bunk_bed' ? 'bunk' : value, z.enum(['king', 'queen', 'double', 'single', 'sofa_bed', 'bunk', 'crib', 'floor_mattress'])),
   quantity: z.number().int().min(1).max(10),
 }).strict();
 
@@ -72,8 +73,9 @@ const listingSchema = z.object({
   securityDepositCents: money,
   minimumStay: z.number().int().min(1).max(365),
   maximumStay: z.number().int().min(1).max(365),
-  reviewAverageHundredths: z.number().int().min(0).max(500),
-  reviewCount: z.number().int().min(0).max(1_000_000),
+  // Accepted for older custom configurations but never saved: ratings come from real reviews.
+  reviewAverageHundredths: z.number().int().min(0).max(500).optional(),
+  reviewCount: z.number().int().min(0).max(1_000_000).optional(),
   amenities: z.array(slug).max(50),
   collections: z.array(slug).max(30),
   media: z.array(mediaSchema).min(1).max(20),
@@ -95,6 +97,7 @@ const propertySchema = z.object({
   checkInFrom: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   checkInUntil: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   checkOutBy: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  arrivalInstructions: optionalText(4000),
   address: addressSchema,
   unit: unitSchema,
   listing: listingSchema,
@@ -103,9 +106,11 @@ const propertySchema = z.object({
 const customConfigurationSchema = z.object({
   settings: z.object({
     name: text(100), tagline: text(200), homepageHeadline: text(200), publicDescription: text(2000),
-    supportEmail: z.string().email().max(200), supportPhone: text(50), currencyCode: z.string().regex(/^[A-Z]{3}$/),
+    supportEmail: z.string().email().max(200), supportPhone: text(50), supportHours: optionalText(300), officeAddress: optionalText(300),
+    currencyCode: z.string().regex(/^[A-Z]{3}$/),
     locale: text(30), timezone: text(100), defaultMapLatitude: z.number().min(-90).max(90),
-    defaultMapLongitude: z.number().min(-180).max(180), accentHue: z.number().int().min(0).max(360), isPublished: z.boolean(),
+    defaultMapLongitude: z.number().min(-180).max(180), accentHue: z.number().int().min(0).max(360),
+    logoColor: z.string().regex(/^\d{1,3}$/).optional(), isPublished: z.boolean(),
   }).strict(),
   hostOrganization: z.object({
     id, name: text(150), slug, organizationType: z.enum(['individual_host', 'property_manager', 'cooperative']),
@@ -140,7 +145,7 @@ function assertUniqueIds(config: AccommodationCustomConfiguration) {
   const identities = [config.hostOrganization.id, config.cancellationPolicy.id,
     ...config.amenities.map(item => item.id), ...config.collections.map(item => item.id),
     ...config.properties.flatMap(item => [item.id, item.address.id, item.unit.id, item.listing.id])];
-  const reserved = new Set(['settings', seedData.paymentProvider.id,
+  const reserved = new Set(['settings', seedData.paymentProvider.id, seedData.cardPaymentProvider.id,
     ...seedData.guests.map(item => item.id), ...seedData.reservations.map(item => item.id),
     ...seedData.calendarBlocks.map(item => item.id), ...seedData.tasks.map(item => item.id)]);
   if (new Set(identities).size !== identities.length || identities.some(identity => reserved.has(identity))) {
@@ -188,7 +193,10 @@ export function getSeedForTemplate(template: AccommodationTemplateType, custom?:
     full.calendarBlocks = full.calendarBlocks.filter((item: any) => retained.has(item.listingSlug)).map(mapListing);
     full.tasks = full.tasks.filter((item: any) => retained.has(item.listingSlug) && (!item.reservationId || reservationIds.has(item.reservationId))).map(mapListing);
     full.channel = full.channel && retained.has(full.channel.listingSlug) ? mapListing(full.channel) : null;
-    if (parsed.hostOrganization.id !== seedData.hostOrganization.id) full.paymentProvider.id = `${parsed.hostOrganization.id}_manual_provider`;
+    if (parsed.hostOrganization.id !== seedData.hostOrganization.id) {
+      full.paymentProvider.id = `${parsed.hostOrganization.id}_manual_provider`;
+      full.cardPaymentProvider.id = `${parsed.hostOrganization.id}_card_provider`;
+    }
     return { ...full, ...parsed, onboardingTemplate: 'custom' } as AccommodationSeed;
   }
 

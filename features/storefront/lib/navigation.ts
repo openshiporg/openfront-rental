@@ -12,6 +12,9 @@ export function searchQuery(params: SearchParams, updates: Record<string, string
   }
   return query.toString();
 }
+/** Index of the last result a page can start at: the server ranks at most 5,000 homes. */
+export const MAX_RESULT_INDEX = 4999;
+
 export function countParam(value: string | string[] | undefined, fallback = 0, max = 16) {
   const text = single(value);
   return /^\d{1,4}$/.test(text) ? Math.min(Number(text), max) : fallback;
@@ -33,4 +36,5 @@ export const storefrontNav = [
   { key: 'collections', href: '/collections', label: 'Collections' },
   { key: 'trips', href: '/trips', label: 'Your trip' },
   { key: 'help', href: '/help', label: 'Help' },
+  { key: 'account', href: '/account', label: 'Account' },
 ] as const;

@@ -4,28 +4,49 @@ import { checkbox, integer, relationship, select, text, virtual } from '@keyston
 
 import { hostScopedListAccess, permissions } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
+import { assertListingAllocation, coherentBookingMode } from '../utils/listingIntegrity';
 import { trackingFields } from './trackingFields';
+import { listingReadinessFor } from '../utils/listingReadiness';
+import { archivedRecordGuard } from '../mutations/catalogLifecycle';
+
+const listingHostHooks = hostScopedHooks('canManageListings');
+const archivedListingGuard = archivedRecordGuard('listing');
 
 export const Listing = list({
   access: hostScopedListAccess('canReadListings', 'canManageListings'),
-  hooks: hostScopedHooks('canManageListings'),
+  hooks: {
+    resolveInput: async (args: any) => coherentBookingMode(await listingHostHooks.resolveInput(args), args.item),
+    validate: async (args: any) => {
+      await listingHostHooks.validate(args);
+      archivedListingGuard(args);
+      try {
+        await assertListingAllocation(args);
+      } catch (error) {
+        args.addValidationError(error instanceof Error ? error.message : 'Listing allocation is invalid.');
+      }
+    },
+  },
   ui: {
     labelField: 'title',
     listView: { initialColumns: ['title', 'status', 'property', 'accommodationUnit', 'baseNightlyRateCents', 'instantBook'] },
   },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization.listings' }),
+    // Set when the listing is created; moved later only by the locked allocation command, which
+    // serializes with bookings, amendments and re-accommodation on the same listing and units.
     property: relationship({
       ref: 'Property.listings',
-      access: { read: permissions.canReadProperties, update: permissions.canManageProperties },
+      access: { read: permissions.canReadProperties, update: () => false },
     }),
-    accommodationUnit: relationship({ ref: 'AccommodationUnit.listings' }),
+    accommodationUnit: relationship({ ref: 'AccommodationUnit.listings', access: { update: () => false } }),
     title: text({ validation: { isRequired: true } }),
     slug: text({ validation: { isRequired: true }, isIndexed: 'unique' }),
     subtitle: text(),
     description: text({ ui: { displayMode: 'textarea' } }),
+    // Lifecycle moves only through the locked catalog transition command.
     status: select({
       type: 'string',
+      access: { update: () => false },
       options: [
         { label: 'Draft', value: 'draft' },
         { label: 'Published', value: 'published' },
@@ -49,10 +70,19 @@ export const Listing = list({
     securityDepositCents: integer({ defaultValue: 0, validation: { min: 0 } }),
     minimumStay: integer({ defaultValue: 1, validation: { min: 1 } }),
     maximumStay: integer({ validation: { min: 1 } }),
-    advanceNoticeHours: integer({ defaultValue: 24, validation: { min: 0 }, ui: { description: 'Informational configuration only: stay search, quote, and reservation conversion do not currently enforce this notice.' } }),
-    bookingWindowDays: integer({ defaultValue: 365, validation: { min: 1 }, ui: { description: 'Informational configuration only: stay search, quote, and reservation conversion do not currently enforce this window.' } }),
+    advanceNoticeHours: integer({ defaultValue: 24, validation: { min: 0 }, ui: { description: 'Minimum hours between booking and check-in (at the property’s check-in time). Enforced in search, quotes and booking; an active rate plan’s value takes precedence.' } }),
+    bookingWindowDays: integer({ defaultValue: 365, validation: { min: 1 }, ui: { description: 'How many days ahead a check-in can be booked. Enforced in search, quotes and booking; an active rate plan’s value takes precedence.' } }),
     reviewAverageHundredths: integer({ defaultValue: 0, validation: { min: 0, max: 500 } }),
     reviewCount: integer({ defaultValue: 0, validation: { min: 0 } }),
+    // Bookable-online readiness from the quote rules, readable with the listing itself; it
+    // carries no prices or terms, so hidden pricing is never misread as missing pricing.
+    onlineReadiness: virtual({
+      field: graphql.field({
+        type: graphql.JSON,
+        resolve: async (item, _args, context) => (await listingReadinessFor(context.prisma, [String(item.id)])).get(String(item.id)) || null,
+      }),
+      ui: { itemView: { fieldMode: 'hidden' }, listView: { fieldMode: 'hidden' }, createView: { fieldMode: 'hidden' } },
+    }),
     thumbnail: virtual({
       field: graphql.field({
         type: graphql.String,
@@ -82,21 +112,22 @@ export const Listing = list({
     calendarBlocks: relationship({
       ref: 'CalendarBlock.listing',
       many: true,
-      access: { create: denyAll, update: denyAll },
-    }),
-    ratePlans: relationship({ ref: 'RatePlan.listing', many: true }),
-    feeDefinitions: relationship({ ref: 'FeeDefinition.listing', many: true }),
-    taxRules: relationship({ ref: 'TaxRule.listing', many: true }),
-    quotes: relationship({ ref: 'StayQuote.listing', many: true }),
+      access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
+    // Pricing links need pricing authority, not only listing authority; read-only pricing can't repoint them.
+    ratePlans: relationship({ ref: 'RatePlan.listing', many: true, access: { create: permissions.canManagePricing, update: permissions.canManagePricing }, ui: { displayMode: 'count' } }),
+    feeDefinitions: relationship({ ref: 'FeeDefinition.listing', many: true, access: { create: permissions.canManagePricing, update: permissions.canManagePricing } }),
+    taxRules: relationship({ ref: 'TaxRule.listing', many: true, access: { create: permissions.canManagePricing, update: permissions.canManagePricing } }),
+    // History (issued quotes, conversations, reviews, tasks) is never moved or detached from a parent's form.
+    quotes: relationship({ ref: 'StayQuote.listing', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count', createView: { fieldMode: 'hidden' } } }),
     reservations: relationship({
       ref: 'Reservation.listing',
       many: true,
-      access: { read: permissions.canReadReservations, update: () => false },
-    }),
-    conversations: relationship({ ref: 'Conversation.listing', many: true }),
-    reviews: relationship({ ref: 'Review.listing', many: true }),
-    tasks: relationship({ ref: 'PropertyTask.listing', many: true }),
-    channelListings: relationship({ ref: 'ChannelListing.listing', many: true }),
+      // Reservations move only through allocation and lifecycle commands, never from a parent's form.
+      access: { read: permissions.canReadReservations, create: () => false, update: () => false }, ui: { displayMode: 'count' } }),
+    conversations: relationship({ ref: 'Conversation.listing', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count', createView: { fieldMode: 'hidden' } } }),
+    reviews: relationship({ ref: 'Review.listing', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count', createView: { fieldMode: 'hidden' } } }),
+    tasks: relationship({ ref: 'PropertyTask.listing', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count', createView: { fieldMode: 'hidden' } } }),
+    channelListings: relationship({ ref: 'ChannelListing.listing', many: true, access: { create: permissions.canManageChannels, update: permissions.canManageChannels }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

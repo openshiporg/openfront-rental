@@ -3,11 +3,34 @@ import { checkbox, integer, json, relationship, select, text } from '@keystone-6
 
 import { hostScopedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
+import { propertyTaskPriorityOptions, propertyTaskTypeOptions, taskRuleTriggerOptions, unsupportedTaskRuleTriggers } from '../utils/propertyTaskLifecycle';
 import { trackingFields } from './trackingFields';
+
+const scopedHooks = hostScopedHooks('canManageProperties');
 
 export const TaskRule = list({
   access: hostScopedListAccess('canReadProperties', 'canManageProperties'),
-  hooks: hostScopedHooks('canManageProperties'),
+  hooks: {
+    ...scopedHooks,
+    validate: async (args: any) => {
+      await scopedHooks.validate(args);
+      const { operation, resolvedData, item, context, addValidationError } = args;
+      if (operation === 'delete') return;
+      // Existing rules with an unsupported trigger are kept as records; they can't be added, switched to, or switched back on.
+      const trigger = resolvedData?.trigger ?? item?.trigger;
+      const admitted = operation === 'create'
+        || (resolvedData?.trigger !== undefined && resolvedData.trigger !== item?.trigger)
+        || (resolvedData?.isActive === true && item?.isActive !== true);
+      if (admitted && unsupportedTaskRuleTriggers.includes(trigger)) {
+        addValidationError('This trigger isn’t supported yet and would never create tasks. Choose another trigger.');
+      }
+      const defaultAssigneeId = resolvedData?.defaultAssignee?.connect?.id;
+      if (defaultAssigneeId) {
+        const user = await context.prisma.user.findUnique({ where: { id: defaultAssigneeId }, select: { isActive: true } });
+        if (user?.isActive !== true) addValidationError('The default assignee’s account is inactive.');
+      }
+    },
+  },
   ui: { listView: { initialColumns: ['name', 'trigger', 'property', 'taskType', 'priority', 'isActive'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization.taskRules' }),
@@ -18,42 +41,24 @@ export const TaskRule = list({
     name: text({ validation: { isRequired: true } }),
     trigger: select({
       type: 'string',
-      options: [
-        { label: 'Reservation confirmed', value: 'reservation_confirmed' },
-        { label: 'Before check-in', value: 'before_check_in' },
-        { label: 'After check-out', value: 'after_check_out' },
-        { label: 'Reservation cancelled', value: 'reservation_cancelled' },
-        { label: 'Calendar schedule', value: 'calendar_schedule' },
-      ],
+      options: taskRuleTriggerOptions,
       defaultValue: 'after_check_out',
     }),
     offsetMinutes: integer({ defaultValue: 0 }),
     taskType: select({
       type: 'string',
-      options: [
-        { label: 'Turnover Cleaning', value: 'turnover_cleaning' },
-        { label: 'Readiness Inspection', value: 'readiness_inspection' },
-        { label: 'Property Maintenance', value: 'property_maintenance' },
-        { label: 'Guest Request', value: 'guest_request' },
-        { label: 'Restocking', value: 'restocking' },
-        { label: 'Check-in Support', value: 'check_in_support' },
-      ],
+      options: propertyTaskTypeOptions,
       defaultValue: 'turnover_cleaning',
     }),
     titleTemplate: text({ validation: { isRequired: true } }),
     priority: select({
       type: 'string',
-      options: [
-        { label: 'Low', value: 'low' },
-        { label: 'Normal', value: 'normal' },
-        { label: 'High', value: 'high' },
-        { label: 'Urgent', value: 'urgent' },
-      ],
+      options: propertyTaskPriorityOptions,
       defaultValue: 'normal',
     }),
     checklistTemplate: json({ defaultValue: [] }),
     isActive: checkbox({ defaultValue: true }),
-    tasks: relationship({ ref: 'PropertyTask.taskRule', many: true }),
+    tasks: relationship({ ref: 'PropertyTask.taskRule', many: true, access: { create: () => false, update: () => false }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

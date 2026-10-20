@@ -44,8 +44,8 @@ export const OwnerStatement = list({
     sentAt: timestamp(),
     paidAt: timestamp(),
     paidReference: text(),
-    lines: relationship({ ref: 'OwnerStatementLine.statement', many: true }),
-    payouts: relationship({ ref: 'Payout.ownerStatement', many: true }),
+    lines: relationship({ ref: 'OwnerStatementLine.statement', many: true, ui: { displayMode: 'count' } }),
+    payouts: relationship({ ref: 'Payout.ownerStatement', many: true, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

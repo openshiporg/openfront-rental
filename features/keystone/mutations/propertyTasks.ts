@@ -2,7 +2,15 @@ import crypto from 'node:crypto';
 
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
 import { enqueueOutboxEvent } from '../utils/outbox';
-import { applyPropertyTaskTransition } from '../utils/propertyTaskLifecycle';
+import {
+  applyPropertyTaskTransition,
+  isActiveTaskAssignee,
+  isPropertyTaskPriority,
+  isPropertyTaskType,
+  propertyTaskMessages,
+  resolvePropertyTaskDueAt,
+} from '../utils/propertyTaskLifecycle';
+import { createMissingBeforeCheckInTasks } from '../utils/reservationTaskAutomation';
 
 export async function createPropertyTask(
   _root: unknown,
@@ -19,36 +27,42 @@ export async function createPropertyTask(
   },
   context: any,
 ) {
-  const property = await context.query.Property.findOne({ where: { id: args.propertyId }, query: 'id hostOrganization { id }' });
-  if (!property?.hostOrganization?.id) throw new Error('Property not found.');
+  const property = await context.query.Property.findOne({ where: { id: args.propertyId }, query: 'id status timezone hostOrganization { id }' });
+  if (!property?.hostOrganization?.id) throw new Error(propertyTaskMessages.propertyNotFound);
   await assertHostOrganizationAccess({ context, hostOrganizationId: property.hostOrganization.id, permission: 'canManageProperties' });
+  if (property.status === 'archived') throw new Error(propertyTaskMessages.archivedProperty);
   const title = args.title.trim();
-  if (!title || title.length > 240) throw new Error('Task title is required and must be at most 240 characters.');
+  if (!title || title.length > 240) throw new Error(propertyTaskMessages.title);
   const notes = args.notes?.trim() || '';
-  if (notes.length > 4000) throw new Error('Task notes are too long.');
-  const dueAt = args.dueAt ? new Date(args.dueAt) : null;
-  if (dueAt && Number.isNaN(dueAt.getTime())) throw new Error('Task due date is invalid.');
+  if (notes.length > 4000) throw new Error(propertyTaskMessages.notes);
+  if (!isPropertyTaskType(args.taskType)) throw new Error(propertyTaskMessages.taskType);
+  const priority = args.priority || 'normal';
+  if (!isPropertyTaskPriority(priority)) throw new Error(propertyTaskMessages.priority);
+  const dueAt = resolvePropertyTaskDueAt(args.dueAt, property.timezone);
   const id = crypto.randomUUID();
 
   return context.prisma.$transaction(async (tx: any) => {
-    if (args.listingId) {
-      const listing = await tx.listing.findFirst({ where: { id: args.listingId, propertyId: property.id, hostOrganizationId: property.hostOrganization.id }, select: { id: true } });
-      if (!listing) throw new Error('Task listing must belong to the selected property and host organization.');
+    let listingId = args.listingId || null;
+    if (listingId) {
+      const listing = await tx.listing.findFirst({ where: { id: listingId, propertyId: property.id, hostOrganizationId: property.hostOrganization.id }, select: { id: true } });
+      if (!listing) throw new Error(propertyTaskMessages.listing);
     }
     if (args.reservationId) {
-      const reservation = await tx.reservation.findFirst({ where: { id: args.reservationId, hostOrganizationId: property.hostOrganization.id }, select: { id: true, listing: { select: { propertyId: true } } } });
-      if (!reservation || reservation.listing?.propertyId !== property.id) throw new Error('Task reservation must belong to the selected property and host organization.');
+      const reservation = await tx.reservation.findFirst({ where: { id: args.reservationId, hostOrganizationId: property.hostOrganization.id }, select: { id: true, listingId: true, listing: { select: { propertyId: true } } } });
+      if (!reservation || reservation.listing?.propertyId !== property.id) throw new Error(propertyTaskMessages.reservation);
+      // A stay is on exactly one listing; never attach it under another.
+      if (listingId && reservation.listingId !== listingId) throw new Error(propertyTaskMessages.reservationListing);
+      listingId = reservation.listingId;
     }
-    if (args.assigneeId) {
-      const membership = await tx.hostMembership.findFirst({ where: { hostOrganizationId: property.hostOrganization.id, userId: args.assigneeId, status: 'active' }, select: { id: true } });
-      if (!membership) throw new Error('Task assignee must be an active member of the host organization.');
+    if (args.assigneeId && !(await isActiveTaskAssignee(tx, property.hostOrganization.id, args.assigneeId))) {
+      throw new Error(propertyTaskMessages.assignee);
     }
     const created = await tx.propertyTask.create({
       data: {
         id,
         hostOrganizationId: property.hostOrganization.id,
         propertyId: property.id,
-        listingId: args.listingId || null,
+        listingId,
         reservationId: args.reservationId || null,
         assigneeId: args.assigneeId || null,
         idempotencyKey: `manual-property-task:${id}`,
@@ -56,7 +70,7 @@ export async function createPropertyTask(
         title,
         taskType: args.taskType,
         status: args.assigneeId ? 'assigned' : 'queued',
-        priority: args.priority || 'normal',
+        priority,
         dueAt,
         claimedAt: args.assigneeId ? new Date() : null,
         checklist: [],
@@ -69,7 +83,7 @@ export async function createPropertyTask(
       aggregateType: 'PropertyTask',
       aggregateId: id,
       operationKey: `create:${id}`,
-      payload: { taskId: id, propertyId: property.id, status: created.status, taskType: created.taskType },
+      payload: { taskId: id, propertyId: property.id, status: created.status, taskType: created.taskType, actorId: context.session?.itemId || null },
     });
     return created;
   }, { maxWait: 5000, timeout: 10000, isolationLevel: 'ReadCommitted' });
@@ -94,11 +108,12 @@ export async function transitionPropertyTask(
     await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `property-task:${task.id}`);
     const locked = await tx.propertyTask.findUnique({ where: { id: task.id } });
     if (!locked) throw new Error('Property task not found.');
-    if (args.action === 'assign') {
-      const assigneeId = args.assigneeId?.trim() || '';
-      const membership = await tx.hostMembership.findFirst({ where: { hostOrganizationId: task.hostOrganization.id, userId: assigneeId, status: 'active' }, select: { id: true } });
-      if (!membership) throw new Error('Task assignee must be an active member of the host organization.');
+    if (args.action === 'assign' && !(await isActiveTaskAssignee(tx, task.hostOrganization.id, args.assigneeId?.trim()))) {
+      throw new Error(propertyTaskMessages.assignee);
     }
+    // Work isn't started for, or handed back to, someone who has since lost access.
+    const assigneeActive = !locked.assigneeId || await isActiveTaskAssignee(tx, task.hostOrganization.id, locked.assigneeId);
+    if (args.action === 'start' && !assigneeActive) throw new Error(propertyTaskMessages.staleAssignee);
     const transition = args.action === 'assign'
       ? { action: 'assign' as const, assigneeId: args.assigneeId || '' }
       : args.action === 'complete'
@@ -114,16 +129,54 @@ export async function transitionPropertyTask(
                 : null;
     if (!transition) throw new Error('Unsupported property task transition.');
     const now = new Date();
-    const data = applyPropertyTaskTransition({ status: locked.status, assigneeId: locked.assigneeId }, transition, now);
-    const updated = await tx.propertyTask.update({ where: { id: locked.id }, data });
+    const releaseStaleAssignee = args.action === 'reopen' && !assigneeActive;
+    const data = applyPropertyTaskTransition({
+      status: locked.status,
+      assigneeId: releaseStaleAssignee ? null : locked.assigneeId,
+      checklist: locked.checklist,
+    }, transition, now);
+    const updated = await tx.propertyTask.update({ where: { id: locked.id }, data: releaseStaleAssignee ? { ...data, assigneeId: null, claimedAt: null } : data });
     await enqueueOutboxEvent(tx, {
       hostOrganizationId: task.hostOrganization.id,
       eventType: `property_task.${updated.status}`,
       aggregateType: 'PropertyTask',
       aggregateId: locked.id,
       operationKey: `${args.action}:${now.toISOString()}`,
-      payload: { taskId: locked.id, status: updated.status, propertyId: locked.propertyId, reservationId: locked.reservationId },
+      payload: {
+        taskId: locked.id,
+        status: updated.status,
+        propertyId: locked.propertyId,
+        reservationId: locked.reservationId,
+        actorId: context.session?.itemId || null,
+        ...(releaseStaleAssignee ? { releasedAssigneeId: locked.assigneeId } : {}),
+      },
     });
     return updated;
   }, { maxWait: 5000, timeout: 10000, isolationLevel: 'ReadCommitted' });
 }
+
+/** Host command: create any missing before-check-in tasks for upcoming confirmed stays. */
+export async function runPropertyTaskRules(_root: unknown, args: { hostOrganizationId: string; afterRuleId?: string | null }, context: any) {
+  const hostOrganizationId = String(args.hostOrganizationId || '').trim();
+  if (!hostOrganizationId) throw new Error('Choose a host organization.');
+  await assertHostOrganizationAccess({ context, hostOrganizationId, permission: 'canManageProperties' });
+  return context.prisma.$transaction(async (tx: any) => {
+    // One evaluation per host at a time; the unique task keys still guard against any overlap.
+    await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `property-task-rules:${hostOrganizationId}`);
+    const afterRuleId = typeof args.afterRuleId === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(args.afterRuleId) ? args.afterRuleId : null;
+    return createMissingBeforeCheckInTasks(tx, hostOrganizationId, new Date(), afterRuleId);
+  }, { maxWait: 5000, timeout: 30000, isolationLevel: 'ReadCommitted' });
+}
+
+export const propertyTaskRuleTypeDefs = String.raw`
+  type Mutation {
+    "Creates missing before-arrival tasks a page of rules at a time; pass the returned nextRuleCursor to continue."
+    runPropertyTaskRules(hostOrganizationId: ID!, afterRuleId: String): JSON!
+  }
+`;
+
+export const propertyTaskRuleResolvers = {
+  Mutation: {
+    runPropertyTaskRules,
+  },
+};

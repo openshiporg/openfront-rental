@@ -39,9 +39,8 @@ export const ChannelReservation = list({
     calendarBlocks: relationship({
       ref: 'CalendarBlock.channelReservation',
       many: true,
-      access: { create: denyAll, update: denyAll },
-    }),
-    syncEvents: relationship({ ref: 'ChannelSyncEvent.channelReservation', many: true }),
+      access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
+    syncEvents: relationship({ ref: 'ChannelSyncEvent.channelReservation', many: true, access: { create: () => false, update: () => false }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

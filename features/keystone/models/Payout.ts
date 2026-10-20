@@ -33,7 +33,11 @@ export const Payout = list({
     managerFeeCents: integer({ defaultValue: 0 }),
     refundAmountCents: integer({ defaultValue: 0 }),
     netAmountCents: integer({ defaultValue: 0 }),
-    providerPayoutId: text({ isIndexed: 'unique' }),
+    providerPayoutId: text({
+      isIndexed: 'unique',
+      db: { isNullable: true },
+      ui: { description: 'External provider reference only. Payouts an operator records as paid outside the app do not receive a provider ID.' },
+    }),
     scheduledAt: timestamp(),
     paidAt: timestamp(),
     data: json(),

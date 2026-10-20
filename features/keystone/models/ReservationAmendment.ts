@@ -26,7 +26,7 @@ export const ReservationAmendment = list({
     beforeSnapshot: json({ access: { update: () => false }, ui: { itemView: { fieldMode: 'read' } } }),
     afterSnapshot: json({ access: { update: () => false }, ui: { itemView: { fieldMode: 'read' } } }),
     delta: json({ access: { update: () => false }, ui: { itemView: { fieldMode: 'read' } } }),
-    refunds: relationship({ ref: 'Refund.reservationAmendment', many: true, access: { create: () => false, update: () => false } }),
+    refunds: relationship({ ref: 'Refund.reservationAmendment', many: true, access: { create: () => false, update: () => false }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

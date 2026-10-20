@@ -52,17 +52,15 @@ export const PropertyOwner = list({
       defaultValue: {},
       ui: { description: 'Non-secret tax classification and reporting metadata. Never store tax IDs or bank credentials here.' },
     }),
-    assignments: relationship({ ref: 'PropertyOwnerAssignment.owner', many: true }),
+    assignments: relationship({ ref: 'PropertyOwnerAssignment.owner', many: true, ui: { displayMode: 'count' } }),
     statements: relationship({
       ref: 'OwnerStatement.owner',
       many: true,
-      access: { create: denyAll, update: denyAll },
-    }),
+      access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
     payouts: relationship({
       ref: 'Payout.propertyOwner',
       many: true,
-      access: { create: denyAll, update: denyAll },
-    }),
+      access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

@@ -8,6 +8,7 @@ import { sendPasswordResetEmail } from "./lib/mail";
 import { resolvePostgresDatabaseUrl, resolveSessionSecret } from "./lib/runtimeSecrets";
 import { createKeystoneSessionConfig } from "./sessionPolicy";
 import { withGraphqlListMaxTake } from "./security/graphql-limits";
+import { parseStorageEndpoint } from "./lib/storage-endpoint";
 
 const databaseURL = resolvePostgresDatabaseUrl();
 
@@ -15,13 +16,22 @@ const boundedModels = withGraphqlListMaxTake(models);
 
 const sessionConfig = createKeystoneSessionConfig(resolveSessionSecret());
 
-const {
-  S3_BUCKET_NAME: bucketName = "keystone-test",
-  S3_REGION: region = "ap-southeast-2",
-  S3_ACCESS_KEY_ID: accessKeyId = "keystone",
-  S3_SECRET_ACCESS_KEY: secretAccessKey = "keystone",
-  S3_ENDPOINT: endpoint = "https://sfo3.digitaloceanspaces.com",
-} = process.env;
+// As in E-commerce: development keeps local defaults; production must configure real storage
+// instead of silently uploading with placeholder credentials.
+function productionEnv(name: string, developmentFallback: string): string {
+  const value = process.env[name]?.trim();
+  if (value) return value;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(`${name} is required in production`);
+  }
+  return developmentFallback;
+}
+
+const bucketName = productionEnv("S3_BUCKET_NAME", "keystone-test");
+const region = productionEnv("S3_REGION", "ap-southeast-2");
+const accessKeyId = productionEnv("S3_ACCESS_KEY_ID", "keystone");
+const secretAccessKey = productionEnv("S3_SECRET_ACCESS_KEY", "keystone");
+const endpoint = parseStorageEndpoint(productionEnv("S3_ENDPOINT", "https://sfo3.digitaloceanspaces.com")).origin;
 
 const { withAuth } = createAuth({
   listKey: "User",
@@ -70,8 +80,14 @@ const { withAuth } = createAuth({
   },
   passwordResetLink: {
     async sendToken(args) {
-      // send the email
-      await sendPasswordResetEmail(args.token, args.identity);
+      const user = await args.context.sudo().query.User.findOne({ where: { id: String(args.itemId) }, query: 'role { canAccessDashboard }' });
+      const audience = user?.role?.canAccessDashboard ? 'dashboard' : 'guest';
+      try {
+        await sendPasswordResetEmail(args.token, args.identity, undefined, audience);
+      } catch {
+        // Keep the response identical for known and unknown emails; delivery failures are operational.
+        console.error('Password reset email could not be sent.');
+      }
     },
   },
   sessionData: `

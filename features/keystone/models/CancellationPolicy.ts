@@ -8,7 +8,7 @@ import { trackingFields } from './trackingFields';
 export const CancellationPolicy = list({
   access: hostScopedListAccess('canReadPricing', 'canManagePricing'),
   hooks: hostScopedHooks('canManagePricing'),
-  ui: { listView: { initialColumns: ['name', 'hostOrganization', 'policyType', 'version', 'ratePlans'] } },
+  ui: { listView: { initialColumns: ['name', 'hostOrganization', 'policyType', 'version'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization.cancellationPolicies' }),
     name: text({ validation: { isRequired: true } }),
@@ -29,8 +29,9 @@ export const CancellationPolicy = list({
     fullTerms: text({ ui: { displayMode: 'textarea' } }),
     freeCancellationHours: integer({ defaultValue: 24, validation: { min: 0 } }),
     rules: json({ ui: { description: 'Versioned refund-window rules in integer basis points.' } }),
-    ratePlans: relationship({ ref: 'RatePlan.cancellationPolicy', many: true }),
-    agreements: relationship({ ref: 'StayAgreement.cancellationPolicy', many: true }),
+    ratePlans: relationship({ ref: 'RatePlan.cancellationPolicy', many: true, ui: { displayMode: 'count' } }),
+    // Agreements keep the policy they were issued under; a policy form can't repoint them.
+    agreements: relationship({ ref: 'StayAgreement.cancellationPolicy', many: true, access: { create: () => false, update: () => false }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

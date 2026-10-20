@@ -13,6 +13,8 @@ type User {
   hostMemberships(where: HostMembershipWhereInput! = {}, orderBy: [HostMembershipOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: HostMembershipWhereUniqueInput): [HostMembership!]
   hostMembershipsCount(where: HostMembershipWhereInput! = {}): Int
   guestProfile: GuestProfile
+  customerReservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
+  customerReservationsCount(where: ReservationWhereInput! = {}): Int
   sentMessages(where: MessageWhereInput! = {}, orderBy: [MessageOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: MessageWhereUniqueInput): [Message!]
   sentMessagesCount(where: MessageWhereInput! = {}): Int
   authoredReviews(where: ReviewWhereInput! = {}, orderBy: [ReviewOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReviewWhereUniqueInput): [Review!]
@@ -49,6 +51,7 @@ input UserWhereInput {
   onboardingStatus: StringNullableFilter
   hostMemberships: HostMembershipManyRelationFilter
   guestProfile: GuestProfileWhereInput
+  customerReservations: ReservationManyRelationFilter
   sentMessages: MessageManyRelationFilter
   authoredReviews: ReviewManyRelationFilter
   assignedPropertyTasks: PropertyTaskManyRelationFilter
@@ -130,6 +133,12 @@ input HostMembershipManyRelationFilter {
   none: HostMembershipWhereInput
 }
 
+input ReservationManyRelationFilter {
+  every: ReservationWhereInput
+  some: ReservationWhereInput
+  none: ReservationWhereInput
+}
+
 input MessageManyRelationFilter {
   every: MessageWhereInput
   some: MessageWhereInput
@@ -201,6 +210,7 @@ input UserUpdateInput {
   onboardingStatus: String
   hostMemberships: HostMembershipRelateToManyForUpdateInput
   guestProfile: GuestProfileRelateToOneForUpdateInput
+  customerReservations: ReservationRelateToManyForUpdateInput
   sentMessages: MessageRelateToManyForUpdateInput
   authoredReviews: ReviewRelateToManyForUpdateInput
   assignedPropertyTasks: PropertyTaskRelateToManyForUpdateInput
@@ -228,6 +238,13 @@ input GuestProfileRelateToOneForUpdateInput {
   create: GuestProfileCreateInput
   connect: GuestProfileWhereUniqueInput
   disconnect: Boolean
+}
+
+input ReservationRelateToManyForUpdateInput {
+  disconnect: [ReservationWhereUniqueInput!]
+  set: [ReservationWhereUniqueInput!]
+  create: [ReservationCreateInput!]
+  connect: [ReservationWhereUniqueInput!]
 }
 
 input MessageRelateToManyForUpdateInput {
@@ -266,6 +283,7 @@ input UserCreateInput {
   onboardingStatus: String
   hostMemberships: HostMembershipRelateToManyForCreateInput
   guestProfile: GuestProfileRelateToOneForCreateInput
+  customerReservations: ReservationRelateToManyForCreateInput
   sentMessages: MessageRelateToManyForCreateInput
   authoredReviews: ReviewRelateToManyForCreateInput
   assignedPropertyTasks: PropertyTaskRelateToManyForCreateInput
@@ -289,6 +307,11 @@ input HostMembershipRelateToManyForCreateInput {
 input GuestProfileRelateToOneForCreateInput {
   create: GuestProfileCreateInput
   connect: GuestProfileWhereUniqueInput
+}
+
+input ReservationRelateToManyForCreateInput {
+  create: [ReservationCreateInput!]
+  connect: [ReservationWhereUniqueInput!]
 }
 
 input MessageRelateToManyForCreateInput {
@@ -537,12 +560,18 @@ type MarketplaceSettings {
   publicDescription: String
   supportEmail: String
   supportPhone: String
+  supportHours: String
+  officeAddress: String
+  privacyPolicyUrl: String
+  termsUrl: String
   currencyCode: String
   locale: String
   timezone: String
   defaultMapLatitude: Float
   defaultMapLongitude: Float
   accentHue: Int
+  logoIcon: String
+  logoColor: String
   isPublished: Boolean
   createdAt: DateTime
   updatedAt: DateTime
@@ -563,12 +592,18 @@ input MarketplaceSettingsWhereInput {
   publicDescription: StringFilter
   supportEmail: StringFilter
   supportPhone: StringFilter
+  supportHours: StringFilter
+  officeAddress: StringFilter
+  privacyPolicyUrl: StringFilter
+  termsUrl: StringFilter
   currencyCode: StringFilter
   locale: StringFilter
   timezone: StringFilter
   defaultMapLatitude: FloatNullableFilter
   defaultMapLongitude: FloatNullableFilter
   accentHue: IntFilter
+  logoIcon: StringFilter
+  logoColor: StringFilter
   isPublished: BooleanFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
@@ -604,12 +639,18 @@ input MarketplaceSettingsOrderByInput {
   publicDescription: OrderDirection
   supportEmail: OrderDirection
   supportPhone: OrderDirection
+  supportHours: OrderDirection
+  officeAddress: OrderDirection
+  privacyPolicyUrl: OrderDirection
+  termsUrl: OrderDirection
   currencyCode: OrderDirection
   locale: OrderDirection
   timezone: OrderDirection
   defaultMapLatitude: OrderDirection
   defaultMapLongitude: OrderDirection
   accentHue: OrderDirection
+  logoIcon: OrderDirection
+  logoColor: OrderDirection
   isPublished: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
@@ -622,12 +663,18 @@ input MarketplaceSettingsUpdateInput {
   publicDescription: String
   supportEmail: String
   supportPhone: String
+  supportHours: String
+  officeAddress: String
+  privacyPolicyUrl: String
+  termsUrl: String
   currencyCode: String
   locale: String
   timezone: String
   defaultMapLatitude: Float
   defaultMapLongitude: Float
   accentHue: Int
+  logoIcon: String
+  logoColor: String
   isPublished: Boolean
   createdAt: DateTime
   updatedAt: DateTime
@@ -645,12 +692,18 @@ input MarketplaceSettingsCreateInput {
   publicDescription: String
   supportEmail: String
   supportPhone: String
+  supportHours: String
+  officeAddress: String
+  privacyPolicyUrl: String
+  termsUrl: String
   currencyCode: String
   locale: String
   timezone: String
   defaultMapLatitude: Float
   defaultMapLongitude: Float
   accentHue: Int
+  logoIcon: String
+  logoColor: String
   isPublished: Boolean
   createdAt: DateTime
   updatedAt: DateTime
@@ -670,6 +723,8 @@ type HostOrganization {
   federationId: String
   dataCustody: String
   isPublic: Boolean
+  onboardingAnchorDate: String
+  onboardingFingerprint: String
   memberships(where: HostMembershipWhereInput! = {}, orderBy: [HostMembershipOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: HostMembershipWhereUniqueInput): [HostMembership!]
   membershipsCount(where: HostMembershipWhereInput! = {}): Int
   properties(where: PropertyWhereInput! = {}, orderBy: [PropertyOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyWhereUniqueInput): [Property!]
@@ -741,6 +796,8 @@ input HostOrganizationWhereInput {
   federationId: StringFilter
   dataCustody: StringNullableFilter
   isPublic: BooleanFilter
+  onboardingAnchorDate: StringFilter
+  onboardingFingerprint: StringFilter
   memberships: HostMembershipManyRelationFilter
   properties: PropertyManyRelationFilter
   listings: ListingManyRelationFilter
@@ -783,12 +840,6 @@ input GuestProfileManyRelationFilter {
   every: GuestProfileWhereInput
   some: GuestProfileWhereInput
   none: GuestProfileWhereInput
-}
-
-input ReservationManyRelationFilter {
-  every: ReservationWhereInput
-  some: ReservationWhereInput
-  none: ReservationWhereInput
 }
 
 input ReservationAmendmentManyRelationFilter {
@@ -895,6 +946,8 @@ input HostOrganizationOrderByInput {
   federationId: OrderDirection
   dataCustody: OrderDirection
   isPublic: OrderDirection
+  onboardingAnchorDate: OrderDirection
+  onboardingFingerprint: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -912,6 +965,8 @@ input HostOrganizationUpdateInput {
   federationId: String
   dataCustody: String
   isPublic: Boolean
+  onboardingAnchorDate: String
+  onboardingFingerprint: String
   memberships: HostMembershipRelateToManyForUpdateInput
   properties: PropertyRelateToManyForUpdateInput
   listings: ListingRelateToManyForUpdateInput
@@ -957,13 +1012,6 @@ input GuestProfileRelateToManyForUpdateInput {
   set: [GuestProfileWhereUniqueInput!]
   create: [GuestProfileCreateInput!]
   connect: [GuestProfileWhereUniqueInput!]
-}
-
-input ReservationRelateToManyForUpdateInput {
-  disconnect: [ReservationWhereUniqueInput!]
-  set: [ReservationWhereUniqueInput!]
-  create: [ReservationCreateInput!]
-  connect: [ReservationWhereUniqueInput!]
 }
 
 input ReservationAmendmentRelateToManyForUpdateInput {
@@ -1089,6 +1137,8 @@ input HostOrganizationCreateInput {
   federationId: String
   dataCustody: String
   isPublic: Boolean
+  onboardingAnchorDate: String
+  onboardingFingerprint: String
   memberships: HostMembershipRelateToManyForCreateInput
   properties: PropertyRelateToManyForCreateInput
   listings: ListingRelateToManyForCreateInput
@@ -1128,11 +1178,6 @@ input ListingRelateToManyForCreateInput {
 input GuestProfileRelateToManyForCreateInput {
   create: [GuestProfileCreateInput!]
   connect: [GuestProfileWhereUniqueInput!]
-}
-
-input ReservationRelateToManyForCreateInput {
-  create: [ReservationCreateInput!]
-  connect: [ReservationWhereUniqueInput!]
 }
 
 input ReservationAmendmentRelateToManyForCreateInput {
@@ -1302,6 +1347,7 @@ type Property {
   checkInUntil: String
   checkOutBy: String
   registrationNumber: String
+  arrivalInstructions: String
   internalNotes: String
   address: PropertyAddress
   units(where: AccommodationUnitWhereInput! = {}, orderBy: [AccommodationUnitOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: AccommodationUnitWhereUniqueInput): [AccommodationUnit!]
@@ -1339,6 +1385,7 @@ input PropertyWhereInput {
   checkInUntil: StringFilter
   checkOutBy: StringFilter
   registrationNumber: StringFilter
+  arrivalInstructions: StringFilter
   internalNotes: StringFilter
   address: PropertyAddressWhereInput
   units: AccommodationUnitManyRelationFilter
@@ -1367,6 +1414,7 @@ input PropertyOrderByInput {
   checkInUntil: OrderDirection
   checkOutBy: OrderDirection
   registrationNumber: OrderDirection
+  arrivalInstructions: OrderDirection
   internalNotes: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
@@ -1383,6 +1431,7 @@ input PropertyUpdateInput {
   checkInUntil: String
   checkOutBy: String
   registrationNumber: String
+  arrivalInstructions: String
   internalNotes: String
   address: PropertyAddressRelateToOneForUpdateInput
   units: AccommodationUnitRelateToManyForUpdateInput
@@ -1423,6 +1472,7 @@ input PropertyCreateInput {
   checkInUntil: String
   checkOutBy: String
   registrationNumber: String
+  arrivalInstructions: String
   internalNotes: String
   address: PropertyAddressRelateToOneForCreateInput
   units: AccommodationUnitRelateToManyForCreateInput
@@ -1795,7 +1845,7 @@ type AccommodationUnit {
   floorLabel: String
   listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
   listingsCount(where: ListingWhereInput! = {}): Int
-  bedrooms(where: BedroomWhereInput! = {}, orderBy: [BedroomOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: BedroomWhereUniqueInput): [Bedroom!]
+  bedrooms(where: BedroomWhereInput! = {}, orderBy: [BedroomOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: BedroomWhereUniqueInput): [Bedroom!]
   bedroomsCount(where: BedroomWhereInput! = {}): Int
   reservations(where: ReservationWhereInput! = {}, orderBy: [ReservationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationWhereUniqueInput): [Reservation!]
   reservationsCount(where: ReservationWhereInput! = {}): Int
@@ -1912,7 +1962,7 @@ type Bedroom {
   accommodationUnit: AccommodationUnit
   name: String
   order: Int
-  beds(where: BedWhereInput! = {}, orderBy: [BedOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: BedWhereUniqueInput): [Bed!]
+  beds(where: BedWhereInput! = {}, orderBy: [BedOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: BedWhereUniqueInput): [Bed!]
   bedsCount(where: BedWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
@@ -2157,21 +2207,21 @@ type Listing {
   reviewAverageHundredths: Int
   reviewCount: Int
   thumbnail: String
-  media(where: ListingMediaWhereInput! = {}, orderBy: [ListingMediaOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingMediaWhereUniqueInput): [ListingMedia!]
+  media(where: ListingMediaWhereInput! = {}, orderBy: [ListingMediaOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: ListingMediaWhereUniqueInput): [ListingMedia!]
   mediaCount(where: ListingMediaWhereInput! = {}): Int
-  amenities(where: AmenityWhereInput! = {}, orderBy: [AmenityOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: AmenityWhereUniqueInput): [Amenity!]
+  amenities(where: AmenityWhereInput! = {}, orderBy: [AmenityOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: AmenityWhereUniqueInput): [Amenity!]
   amenitiesCount(where: AmenityWhereInput! = {}): Int
-  collections(where: StayCollectionWhereInput! = {}, orderBy: [StayCollectionOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: StayCollectionWhereUniqueInput): [StayCollection!]
+  collections(where: StayCollectionWhereInput! = {}, orderBy: [StayCollectionOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: StayCollectionWhereUniqueInput): [StayCollection!]
   collectionsCount(where: StayCollectionWhereInput! = {}): Int
-  houseRules(where: HouseRuleWhereInput! = {}, orderBy: [HouseRuleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: HouseRuleWhereUniqueInput): [HouseRule!]
+  houseRules(where: HouseRuleWhereInput! = {}, orderBy: [HouseRuleOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: HouseRuleWhereUniqueInput): [HouseRule!]
   houseRulesCount(where: HouseRuleWhereInput! = {}): Int
   calendarBlocks(where: CalendarBlockWhereInput! = {}, orderBy: [CalendarBlockOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: CalendarBlockWhereUniqueInput): [CalendarBlock!]
   calendarBlocksCount(where: CalendarBlockWhereInput! = {}): Int
   ratePlans(where: RatePlanWhereInput! = {}, orderBy: [RatePlanOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: RatePlanWhereUniqueInput): [RatePlan!]
   ratePlansCount(where: RatePlanWhereInput! = {}): Int
-  feeDefinitions(where: FeeDefinitionWhereInput! = {}, orderBy: [FeeDefinitionOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: FeeDefinitionWhereUniqueInput): [FeeDefinition!]
+  feeDefinitions(where: FeeDefinitionWhereInput! = {}, orderBy: [FeeDefinitionOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: FeeDefinitionWhereUniqueInput): [FeeDefinition!]
   feeDefinitionsCount(where: FeeDefinitionWhereInput! = {}): Int
-  taxRules(where: TaxRuleWhereInput! = {}, orderBy: [TaxRuleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: TaxRuleWhereUniqueInput): [TaxRule!]
+  taxRules(where: TaxRuleWhereInput! = {}, orderBy: [TaxRuleOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: TaxRuleWhereUniqueInput): [TaxRule!]
   taxRulesCount(where: TaxRuleWhereInput! = {}): Int
   quotes(where: StayQuoteWhereInput! = {}, orderBy: [StayQuoteOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: StayQuoteWhereUniqueInput): [StayQuote!]
   quotesCount(where: StayQuoteWhereInput! = {}): Int
@@ -2565,7 +2615,7 @@ input ListingMediaWhereInput {
   id: IDFilter
   hostOrganization: HostOrganizationWhereInput
   listing: ListingWhereInput
-  imagePath: StringFilter
+  imagePath: StringNullableFilter
   altText: StringFilter
   caption: StringFilter
   order: IntNullableFilter
@@ -2899,7 +2949,7 @@ type RatePlan {
   advanceNoticeHours: Int
   bookingWindowDays: Int
   isDefault: Boolean
-  seasonalRates(where: SeasonalRateWhereInput! = {}, orderBy: [SeasonalRateOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: SeasonalRateWhereUniqueInput): [SeasonalRate!]
+  seasonalRates(where: SeasonalRateWhereInput! = {}, orderBy: [SeasonalRateOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: SeasonalRateWhereUniqueInput): [SeasonalRate!]
   seasonalRatesCount(where: SeasonalRateWhereInput! = {}): Int
   quotes(where: StayQuoteWhereInput! = {}, orderBy: [StayQuoteOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: StayQuoteWhereUniqueInput): [StayQuote!]
   quotesCount(where: StayQuoteWhereInput! = {}): Int
@@ -3729,12 +3779,14 @@ type Reservation {
   accommodationUnit: AccommodationUnit
   guest: GuestProfile
   guestParty: GuestParty
+  bookedBy: User
   quote: StayQuote
   confirmationCode: String
   tripTokenHash: String
   tripTokenExpiresAt: DateTime
   tripTokenRevokedAt: DateTime
   status: String
+  testMode: Boolean
   paymentStatus: String
   source: String
   checkInDate: String
@@ -3805,12 +3857,14 @@ input ReservationWhereInput {
   accommodationUnit: AccommodationUnitWhereInput
   guest: GuestProfileWhereInput
   guestParty: GuestPartyWhereInput
+  bookedBy: UserWhereInput
   quote: StayQuoteWhereInput
   confirmationCode: StringFilter
   tripTokenHash: StringFilter
   tripTokenExpiresAt: DateTimeFilter
   tripTokenRevokedAt: DateTimeNullableFilter
   status: StringNullableFilter
+  testMode: BooleanFilter
   paymentStatus: StringNullableFilter
   source: StringNullableFilter
   checkInDate: StringFilter
@@ -3874,6 +3928,7 @@ input ReservationOrderByInput {
   tripTokenExpiresAt: OrderDirection
   tripTokenRevokedAt: OrderDirection
   status: OrderDirection
+  testMode: OrderDirection
   paymentStatus: OrderDirection
   source: OrderDirection
   checkInDate: OrderDirection
@@ -3905,12 +3960,14 @@ input ReservationUpdateInput {
   accommodationUnit: AccommodationUnitRelateToOneForUpdateInput
   guest: GuestProfileRelateToOneForUpdateInput
   guestParty: GuestPartyRelateToOneForUpdateInput
+  bookedBy: UserRelateToOneForUpdateInput
   quote: StayQuoteRelateToOneForUpdateInput
   confirmationCode: String
   tripTokenHash: String
   tripTokenExpiresAt: DateTime
   tripTokenRevokedAt: DateTime
   status: String
+  testMode: Boolean
   paymentStatus: String
   source: String
   checkInDate: String
@@ -4018,12 +4075,14 @@ input ReservationCreateInput {
   accommodationUnit: AccommodationUnitRelateToOneForCreateInput
   guest: GuestProfileRelateToOneForCreateInput
   guestParty: GuestPartyRelateToOneForCreateInput
+  bookedBy: UserRelateToOneForCreateInput
   quote: StayQuoteRelateToOneForCreateInput
   confirmationCode: String
   tripTokenHash: String
   tripTokenExpiresAt: DateTime
   tripTokenRevokedAt: DateTime
   status: String
+  testMode: Boolean
   paymentStatus: String
   source: String
   checkInDate: String
@@ -4329,6 +4388,7 @@ type StayAgreement {
   signatureName: String
   signedAt: DateTime
   termsSnapshot: JSON
+  signatureEvidence: JSON
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -4392,6 +4452,7 @@ input StayAgreementUpdateInput {
   signatureName: String
   signedAt: DateTime
   termsSnapshot: JSON
+  signatureEvidence: JSON
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -4416,6 +4477,7 @@ input StayAgreementCreateInput {
   signatureName: String
   signedAt: DateTime
   termsSnapshot: JSON
+  signatureEvidence: JSON
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -4541,6 +4603,7 @@ type DamageClaim {
   approvedAmountCents: Int
   currencyCode: String
   evidence: JSON
+  settlementEvidence: JSON
   submittedAt: DateTime
   resolvedAt: DateTime
   createdAt: DateTime
@@ -4599,6 +4662,7 @@ input DamageClaimUpdateInput {
   approvedAmountCents: Int
   currencyCode: String
   evidence: JSON
+  settlementEvidence: JSON
   submittedAt: DateTime
   resolvedAt: DateTime
   createdAt: DateTime
@@ -4622,6 +4686,7 @@ input DamageClaimCreateInput {
   approvedAmountCents: Int
   currencyCode: String
   evidence: JSON
+  settlementEvidence: JSON
   submittedAt: DateTime
   resolvedAt: DateTime
   createdAt: DateTime
@@ -5114,7 +5179,7 @@ input PayoutWhereInput {
   managerFeeCents: IntNullableFilter
   refundAmountCents: IntNullableFilter
   netAmountCents: IntNullableFilter
-  providerPayoutId: StringFilter
+  providerPayoutId: StringNullableFilter
   scheduledAt: DateTimeNullableFilter
   paidAt: DateTimeNullableFilter
   createdAt: DateTimeFilter
@@ -5478,6 +5543,10 @@ type Conversation {
   subject: String
   status: String
   externalThreadId: String
+  guestAccessTokenHash: String
+  guestAccessTokenExpiresAt: DateTime
+  guestAccessTokenRevokedAt: DateTime
+  guestEmail: String
   lastMessageAt: DateTime
   messages(where: MessageWhereInput! = {}, orderBy: [MessageOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: MessageWhereUniqueInput): [Message!]
   messagesCount(where: MessageWhereInput! = {}): Int
@@ -5488,6 +5557,7 @@ type Conversation {
 input ConversationWhereUniqueInput {
   id: ID
   reservation: ReservationWhereUniqueInput
+  guestAccessTokenHash: String
 }
 
 input ConversationWhereInput {
@@ -5503,6 +5573,10 @@ input ConversationWhereInput {
   subject: StringFilter
   status: StringNullableFilter
   externalThreadId: StringFilter
+  guestAccessTokenHash: StringNullableFilter
+  guestAccessTokenExpiresAt: DateTimeNullableFilter
+  guestAccessTokenRevokedAt: DateTimeNullableFilter
+  guestEmail: StringFilter
   lastMessageAt: DateTimeNullableFilter
   messages: MessageManyRelationFilter
   createdAt: DateTimeFilter
@@ -5514,6 +5588,10 @@ input ConversationOrderByInput {
   subject: OrderDirection
   status: OrderDirection
   externalThreadId: OrderDirection
+  guestAccessTokenHash: OrderDirection
+  guestAccessTokenExpiresAt: OrderDirection
+  guestAccessTokenRevokedAt: OrderDirection
+  guestEmail: OrderDirection
   lastMessageAt: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
@@ -5528,6 +5606,10 @@ input ConversationUpdateInput {
   subject: String
   status: String
   externalThreadId: String
+  guestAccessTokenHash: String
+  guestAccessTokenExpiresAt: DateTime
+  guestAccessTokenRevokedAt: DateTime
+  guestEmail: String
   lastMessageAt: DateTime
   messages: MessageRelateToManyForUpdateInput
   createdAt: DateTime
@@ -5554,6 +5636,10 @@ input ConversationCreateInput {
   subject: String
   status: String
   externalThreadId: String
+  guestAccessTokenHash: String
+  guestAccessTokenExpiresAt: DateTime
+  guestAccessTokenRevokedAt: DateTime
+  guestEmail: String
   lastMessageAt: DateTime
   messages: MessageRelateToManyForCreateInput
   createdAt: DateTime
@@ -7036,14 +7122,17 @@ type Mutation {
   sendUserPasswordResetLink(email: String!): Boolean!
   redeemUserPasswordResetToken(email: String!, token: String!, password: String!): RedeemUserPasswordResetTokenResult
   quoteStay(listingId: ID!, checkIn: String!, checkOut: String!, adults: Int!, children: Int, infants: Int, pets: Int): QuoteStayResult!
-  createStayReservation(quoteToken: String!, guestName: String!, guestEmail: String!, guestPhone: String, invitedGuests: JSON, guestNotes: String): CreateStayReservationResult!
-  requestStayCancellation(tripToken: String!, reason: String): StayCancellationResult!
-  signStayAgreement(token: String!, signatureName: String!): StayAgreementMutationResult!
+  createStayReservation(quoteToken: String!, guestName: String!, guestEmail: String!, guestPhone: String, invitedGuests: JSON, guestNotes: String, acceptedTermsVersion: String, receiptKey: String): CreateStayReservationResult!
+  cancelStayQuote(quoteId: ID!): CancelStayQuoteResult!
+  requestStayCancellation(tripToken: String!, reason: String, confirmCancellation: Boolean, expectedRefundCents: Int): StayCancellationResult!
+  signStayAgreement(token: String!, signatureName: String!, acceptTerms: Boolean): StayAgreementMutationResult!
   transitionStayReservation(reservationId: ID!, transition: String!, note: String): StayReservationMutationResult!
   reassignStayReservation(reservationId: ID!, targetAccommodationUnitId: ID!, reason: String!): JSON!
   amendConfirmedStay(reservationId: ID!, expectedCheckInDate: String!, expectedCheckOutDate: String!, checkInDate: String!, checkOutDate: String!, reason: String!, idempotencyKey: String!): JSON!
-  initiateStayPayment(reservationId: ID!, paymentProviderCode: String, amountCents: Int): StayPaymentResult!
+  initiateStayPayment(reservationId: ID!, paymentProviderCode: String, amountCents: Int, operationKey: String): StayPaymentResult!
   captureStayPayment(paymentId: ID!): StayPaymentResult!
+  startGuestStayPayment(tripToken: String!): JSON!
+  completeGuestStayPayment(tripToken: String!, paymentId: ID!): JSON!
   generateOwnerStatement(ownerId: ID!, periodStart: String!, periodEnd: String!, currencyCode: String): JSON!
   transitionOwnerStatement(statementId: ID!, transition: String!, reference: String): JSON!
   createOperationsTask(propertyId: ID!, listingId: ID, reservationId: ID, assigneeId: ID, title: String!, taskType: String!, priority: String, dueAt: String, notes: String): JSON!
@@ -7057,6 +7146,24 @@ type Mutation {
   transitionDamageClaim(claimId: ID!, transition: String!, approvedAmountCents: Int): JSON!
   updateOnboardingStatus(status: String!): OnboardingStatusResult!
   rentalOnboarding(input: JSON!, operationId: String, mode: String!): JSON!
+  submitGuestInquiry(name: String!, email: String!, message: String!, listingSlug: String): JSON!
+  replyToGuestThread(token: String!, message: String!): JSON!
+  sendTripMessage(tripToken: String!, topic: String, message: String!): JSON!
+  submitStayReview(tripToken: String!, overallRating: Int!, cleanlinessRating: Int, accuracyRating: Int, communicationRating: Int, locationRating: Int, valueRating: Int, body: String, privateFeedback: String): JSON!
+  registerGuestAccount(name: String!, email: String!, password: String!): JSON!
+  openAccountTrip(confirmationCode: String!): JSON!
+  recoverStayTrip(confirmationCode: String!, email: String!, addToAccount: Boolean): JSON!
+  claimStayTrip(tripToken: String!): JSON!
+  updateMyGuestProfile(name: String!, phone: String): JSON!
+  changeGuestEmail(email: String!, currentPassword: String!): JSON!
+  changeGuestPassword(currentPassword: String!, newPassword: String!, confirmPassword: String!): JSON!
+
+  """
+  Merchant stay, payment, agreement, message and review actions. Returns { ok, message?, data? }.
+  """
+  hostStayCommand(command: String!, input: JSON!): JSON!
+  deliverOutboxEvents(limit: Int, hostOrganizationId: ID): JSON!
+  runPropertyTaskRules(hostOrganizationId: ID!): JSON!
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
@@ -7119,25 +7226,25 @@ type Query {
   accommodationUnits(where: AccommodationUnitWhereInput! = {}, orderBy: [AccommodationUnitOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: AccommodationUnitWhereUniqueInput): [AccommodationUnit!]
   accommodationUnitsCount(where: AccommodationUnitWhereInput! = {}): Int
   bedroom(where: BedroomWhereUniqueInput!): Bedroom
-  bedrooms(where: BedroomWhereInput! = {}, orderBy: [BedroomOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: BedroomWhereUniqueInput): [Bedroom!]
+  bedrooms(where: BedroomWhereInput! = {}, orderBy: [BedroomOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: BedroomWhereUniqueInput): [Bedroom!]
   bedroomsCount(where: BedroomWhereInput! = {}): Int
   bed(where: BedWhereUniqueInput!): Bed
-  beds(where: BedWhereInput! = {}, orderBy: [BedOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: BedWhereUniqueInput): [Bed!]
+  beds(where: BedWhereInput! = {}, orderBy: [BedOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: BedWhereUniqueInput): [Bed!]
   bedsCount(where: BedWhereInput! = {}): Int
   amenity(where: AmenityWhereUniqueInput!): Amenity
-  amenities(where: AmenityWhereInput! = {}, orderBy: [AmenityOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: AmenityWhereUniqueInput): [Amenity!]
+  amenities(where: AmenityWhereInput! = {}, orderBy: [AmenityOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: AmenityWhereUniqueInput): [Amenity!]
   amenitiesCount(where: AmenityWhereInput! = {}): Int
   listing(where: ListingWhereUniqueInput!): Listing
   listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
   listingsCount(where: ListingWhereInput! = {}): Int
   listingMedia(where: ListingMediaWhereUniqueInput!): ListingMedia
-  listingMedias(where: ListingMediaWhereInput! = {}, orderBy: [ListingMediaOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingMediaWhereUniqueInput): [ListingMedia!]
+  listingMedias(where: ListingMediaWhereInput! = {}, orderBy: [ListingMediaOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: ListingMediaWhereUniqueInput): [ListingMedia!]
   listingMediasCount(where: ListingMediaWhereInput! = {}): Int
   stayCollection(where: StayCollectionWhereUniqueInput!): StayCollection
-  stayCollections(where: StayCollectionWhereInput! = {}, orderBy: [StayCollectionOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: StayCollectionWhereUniqueInput): [StayCollection!]
+  stayCollections(where: StayCollectionWhereInput! = {}, orderBy: [StayCollectionOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: StayCollectionWhereUniqueInput): [StayCollection!]
   stayCollectionsCount(where: StayCollectionWhereInput! = {}): Int
   houseRule(where: HouseRuleWhereUniqueInput!): HouseRule
-  houseRules(where: HouseRuleWhereInput! = {}, orderBy: [HouseRuleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: HouseRuleWhereUniqueInput): [HouseRule!]
+  houseRules(where: HouseRuleWhereInput! = {}, orderBy: [HouseRuleOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: HouseRuleWhereUniqueInput): [HouseRule!]
   houseRulesCount(where: HouseRuleWhereInput! = {}): Int
   calendarBlock(where: CalendarBlockWhereUniqueInput!): CalendarBlock
   calendarBlocks(where: CalendarBlockWhereInput! = {}, orderBy: [CalendarBlockOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: CalendarBlockWhereUniqueInput): [CalendarBlock!]
@@ -7146,13 +7253,13 @@ type Query {
   ratePlans(where: RatePlanWhereInput! = {}, orderBy: [RatePlanOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: RatePlanWhereUniqueInput): [RatePlan!]
   ratePlansCount(where: RatePlanWhereInput! = {}): Int
   seasonalRate(where: SeasonalRateWhereUniqueInput!): SeasonalRate
-  seasonalRates(where: SeasonalRateWhereInput! = {}, orderBy: [SeasonalRateOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: SeasonalRateWhereUniqueInput): [SeasonalRate!]
+  seasonalRates(where: SeasonalRateWhereInput! = {}, orderBy: [SeasonalRateOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: SeasonalRateWhereUniqueInput): [SeasonalRate!]
   seasonalRatesCount(where: SeasonalRateWhereInput! = {}): Int
   feeDefinition(where: FeeDefinitionWhereUniqueInput!): FeeDefinition
-  feeDefinitions(where: FeeDefinitionWhereInput! = {}, orderBy: [FeeDefinitionOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: FeeDefinitionWhereUniqueInput): [FeeDefinition!]
+  feeDefinitions(where: FeeDefinitionWhereInput! = {}, orderBy: [FeeDefinitionOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: FeeDefinitionWhereUniqueInput): [FeeDefinition!]
   feeDefinitionsCount(where: FeeDefinitionWhereInput! = {}): Int
   taxRule(where: TaxRuleWhereUniqueInput!): TaxRule
-  taxRules(where: TaxRuleWhereInput! = {}, orderBy: [TaxRuleOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: TaxRuleWhereUniqueInput): [TaxRule!]
+  taxRules(where: TaxRuleWhereInput! = {}, orderBy: [TaxRuleOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: TaxRuleWhereUniqueInput): [TaxRule!]
   taxRulesCount(where: TaxRuleWhereInput! = {}): Int
   cancellationPolicy(where: CancellationPolicyWhereUniqueInput!): CancellationPolicy
   cancellationPolicies(where: CancellationPolicyWhereInput! = {}, orderBy: [CancellationPolicyOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: CancellationPolicyWhereUniqueInput): [CancellationPolicy!]
@@ -7243,12 +7350,26 @@ type Query {
   validateUserPasswordResetToken(email: String!, token: String!): ValidateUserPasswordResetTokenResult
   redirectToInit: Boolean
   publicMarketplaceSettings: PublicMarketplaceSettingsResult!
-  searchStays(destination: String, checkIn: String, checkOut: String, adults: Int, children: Int, infants: Int, pets: Int, propertyTypes: [String!], amenitySlugs: [String!], bedrooms: Int, beds: Int, bathroomsHalfUnits: Int, minTotalCents: Int, maxTotalCents: Int, instantBook: Boolean, offset: Int, limit: Int): SearchStaysResult!
+  searchStays(destination: String, checkIn: String, checkOut: String, adults: Int, children: Int, infants: Int, pets: Int, propertyTypes: [String!], amenitySlugs: [String!], bedrooms: Int, beds: Int, bathroomsHalfUnits: Int, minTotalCents: Int, maxTotalCents: Int, instantBook: Boolean, listingIds: [ID!], collectionSlug: String, offset: Int, limit: Int): SearchStaysResult!
   publicListing(slug: String!): JSON
   publicStayAgreement(token: String!): JSON
   publicStayQuote(token: String!): JSON
-  publicTrip(token: String!): JSON
+  publicTrip(token: String!, messagesBefore: String): JSON
   hostOperationsReport(hostOrganizationId: ID!, startDate: String!, endDate: String!): JSON!
+  publicGuestThread(token: String!, messagesBefore: String): JSON
+  myGuestAccount(tripsOffset: Int): JSON
+  guestPasswordResetAvailable: Boolean!
+  publicStayAvailability(slug: String!): JSON
+
+  """
+  Id and name of the host organizations where the operator holds the given reports or payouts permission.
+  """
+  permittedHostOrganizations(permission: String!): JSON!
+
+  """
+  Per-currency owner statement totals and payout counts for the owners the operator can read.
+  """
+  ownerFinanceSummary: JSON!
 }
 
 union AuthenticatedItem = User
@@ -7398,12 +7519,18 @@ type PublicMarketplaceSettingsResult {
   publicDescription: String
   supportEmail: String
   supportPhone: String
+  supportHours: String
+  officeAddress: String
+  privacyPolicyUrl: String
+  termsUrl: String
   currencyCode: String
   locale: String
   timezone: String
   defaultMapLatitude: Float
   defaultMapLongitude: Float
   accentHue: Int
+  logoIcon: String
+  logoColor: String
 }
 
 type SearchStaysResult {
@@ -7411,6 +7538,7 @@ type SearchStaysResult {
   offset: Int!
   limit: Int!
   results: [JSON!]!
+  collections: JSON
 }
 
 type QuoteStayResult {
@@ -7442,6 +7570,13 @@ type CreateStayReservationResult {
   listing: JSON
   tripToken: String!
   agreementToken: String!
+  recovered: Boolean
+}
+
+type CancelStayQuoteResult {
+  id: ID!
+  quoteNumber: String!
+  status: String!
 }
 
 type StayReservationMutationResult {
@@ -7460,6 +7595,7 @@ type StayCancellationResult {
   confirmationCode: String!
   status: String!
   refundPendingCents: Int!
+  refundAssessment: String
 }
 
 type StayAgreementMutationResult {

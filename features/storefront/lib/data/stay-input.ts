@@ -21,7 +21,10 @@ function dateOnlyTimestamp(value: string, label: string) {
 export function validateStayDateRange(checkIn: string, checkOut: string, now = new Date()) {
   const checkInTimestamp = dateOnlyTimestamp(checkIn, 'Check-in');
   const checkOutTimestamp = dateOnlyTimestamp(checkOut, 'Check-out');
-  const todayTimestamp = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  // Only dates past everywhere (UTC-12) are refused here; the property's local date is
+  // the real rule and is applied by the server for each home.
+  const earliest = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+  const todayTimestamp = Date.UTC(earliest.getUTCFullYear(), earliest.getUTCMonth(), earliest.getUTCDate());
   if (checkInTimestamp < todayTimestamp) {
     throw new Error('Check-in cannot be in the past.');
   }

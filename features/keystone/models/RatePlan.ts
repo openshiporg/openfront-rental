@@ -7,7 +7,7 @@ import { trackingFields } from './trackingFields';
 
 export const RatePlan = list({
   access: hostScopedListAccess('canReadPricing', 'canManagePricing'),
-  hooks: hostScopedHooks('canManagePricing'),
+  hooks: hostScopedHooks('canManagePricing', { parent: 'listing' }),
   ui: { listView: { initialColumns: ['name', 'listing', 'baseNightlyRateCents', 'minimumStay', 'status'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),
@@ -28,11 +28,11 @@ export const RatePlan = list({
     baseNightlyRateCents: integer({ defaultValue: 0, validation: { min: 0 } }),
     minimumStay: integer({ defaultValue: 1, validation: { min: 1 } }),
     maximumStay: integer({ validation: { min: 1 } }),
-    advanceNoticeHours: integer({ defaultValue: 24, validation: { min: 0 }, ui: { description: 'Informational configuration only: stay search, quote, and reservation conversion do not currently enforce this notice.' } }),
-    bookingWindowDays: integer({ defaultValue: 365, validation: { min: 1 }, ui: { description: 'Informational configuration only: stay search, quote, and reservation conversion do not currently enforce this window.' } }),
+    advanceNoticeHours: integer({ defaultValue: 24, validation: { min: 0 }, ui: { description: 'Minimum hours between booking and check-in (at the property’s check-in time). Enforced in search, quotes and booking.' } }),
+    bookingWindowDays: integer({ defaultValue: 365, validation: { min: 1 }, ui: { description: 'How many days ahead a check-in can be booked. Enforced in search, quotes and booking.' } }),
     isDefault: checkbox({ defaultValue: false }),
     seasonalRates: relationship({ ref: 'SeasonalRate.ratePlan', many: true }),
-    quotes: relationship({ ref: 'StayQuote.ratePlan', many: true }),
+    quotes: relationship({ ref: 'StayQuote.ratePlan', many: true, access: { create: () => false, update: () => false }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

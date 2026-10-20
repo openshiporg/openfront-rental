@@ -7,10 +7,31 @@ export const MAX_GRAPHQL_SELECTION_DEPTH = 24;
 export const MAX_GRAPHQL_FIELD_COUNT = 3000;
 export const MAX_GRAPHQL_ALIAS_COUNT = 500;
 
+/**
+ * Small per-parent child lists get a smaller maximum take, which Keystone enforces for
+ * nested relationship reads too. A dashboard list page can then show these relations as
+ * columns (50 rows × 100) within the unchanged multiplier budget.
+ */
+export const GRAPHQL_LIST_MAX_TAKE_OVERRIDES: Record<string, number> = {
+  ListingMedia: 100,
+  HouseRule: 100,
+  Bedroom: 100,
+  Bed: 100,
+  SeasonalRate: 100,
+  FeeDefinition: 100,
+  TaxRule: 100,
+  Amenity: 100,
+  StayCollection: 100,
+};
+
+export function graphqlListMaxTake(listKey: string) {
+  return GRAPHQL_LIST_MAX_TAKE_OVERRIDES[listKey] ?? MAX_GRAPHQL_LIST_TAKE;
+}
+
 export function withGraphqlListMaxTake(models: Record<string, any>): Record<string, any> {
   return Object.fromEntries(Object.entries(models).map(([key, value]) => [key, {
     ...value,
-    graphql: { ...(value as any).graphql, maxTake: MAX_GRAPHQL_LIST_TAKE },
+    graphql: { ...(value as any).graphql, maxTake: graphqlListMaxTake(key) },
   }]));
 }
 

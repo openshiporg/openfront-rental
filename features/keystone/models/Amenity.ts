@@ -13,7 +13,7 @@ export const Amenity = list({
       delete: permissions.canManageListings,
     },
   },
-  ui: { listView: { initialColumns: ['name', 'category', 'iconKey', 'listings'] } },
+  ui: { listView: { initialColumns: ['name', 'category', 'iconKey'] } },
   fields: {
     name: text({ validation: { isRequired: true }, isIndexed: 'unique' }),
     slug: text({ validation: { isRequired: true }, isIndexed: 'unique' }),
@@ -33,7 +33,8 @@ export const Amenity = list({
       defaultValue: 'essentials',
     }),
     iconKey: text(),
-    listings: relationship({ ref: 'Listing.amenities', many: true }),
+    // Hosts attach amenities from their own listings; a global amenity can't rewire other hosts' listings.
+    listings: relationship({ ref: 'Listing.amenities', many: true, access: { create: () => false, update: () => false }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

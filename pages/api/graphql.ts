@@ -4,7 +4,7 @@ import { createYoga, type Plugin } from 'graphql-yoga';
 import processRequest from 'graphql-upload/processRequest.js';
 
 import { keystoneContext } from '../../features/keystone/context';
-import { admitGraphqlRequest, MAX_GRAPHQL_PARSE_TOKENS, rentalQueryLimits } from '../../features/keystone/security/graphql-limits';
+import { MAX_GRAPHQL_PARSE_TOKENS, rentalQueryLimits } from '../../features/keystone/security/graphql-limits';
 import { graphqlListPathMultiplierPlugin } from '../../features/keystone/security/graphql-query-cost';
 import {
   GraphqlRequestBodyTooLargeError,
@@ -62,14 +62,8 @@ export function getGraphiQLOptions(environment = process.env.NODE_ENV) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Use socket identity only. Forwarded-IP headers are not trusted here; the
-  // deployment proxy must apply its own shared edge limits.
-  if (!admitGraphqlRequest(req.socket.remoteAddress || 'local')) {
-    req.resume();
-    res.setHeader('Retry-After', '60');
-    return res.status(429).json({ error: 'Too many requests' });
-  }
-
+  // Match the reference apps: ordinary GraphQL reads (including the proxy's
+  // session check) do not consume a shared ingress-IP request bucket.
   const contentLength = Number(req.headers['content-length']);
   if (Number.isFinite(contentLength) && contentLength > MAX_GRAPHQL_REQUEST_BODY_BYTES) {
     req.resume();

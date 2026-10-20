@@ -1,5 +1,18 @@
 import crypto from 'node:crypto';
 
+/**
+ * One key per intended receipt. A retry of the same submission reuses its operation key; a
+ * separate instalment of the same amount has its own key and is a separate payment.
+ */
+export function manualPaymentOperationKey({ reservationId, operationKey }: { reservationId: string; operationKey: string }) {
+  const key = operationKey.trim();
+  if (key.length < 8 || key.length > 200 || Array.from(key).some((character) => character.charCodeAt(0) < 0x20 || character.charCodeAt(0) === 0x7f)) {
+    throw new Error('Provide a stable payment operation key (8 to 200 characters).');
+  }
+  return crypto.createHash('sha256').update(`manual-payment:${reservationId}:${key}`).digest('hex');
+}
+
+/** Legacy amount-derived key: still recognised for replays of records created before operation keys. */
 export function createManualPaymentIdempotencyKey({
   reservationId,
   amount,

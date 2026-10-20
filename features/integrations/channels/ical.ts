@@ -8,8 +8,18 @@ export type ICalendarEvent = {
   status: 'confirmed' | 'cancelled';
 };
 
+export const capabilities = {
+  availability: true,
+  rates: false,
+  reservations: false,
+  messages: false,
+  externalTransport: false,
+} as const;
+
 const MAX_BYTES = 1_000_000;
 const MAX_EVENTS = 500;
+// Recurrence can't be represented as one hold, so these events are rejected rather than half-applied.
+const RECURRENCE_PROPERTIES = ['RRULE', 'RDATE', 'EXDATE', 'EXRULE', 'RECURRENCE-ID'];
 
 function dateOnly(value: string, field: string) {
   if (!/^\d{8}$/.test(value)) throw new Error(`${field} must be an iCalendar date-only value.`);
@@ -34,16 +44,20 @@ export function parseICalendar(input: string): ICalendarEvent[] {
   if (!lines.includes('BEGIN:VCALENDAR') || !lines.includes('END:VCALENDAR')) throw new Error('Malformed iCalendar document.');
   const events: ICalendarEvent[] = [];
   let current: Record<string, string> | null = null;
+  let recurrence: string | null = null;
+  let nestedDepth = 0;
   for (const line of lines) {
     if (line === 'BEGIN:VEVENT') {
       if (current) throw new Error('Nested iCalendar events are invalid.');
       current = {};
+      recurrence = null;
       continue;
     }
     if (line === 'END:VEVENT') {
-      if (!current) throw new Error('Malformed iCalendar event.');
+      if (!current || nestedDepth) throw new Error('Malformed iCalendar event.');
       const uid = current.UID?.trim();
       if (!uid || uid.length > 255) throw new Error('Every iCalendar event requires a bounded UID.');
+      if (recurrence) throw new Error(`iCalendar event ${uid.slice(0, 80)} repeats with ${recurrence}. Export each date as its own event and import again.`);
       const startDate = dateOnly(current.DTSTART || '', 'DTSTART');
       const endDate = dateOnly(current.DTEND || '', 'DTEND');
       if (startDate >= endDate) throw new Error('iCalendar event end must be after its start.');
@@ -53,10 +67,15 @@ export function parseICalendar(input: string): ICalendarEvent[] {
       continue;
     }
     if (!current) continue;
+    // Properties of nested components (VALARM) never describe the event's own dates or identity.
+    if (/^BEGIN:/i.test(line)) { nestedDepth += 1; continue; }
+    if (/^END:/i.test(line)) { nestedDepth = Math.max(0, nestedDepth - 1); continue; }
+    if (nestedDepth) continue;
     const separator = line.indexOf(':');
     if (separator < 1) continue;
     const name = line.slice(0, separator).split(';')[0].toUpperCase();
     if (['UID', 'DTSTART', 'DTEND', 'SUMMARY', 'STATUS'].includes(name)) current[name] = line.slice(separator + 1);
+    else if (RECURRENCE_PROPERTIES.includes(name) && !recurrence) recurrence = name;
   }
   if (current) throw new Error('Unclosed iCalendar event.');
   const seen = new Set<string>();

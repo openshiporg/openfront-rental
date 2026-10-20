@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { keystoneContext } from '@/features/keystone/context';
-import { processPaymentWebhook } from '@/features/keystone/mutations/paymentWebhook';
-import { UnsupportedPaymentCapabilityError } from '@/features/keystone/utils/paymentProviderAdapter';
+import { PaymentWebhookError, processPaymentWebhook } from '@/features/keystone/mutations/paymentWebhook';
 
 const MAX_WEBHOOK_BODY_BYTES = 65_536;
 const WEBHOOK_BODY_TIMEOUT_MS = 2_000;
@@ -10,7 +9,7 @@ const WEBHOOK_BODY_TIMEOUT_MS = 2_000;
 async function readPaymentWebhookBody(request: Request) {
   const contentLength = Number(request.headers.get('content-length') || '0');
   if (Number.isFinite(contentLength) && contentLength > MAX_WEBHOOK_BODY_BYTES) {
-    throw new Error(`Request body exceeds the ${MAX_WEBHOOK_BODY_BYTES}-byte limit.`);
+    throw new PaymentWebhookError('body_too_large', 413, 'Request body is too large.');
   }
   if (!request.body) return '';
 
@@ -23,18 +22,18 @@ async function readPaymentWebhookBody(request: Request) {
   try {
     while (true) {
       const remainingMs = deadline - Date.now();
-      if (remainingMs <= 0) throw new Error('Request body timed out.');
+      if (remainingMs <= 0) throw new PaymentWebhookError('body_timeout', 408, 'Request body timed out.');
       const result = await Promise.race([
         reader.read(),
         new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(new Error('Request body timed out.')), remainingMs);
+          timer = setTimeout(() => reject(new PaymentWebhookError('body_timeout', 408, 'Request body timed out.')), remainingMs);
         }),
       ]);
       if (timer) clearTimeout(timer);
       if (result.done) break;
       total += result.value.byteLength;
       if (total > MAX_WEBHOOK_BODY_BYTES) {
-        throw new Error(`Request body exceeds the ${MAX_WEBHOOK_BODY_BYTES}-byte limit.`);
+        throw new PaymentWebhookError('body_too_large', 413, 'Request body is too large.');
       }
       chunks.push(result.value);
     }
@@ -59,13 +58,14 @@ export async function POST(
     const result = await processPaymentWebhook(keystoneContext as any, providerCode, rawBody, request.headers);
     return NextResponse.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Payment webhook processing failed.';
-    const tooLarge = /body exceeds/i.test(message);
-    const timedOut = /body timed out/i.test(message);
-    const clientError = error instanceof UnsupportedPaymentCapabilityError
-      || /signature|payload|unsupported|event id|integer cents|currency/i.test(message);
-    const conflict = /does not match|does not map|cannot settle/i.test(message);
-    console.error('Payment webhook rejected', { providerCode, message });
-    return NextResponse.json({ error: message }, { status: tooLarge ? 413 : timedOut ? 408 : clientError ? 400 : conflict ? 409 : 500 });
+    // Known outcomes answer with their code; anything else is a retryable 500 with a
+    // correlation id. Bodies, signatures and raw database errors are never echoed or logged.
+    const correlationId = crypto.randomUUID();
+    if (error instanceof PaymentWebhookError) {
+      console.warn('Payment webhook rejected', { providerCode, code: error.code, correlationId });
+      return NextResponse.json({ error: error.message, code: error.code, correlationId }, { status: error.status });
+    }
+    console.error('Payment webhook failed', { providerCode, correlationId, errorName: error instanceof Error ? error.name : 'unknown' });
+    return NextResponse.json({ error: 'Payment webhook processing failed.', correlationId }, { status: 500 });
   }
 }

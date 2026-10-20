@@ -12,7 +12,45 @@ import {
   isListType,
   isInputObjectType,
 } from 'graphql';
-import { getBaseUrl } from '@/features/dashboard/lib/getBaseUrl';
+import { resolveInternalBaseUrl } from '@/features/keystone/lib/internal-origin';
+
+/**
+ * GraphQL failures normalized for the model: only messages of known user-facing kinds
+ * (access denied, validation, bad input, malformed query) pass, cleaned to one short line.
+ * Anything else, short or long, is replaced by a reference; the server logs the reference and
+ * error codes only, never request bodies, raw errors or extensions.
+ */
+const PUBLIC_ERROR_CODES = new Set(['KS_ACCESS_DENIED', 'KS_VALIDATION_FAILURE', 'KS_USER_INPUT_ERROR', 'GRAPHQL_VALIDATION_FAILED', 'GRAPHQL_PARSE_FAILED', 'BAD_USER_INPUT']);
+const UNSAFE_TEXT = /prisma|invocation|postgres|sql|\bselect\b|\binsert\b|constraint|econn|stack|\bat\s+\S+\s*\(|https?:\/\/|bearer|secret|password|token|api[_-]?key/i;
+
+// Domain commands the assistant may run (each still enforced by the server for this operator).
+// Refund issuing and provider-side card actions stay with the dashboard's own forms.
+const STAY_COMMANDS = ['transition', 'conversation_reply', 'conversation_status', 'review_moderate', 'catalog_transition', 'refund_decline', 'payment_cancel_attempt', 'payment_record_manual'] as const;
+
+class ToolGraphQLError extends Error {
+  constructor(readonly publicMessage: string) { super(publicMessage); this.name = 'ToolGraphQLError'; }
+}
+
+function publicText(message: unknown) {
+  const text = String(message ?? '').replace(/\s+/g, ' ').trim();
+  return text && text.length <= 240 && !UNSAFE_TEXT.test(text) ? text : null;
+}
+
+function normalizedGraphQLError(errors: any[], context: string) {
+  const reference = crypto.randomUUID().slice(0, 8);
+  const codes = errors.map((error) => String(error?.extensions?.code || 'UNKNOWN')).slice(0, 5);
+  const messages = errors.flatMap((error) => (PUBLIC_ERROR_CODES.has(String(error?.extensions?.code || '')) ? [publicText(error?.message)] : [])).filter(Boolean) as string[];
+  console.error(`MCP ${context} failed ref=${reference} codes=${codes.join(',')}`);
+  return new ToolGraphQLError(messages.length ? messages.slice(0, 3).join(' ') : `The operation failed (reference ${reference}).`);
+}
+
+// Tool failures go back to the model as short, safe text: no raw errors, short or long.
+function safeToolError(error: unknown) {
+  if (error instanceof ToolGraphQLError) return error.publicMessage;
+  const reference = crypto.randomUUID().slice(0, 8);
+  console.error(`MCP tool failed ref=${reference} (${error instanceof Error ? error.name : 'Error'})`);
+  return `The operation failed (reference ${reference}).`;
+}
 
 // Get simple type name for display
 function getSimpleTypeName(type: any): string {
@@ -26,7 +64,7 @@ function getSimpleTypeName(type: any): string {
 }
 
 // Execute GraphQL query with authentication
-async function executeGraphQL(query: string, graphqlEndpoint: string, cookie: string): Promise<any> {
+async function executeGraphQL(query: string, graphqlEndpoint: string, cookie: string, variables?: Record<string, unknown>): Promise<any> {
   const response = await fetch(graphqlEndpoint, {
     method: 'POST',
     redirect: 'error',
@@ -34,13 +72,11 @@ async function executeGraphQL(query: string, graphqlEndpoint: string, cookie: st
       'Content-Type': 'application/json',
       'Cookie': cookie,
     },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify(variables ? { query, variables } : { query }),
   });
 
   const result = await response.json();
-  if (result.errors) {
-    throw new Error(`GraphQL execution failed: ${JSON.stringify(result.errors)}`);
-  }
+  if (result.errors) throw normalizedGraphQLError(Array.isArray(result.errors) ? result.errors : [], 'execution');
   return result;
 }
 
@@ -61,9 +97,7 @@ async function getGraphQLSchema(graphqlEndpoint: string, cookie: string): Promis
   }
   
   const result = await response.json();
-  if (result.errors) {
-    throw new Error(`GraphQL introspection failed: ${JSON.stringify(result.errors)}`);
-  }
+  if (result.errors) throw normalizedGraphQLError(Array.isArray(result.errors) ? result.errors : [], 'introspection');
   
   return buildClientSchema(result.data);
 }
@@ -76,7 +110,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
     const { transport } = await params;
     
     // Construct GraphQL endpoint
-    const baseUrl = await getBaseUrl();
+    const baseUrl = resolveInternalBaseUrl();
     const graphqlEndpoint = `${baseUrl}/api/graphql`;
     
     // Extract cookie from request
@@ -269,6 +303,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
             }
           },
           required: ['modelName', 'searchQuery', 'fields']
+        }
+      }, {
+        name: 'stayCommand',
+        description: 'Run one stay, payment, message, review or catalog command exactly as the dashboard does, with the operator’s own permissions. Reservations, payments and refunds change only through this tool, never through createData/updateData. Ask the operator to confirm first, then pass confirm: true. Returns { ok, message, data }.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            command: { type: 'string', enum: [...STAY_COMMANDS], description: 'transition: input { reservationId, transition: confirm|decline|check_in|complete|cancel|no_show, note? }. conversation_reply: { conversationId, body }. conversation_status: { conversationId, status: open|snoozed|archived }. review_moderate: { reviewId, action: publish|hold|remove }. catalog_transition: { kind: property|listing, id, expectedStatus, transition }. refund_decline: { refundId, note }. payment_cancel_attempt: { paymentId, reason }. payment_record_manual: { reservationId, amountCents, confirmReceived: true, operationKey } (only money already received).' },
+            input: { type: 'object', description: 'The command’s input, as described for the command.' },
+            confirm: { type: 'boolean', description: 'true only after the operator confirmed this exact action.' },
+          },
+          required: ['command', 'input', 'confirm'],
         }
       }];
       
@@ -719,6 +765,29 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
           });
         }
         
+        if (name === 'stayCommand') {
+          const command = String(args?.command || '');
+          if (!STAY_COMMANDS.includes(command as (typeof STAY_COMMANDS)[number])) throw new ToolGraphQLError('That command isn’t available to the assistant.');
+          if (args?.confirm !== true) throw new ToolGraphQLError('Ask the operator to confirm this action, then call again with confirm: true.');
+          const input = args?.input && typeof args.input === 'object' && !Array.isArray(args.input) ? args.input : null;
+          if (!input || JSON.stringify(input).length > 8000) throw new ToolGraphQLError('Give the command’s input as an object.');
+          // The real domain command, run as the operator: the server checks permission, host scope and state.
+          const result = await executeGraphQL(
+            'mutation AssistantStayCommand($command: String!, $input: JSON!) { hostStayCommand(command: $command, input: $input) }',
+            graphqlEndpoint, cookie || '', { command, input },
+          );
+          const outcome = result?.data?.hostStayCommand || {};
+          if (outcome.ok) dataHasChanged = true;
+          return new Response(JSON.stringify({
+            jsonrpc: '2.0',
+            id: body.id,
+            result: { content: [{ type: 'text', text: JSON.stringify({ ok: outcome.ok === true, message: publicText(outcome.message) || (outcome.ok ? null : 'The command was refused.'), data: outcome.ok ? outcome.data ?? null : null }, null, 2) }] },
+          }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', ...(outcome.ok ? { 'X-Data-Changed': 'true' } : {}) },
+          });
+        }
+
         if (name === 'modelSpecificSearch') {
           const { modelName, searchQuery, fields, limit = 10 } = args;
           
@@ -883,7 +952,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
           result: {
             content: [{
               type: 'text',
-              text: `Error executing ${name}: ${error}`,
+              text: `Error executing ${name}: ${safeToolError(error)}`,
             }],
           }
         }), {
@@ -905,11 +974,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
     return new Response(JSON.stringify({
       jsonrpc: '2.0',
       id: null,
-      error: { 
-        code: -32603, 
-        message: 'Internal error',
-        data: error instanceof Error ? error.message : String(error)
-      }
+      error: { code: -32603, message: 'Internal error' }
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -920,7 +985,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
 export async function GET(request: Request, { params }: { params: Promise<{ transport: string }> }) {
   const { transport } = await params;
   
-  const baseUrl = await getBaseUrl();
+  const baseUrl = resolveInternalBaseUrl();
   const graphqlEndpoint = `${baseUrl}/api/graphql`;
   
   return new Response(JSON.stringify({ 

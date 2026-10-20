@@ -11,10 +11,19 @@ export type PublicMarketplaceSettings = {
   publicDescription?: string | null;
   supportPhone?: string | null;
   supportEmail?: string | null;
+  supportHours?: string | null;
+  officeAddress?: string | null;
+  privacyPolicyUrl?: string | null;
+  privacyPolicyVersion?: string | null;
+  termsUrl?: string | null;
+  termsVersion?: string | null;
+  testBookingsAvailable?: boolean | null;
   currencyCode: string;
   locale: string;
   timezone: string;
   accentHue: number;
+  logoIcon?: string | null;
+  logoColor?: string | null;
 };
 
 export type PublicMarketplaceSettingsState =
@@ -33,10 +42,19 @@ type PublicMarketplaceSettingsResponse = {
     publicDescription?: string | null;
     supportPhone?: string | null;
     supportEmail?: string | null;
+    supportHours?: string | null;
+    officeAddress?: string | null;
+    privacyPolicyUrl?: string | null;
+    privacyPolicyVersion?: string | null;
+    termsUrl?: string | null;
+    termsVersion?: string | null;
+    testBookingsAvailable?: boolean | null;
     currencyCode?: string | null;
     locale?: string | null;
     timezone?: string | null;
     accentHue?: number | null;
+    logoIcon?: string | null;
+    logoColor?: string | null;
   };
 };
 
@@ -44,7 +62,7 @@ export const getPublicMarketplaceSettings = cache(async function (): Promise<Pub
   const response = await keystoneClient<PublicMarketplaceSettingsResponse>(`
     query PublicMarketplaceSettings {
       publicMarketplaceSettings {
-        status id name tagline homepageHeadline publicDescription supportPhone supportEmail currencyCode locale timezone accentHue
+        status id name tagline homepageHeadline publicDescription supportPhone supportEmail supportHours officeAddress privacyPolicyUrl privacyPolicyVersion termsUrl termsVersion testBookingsAvailable currencyCode locale timezone accentHue logoIcon logoColor
       }
     }
   `);
@@ -67,3 +85,4 @@ export const getPublicMarketplaceSettings = cache(async function (): Promise<Pub
 
   return settings as PublicMarketplaceSettings;
 });
+

@@ -1,3 +1,5 @@
+import { REAL_CAPACITY_BLOCK, REAL_STAY } from './fixtureOrigin';
+
 const capacityReservationStatuses = ['pending', 'confirmed', 'in_stay'];
 
 function parseCapacityDate(value: string, label: string) {
@@ -63,8 +65,10 @@ export async function findAccommodationUnitCapacityConflict(tx: any, {
       throw new Error('The selected accommodation unit must belong to the same host organization.');
     }
   }
+  // Test bookings and onboarding samples hold no real capacity.
   const reservationWhere: Record<string, any> = {
     accommodationUnitId,
+    ...REAL_STAY,
     status: { in: capacityReservationStatuses },
     checkInDate: { lt: checkOutDate },
     checkOutDate: { gt: checkInDate },
@@ -82,6 +86,7 @@ export async function findAccommodationUnitCapacityConflict(tx: any, {
     const blockWhere: Record<string, any> = {
       listingId: { in: listingIds },
       status: 'active',
+      ...REAL_CAPACITY_BLOCK,
       startDate: { lt: checkOutDate },
       endDate: { gt: checkInDate },
     };
@@ -111,6 +116,7 @@ export async function findListingCapacityConflict(tx: any, {
   assertCapacityDateRange(checkInDate, checkOutDate);
   const reservationWhere: Record<string, any> = {
     listingId,
+    ...REAL_STAY,
     status: { in: capacityReservationStatuses },
     checkInDate: { lt: checkOutDate },
     checkOutDate: { gt: checkInDate },
@@ -122,6 +128,7 @@ export async function findListingCapacityConflict(tx: any, {
   const blockWhere: Record<string, any> = {
     listingId,
     status: 'active',
+    ...REAL_CAPACITY_BLOCK,
     startDate: { lt: checkOutDate },
     endDate: { gt: checkInDate },
   };

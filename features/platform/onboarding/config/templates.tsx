@@ -10,7 +10,8 @@ export type AccommodationSectionType =
   | 'policies'
   | 'rates'
   | 'availability'
-  | 'workflows';
+  | 'workflows'
+  | 'readiness';
 
 export interface AccommodationTemplate {
   name: string;

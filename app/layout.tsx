@@ -14,19 +14,19 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+// Product identity by default (the dashboard); storefront pages set the merchant's own
+// name, icon and manifest through buildStorefrontMetadata.
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://rental.local'),
-  title: 'Independent stays',
-  description: 'Short-term accommodation booked directly with the host.',
-  applicationName: 'Independent stays',
-  manifest: '/manifest.webmanifest',
+  title: 'Openfront Rental',
+  applicationName: 'Openfront Rental',
+  icons: { icon: '/favicon.svg' },
   formatDetection: { email: false, address: false, telephone: false },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head><link href="/favicon.svg" rel="icon" /></head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background font-sans`}>
         {children}
       </body>

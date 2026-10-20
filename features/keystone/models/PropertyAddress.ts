@@ -7,7 +7,7 @@ import { trackingFields } from './trackingFields';
 
 export const PropertyAddress = list({
   access: hostScopedListAccess('canReadProperties', 'canManageProperties'),
-  hooks: hostScopedHooks('canManageProperties'),
+  hooks: hostScopedHooks('canManageProperties', { parent: 'property', foreignKeyOnParent: 'addressId' }),
   ui: { listView: { initialColumns: ['property', 'city', 'region', 'countryCode', 'showExactAddressPublicly'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),

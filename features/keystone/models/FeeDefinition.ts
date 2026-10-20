@@ -7,7 +7,7 @@ import { trackingFields } from './trackingFields';
 
 export const FeeDefinition = list({
   access: hostScopedListAccess('canReadPricing', 'canManagePricing'),
-  hooks: hostScopedHooks('canManagePricing'),
+  hooks: hostScopedHooks('canManagePricing', { parent: 'listing' }),
   ui: { listView: { initialColumns: ['name', 'listing', 'feeType', 'calculation', 'amountCents', 'percentageBasisPoints', 'isActive'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),

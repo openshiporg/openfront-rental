@@ -15,6 +15,6 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     display: 'standalone',
     background_color: '#f4f0e7',
     theme_color: brand ? storefrontThemeColor(brand.accentHue) : '#292929',
-    icons: [{ src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' }],
+    icons: [{ src: '/storefront-icon.svg', sizes: 'any', type: 'image/svg+xml' }],
   };
 }

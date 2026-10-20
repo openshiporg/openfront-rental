@@ -59,10 +59,7 @@ export async function refundStayPaymentOperation(
     }
     await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `payment-refund:${payment.id}`);
     const locked = await tx.payment.findUnique({ where: { id: payment.id } });
-    if (locked?.reservationId !== (payment.reservation?.id || null)) throw new Error('Payment reservation changed during refund reconciliation.');
-    if (!locked || !['succeeded', 'partially_refunded'].includes(locked.status)) {
-      throw new Error('Manual refund reconciliation requires a payment recorded as succeeded or partially refunded.');
-    }
+    if (!locked || locked.reservationId !== (payment.reservation?.id || null)) throw new Error('Payment reservation changed during refund reconciliation.');
     const priorRefunds = await tx.refund.findMany({
       where: { paymentId: payment.id },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -80,6 +77,10 @@ export async function refundStayPaymentOperation(
         throw new Error('This refund operation key was already used with different evidence or request parameters.');
       }
       return existing;
+    }
+    // Only after an exact replay is ruled out: a new refund needs remaining settled money.
+    if (!['succeeded', 'partially_refunded'].includes(locked.status)) {
+      throw new Error('Manual refund reconciliation requires a payment recorded as succeeded or partially refunded.');
     }
 
     const openRefunds = await tx.refund.findMany({
@@ -148,10 +149,10 @@ export async function refundStayPaymentOperation(
     await tx.payment.update({ where: { id: locked.id }, data: { refundedAmountCents, status: paymentStatus } });
     if (locked.reservationId) {
       const [reservation, payments, refunds, pendingAmendmentRefunds] = await Promise.all([
-        tx.reservation.findUnique({ where: { id: locked.reservationId }, select: { totalAmountCents: true, currencyCode: true } }),
+        tx.reservation.findUnique({ where: { id: locked.reservationId }, select: { totalAmountCents: true, currencyCode: true, testMode: true } }),
         tx.payment.findMany({
           where: { reservationId: locked.reservationId },
-          select: { id: true, status: true, amountCents: true, refundedAmountCents: true, currencyCode: true },
+          select: { id: true, status: true, amountCents: true, refundedAmountCents: true, currencyCode: true, provider: true, data: true },
         }),
         tx.refund.findMany({
           where: { reservationId: locked.reservationId },
@@ -163,7 +164,7 @@ export async function refundStayPaymentOperation(
         }),
       ]);
       if (!reservation) throw new Error('Reservation not found while reconciling refund evidence.');
-      const reconciliation = reconcileReservationPaymentEvidence({ payments, refunds, currencyCode: reservation.currencyCode });
+      const reconciliation = reconcileReservationPaymentEvidence({ payments, refunds, currencyCode: reservation.currencyCode, testMode: reservation.testMode === true });
       const totalAmountCents = reservation.totalAmountCents || 0;
       const refundDueCents = Math.max(reconciliation.netPaidCents - totalAmountCents, 0);
       const recordedRefundLiabilityCents = pendingAmendmentRefunds._sum.amountCents || 0;
@@ -192,19 +193,51 @@ const depositTransitions: Record<string, string[]> = {
   fail: ['required', 'authorized', 'held'],
 };
 
+function evidenceReference(value: unknown, label: string) {
+  const reference = typeof value === 'string' ? value.trim() : '';
+  if (reference.length < 3 || reference.length > 500) throw new Error(`Enter the ${label} reference (3 to 500 characters).`);
+  return reference;
+}
+
+/**
+ * Records a security deposit event the operator attests (authorize, hold, capture, release,
+ * fail). Each action carries a stable operation key: a retry of the same action after a lost
+ * response returns the deposit without appending again; the same key with different details is
+ * refused; two genuine equal actions use different keys and stay separate. Deposit and claim
+ * writers share the reservation→deposit lock order.
+ */
 export async function transitionSecurityDeposit(
   _root: unknown,
-  args: { depositId: string; transition: string; amountCents?: number | null; reference?: string | null },
+  args: { depositId: string; transition: string; amountCents?: number | null; reference?: string | null; confirmEvidence?: boolean | null; operationKey?: string | null },
   context: any,
 ) {
-  const deposit = await context.query.SecurityDeposit.findOne({ where: { id: args.depositId }, query: 'id hostOrganization { id }' });
+  const deposit = await context.query.SecurityDeposit.findOne({ where: { id: args.depositId }, query: 'id hostOrganization { id } reservation { id }' });
   if (!deposit?.hostOrganization?.id) throw new Error('Security deposit not found.');
   await assertHostOrganizationAccess({ context, hostOrganizationId: deposit.hostOrganization.id, permission: 'canManagePayments' });
   if (!depositTransitions[args.transition]) throw new Error('Unsupported security deposit transition.');
+  // Each deposit event is a real-world fact the operator attests with a reference.
+  if (args.confirmEvidence !== true) throw new Error('Confirm that this already happened with the guest or payment provider.');
+  const reference = evidenceReference(args.reference, 'receipt, hold or transfer');
+  const actorUserId = context.session?.itemId;
+  if (!actorUserId) throw new Error('Sign in to record deposit events.');
+  const operationKey = typeof args.operationKey === 'string' ? args.operationKey.trim() : '';
+  if (operationKey.length < 8 || operationKey.length > 200) throw new Error('This deposit action is missing its submission key. Refresh and try again.');
+  const amountCents = args.transition === 'capture' ? args.amountCents ?? null : null;
+  const fingerprint = digest(JSON.stringify({ depositId: deposit.id, transition: args.transition, amountCents, reference }));
   return context.prisma.$transaction(async (tx: any) => {
+    if (deposit.reservation?.id) await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `reservation:${deposit.reservation.id}`);
     await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `security-deposit:${deposit.id}`);
     const locked = await tx.securityDeposit.findUnique({ where: { id: deposit.id } });
-    if (!locked || !depositTransitions[args.transition].includes(locked.status)) throw new Error(`Cannot ${args.transition} this security deposit.`);
+    if (!locked) throw new Error('Security deposit not found.');
+    const metadata = locked.metadata && typeof locked.metadata === 'object' && !Array.isArray(locked.metadata) ? locked.metadata as Record<string, any> : {};
+    const events = Array.isArray(metadata.events) ? metadata.events : [];
+    // Replay first (after authorization, before any state check): the same action returns as recorded.
+    const prior = events.find((event: any) => event?.operationKey === operationKey);
+    if (prior) {
+      if (prior.fingerprint !== fingerprint) throw new Error('This deposit action was already recorded with different details. Refresh to see the deposit.');
+      return locked;
+    }
+    if (!depositTransitions[args.transition].includes(locked.status)) throw new Error(`Cannot ${args.transition} this security deposit.`);
     const now = new Date();
     const data: Record<string, unknown> = {};
     if (args.transition === 'authorize') data.status = 'authorized';
@@ -212,16 +245,18 @@ export async function transitionSecurityDeposit(
     if (args.transition === 'release') { data.status = 'released'; data.releasedAt = now; }
     if (args.transition === 'fail') data.status = 'failed';
     if (args.transition === 'capture') {
-      const amount = args.amountCents || 0;
+      const amount = amountCents || 0;
       if (!Number.isSafeInteger(amount) || amount <= 0 || amount > locked.amountCents - locked.capturedAmountCents) throw new Error('Deposit capture amount is invalid.');
       const capturedAmountCents = locked.capturedAmountCents + amount;
       data.capturedAmountCents = capturedAmountCents;
       data.status = capturedAmountCents === locked.amountCents ? 'captured' : 'partially_captured';
     }
-    const reference = args.reference?.trim();
-    if (reference) data.providerReference = reference.slice(0, 500);
+    data.providerReference = reference;
+    // Append-only event history: earlier events, amounts and references are never rewritten.
+    const event = { transition: args.transition, fromStatus: locked.status, toStatus: data.status, amountCents, reference, actorUserId, attestedAt: now.toISOString(), operationKey, fingerprint };
+    data.metadata = { ...metadata, events: [...events, event] };
     const updated = await tx.securityDeposit.update({ where: { id: locked.id }, data });
-    await enqueueOutboxEvent(tx, { hostOrganizationId: locked.hostOrganizationId, eventType: `security_deposit.${updated.status}`, aggregateType: 'SecurityDeposit', aggregateId: locked.id, operationKey: `${args.transition}:${updated.capturedAmountCents}:${now.toISOString()}`, payload: { depositId: locked.id, reservationId: locked.reservationId, status: updated.status, amountCents: updated.amountCents, capturedAmountCents: updated.capturedAmountCents } });
+    await enqueueOutboxEvent(tx, { hostOrganizationId: locked.hostOrganizationId, eventType: `security_deposit.${updated.status}`, aggregateType: 'SecurityDeposit', aggregateId: locked.id, operationKey: `deposit:${digest(`${locked.id}|${operationKey}`)}`, payload: { depositId: locked.id, reservationId: locked.reservationId, status: updated.status, amountCents: updated.amountCents, capturedAmountCents: updated.capturedAmountCents, releasedRemainderCents: updated.status === 'released' ? updated.amountCents - updated.capturedAmountCents : null, reference, actorUserId } });
     return updated;
   }, { maxWait: 5000, timeout: 10000, isolationLevel: 'ReadCommitted' });
 }
@@ -237,7 +272,7 @@ const damageClaimTransitions: Record<string, { from: string[]; to: string }> = {
 
 export async function transitionDamageClaim(
   _root: unknown,
-  args: { claimId: string; transition: string; approvedAmountCents?: number | null },
+  args: { claimId: string; transition: string; approvedAmountCents?: number | null; settlementMethod?: string | null; settlementReference?: string | null; confirmSettlement?: boolean | null; receivedOn?: string | null; custody?: string | null },
   context: any,
 ) {
   const claim = await context.query.DamageClaim.findOne({ where: { id: args.claimId }, query: 'id hostOrganization { id }' });
@@ -246,8 +281,17 @@ export async function transitionDamageClaim(
   const transition = damageClaimTransitions[args.transition];
   if (!transition) throw new Error('Unsupported damage claim transition.');
   return context.prisma.$transaction(async (tx: any) => {
+    // Every claim on a stay and every deposit event share one settlement budget: the
+    // reservation, then its deposit, are locked before the claim (the deposit writers' order).
+    const initial = await tx.damageClaim.findUnique({ where: { id: claim.id }, select: { reservationId: true } });
+    if (initial?.reservationId) {
+      await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `reservation:${initial.reservationId}`);
+      const depositIds = await tx.securityDeposit.findMany({ where: { reservation: { id: initial.reservationId } }, select: { id: true }, orderBy: [{ id: 'asc' }] });
+      for (const deposit of depositIds) await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `security-deposit:${deposit.id}`);
+    }
     await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `damage-claim:${claim.id}`);
     const locked = await tx.damageClaim.findUnique({ where: { id: claim.id } });
+    if (locked && locked.reservationId !== (initial?.reservationId ?? null)) throw new Error('This claim changed meanwhile. Refresh and try again.');
     if (!locked || !transition.from.includes(locked.status)) throw new Error(`Cannot ${args.transition.replaceAll('_', ' ')} this damage claim.`);
     const data: Record<string, unknown> = { status: transition.to };
     if (args.transition === 'submit') data.submittedAt = new Date();
@@ -259,7 +303,38 @@ export async function transitionDamageClaim(
       data.resolvedAt = new Date();
     }
     if (args.transition === 'decline') { data.approvedAmountCents = 0; data.resolvedAt = new Date(); }
-    if (args.transition === 'settle') data.resolvedAt = new Date();
+    if (args.transition === 'settle') {
+      // Approval isn't recovered money: settling needs the actual settlement, by deposit
+      // deduction already recorded on this stay or by an attested payment from the guest.
+      if (args.confirmSettlement !== true) throw new Error('Confirm that the approved amount has actually been settled.');
+      const method = args.settlementMethod;
+      if (!['deposit_deduction', 'guest_payment'].includes(method || '')) throw new Error('Choose how the claim was settled.');
+      const reference = evidenceReference(args.settlementReference, 'settlement');
+      if (method === 'deposit_deduction') {
+        const deposit = await tx.securityDeposit.findFirst({ where: { reservation: { id: locked.reservationId } }, select: { id: true, capturedAmountCents: true } });
+        const settledByOtherClaims = await tx.damageClaim.findMany({ where: { reservationId: locked.reservationId, status: 'settled', id: { not: locked.id } }, select: { settlementEvidence: true } });
+        const alreadyApplied = settledByOtherClaims.reduce((sum: number, other: any) => sum + (other.settlementEvidence?.method === 'deposit_deduction' ? other.settlementEvidence.amountCents || 0 : 0), 0);
+        if (!deposit || deposit.capturedAmountCents - alreadyApplied < locked.approvedAmountCents) {
+          throw new Error('Record the deposit deduction for this amount before settling the claim from the deposit.');
+        }
+        data.settlementEvidence = { method, depositId: deposit.id, amountCents: locked.approvedAmountCents, reference, actorUserId: context.session?.itemId || null, settledAt: new Date().toISOString() };
+      } else {
+        // A guest payment for a claim is the operator's attestation of money actually received,
+        // with its date and where the proof is kept; a reference alone isn't proof, and one
+        // receipt settles one claim.
+        const receivedOn = typeof args.receivedOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(args.receivedOn) ? args.receivedOn : '';
+        if (!receivedOn || receivedOn > new Date().toISOString().slice(0, 10)) throw new Error('Enter the date the guest’s payment was received.');
+        const custody = typeof args.custody === 'string' ? args.custody.trim() : '';
+        if (custody.length < 3 || custody.length > 300) throw new Error('Say where the proof of the guest’s payment is kept.');
+        const reused = await tx.damageClaim.findFirst({
+          where: { hostOrganizationId: locked.hostOrganizationId, status: 'settled', id: { not: locked.id }, settlementEvidence: { path: ['reference'], equals: reference } },
+          select: { claimNumber: true },
+        });
+        if (reused) throw new Error(`Reference ${reference} already settles ${reused.claimNumber}. Each receipt settles one claim.`);
+        data.settlementEvidence = { method, kind: 'operator_attestation', amountCents: locked.approvedAmountCents, reference, receivedOn, custody, actorUserId: context.session?.itemId || null, settledAt: new Date().toISOString(), providerVerified: false };
+      }
+      data.resolvedAt = new Date();
+    }
     const updated = await tx.damageClaim.update({ where: { id: locked.id }, data });
     await enqueueOutboxEvent(tx, { hostOrganizationId: locked.hostOrganizationId, eventType: `damage_claim.${updated.status}`, aggregateType: 'DamageClaim', aggregateId: locked.id, operationKey: `${args.transition}:${updated.approvedAmountCents}`, payload: { claimId: locked.id, reservationId: locked.reservationId, status: updated.status, approvedAmountCents: updated.approvedAmountCents } });
     return updated;

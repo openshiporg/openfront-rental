@@ -3,6 +3,7 @@ import { json, relationship, select, text, timestamp } from '@keystone-6/core/fi
 
 import { isSignedIn, rules } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
+import { propertyTaskPriorityOptions, propertyTaskTypeOptions } from '../utils/propertyTaskLifecycle';
 import { trackingFields } from './trackingFields';
 
 export const PropertyTask = list({
@@ -33,14 +34,7 @@ export const PropertyTask = list({
     title: text({ validation: { isRequired: true } }),
     taskType: select({
       type: 'string',
-      options: [
-        { label: 'Turnover Cleaning', value: 'turnover_cleaning' },
-        { label: 'Readiness Inspection', value: 'readiness_inspection' },
-        { label: 'Property Maintenance', value: 'property_maintenance' },
-        { label: 'Guest Request', value: 'guest_request' },
-        { label: 'Restocking', value: 'restocking' },
-        { label: 'Check-in Support', value: 'check_in_support' },
-      ],
+      options: propertyTaskTypeOptions,
       defaultValue: 'turnover_cleaning',
     }),
     status: select({
@@ -57,12 +51,7 @@ export const PropertyTask = list({
     }),
     priority: select({
       type: 'string',
-      options: [
-        { label: 'Low', value: 'low' },
-        { label: 'Normal', value: 'normal' },
-        { label: 'High', value: 'high' },
-        { label: 'Urgent', value: 'urgent' },
-      ],
+      options: propertyTaskPriorityOptions,
       defaultValue: 'normal',
     }),
     dueAt: timestamp(),

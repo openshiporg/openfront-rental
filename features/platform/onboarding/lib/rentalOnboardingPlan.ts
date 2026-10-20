@@ -10,6 +10,20 @@ export function validateRentalOnboardingSeed(seed: AccommodationSeed) {
   }
 }
 
+/**
+ * Models that setup never fills, because only real activity creates them. Each gets a
+ * readiness check of its real prerequisite instead of a fabricated record.
+ */
+export const RENTAL_LIFECYCLE_READINESS = [
+  { id: 'lifecycle:stay-quotes', model: 'StayQuote', label: 'Guest quotes · from a bookable listing with rates and terms' },
+  { id: 'lifecycle:amendments', model: 'ReservationAmendment', label: 'Stay changes · made by the host on confirmed stays' },
+  { id: 'lifecycle:damage-claims', model: 'DamageClaim', label: 'Damage claims · opened by the host after a stay' },
+  { id: 'lifecycle:refunds', model: 'Refund', label: 'Refunds · need an installed payment method' },
+  { id: 'lifecycle:payment-webhooks', model: 'PaymentWebhookEvent', label: 'Payment confirmations · arrive from the card provider' },
+  { id: 'lifecycle:channel-reservations', model: 'ChannelReservation', label: 'Channel bookings · not used by availability-only calendars' },
+  { id: 'lifecycle:outbox', model: 'OutboxEvent', label: 'Notification events · recorded; delivery isn’t set up in this app' },
+] as const;
+
 /** Stable record identities, never display copy, address chips and server commands. */
 export function rentalOnboardingPlan(seed: AccommodationSeed): OnboardingOperation[] {
   const item = (section: string, id: string, label: string): OnboardingOperation => ({ section, id, label, message: `Creating ${label}…` });
@@ -26,10 +40,12 @@ export function rentalOnboardingPlan(seed: AccommodationSeed): OnboardingOperati
     ...seed.calendarBlocks.map(b => item('availability', b.id, b.notes)),
     ...seed.guests.map(g => item('workflows', g.id, g.name)),
     item('workflows', seed.paymentProvider.id, seed.paymentProvider.name),
+    item('workflows', seed.cardPaymentProvider.id, seed.cardPaymentProvider.name),
     ...seed.reservations.map(r => item('workflows', r.id, `${r.confirmationCode} stay workflow`)),
     ...seed.tasks.map(t => item('workflows', t.id, t.title)),
     ...(seed.reservations.some(r => r.id === 'reservation_tidehouse_completed') ? [item('workflows', 'owner-accounting', 'Owner statement & payout records')] : []),
     ...(seed.channel ? [item('workflows', seed.channel.connection.id, 'Availability-only calendar connection')] : []),
+    ...RENTAL_LIFECYCLE_READINESS.map(entry => ({ ...item('readiness', entry.id, entry.label), message: `Checking ${entry.label}…` })),
   ];
 }
 
@@ -37,4 +53,5 @@ export const rentalSectionLabels = [
   ['business', 'Business & Host'], ['amenities', 'Amenities'], ['properties', 'Properties'],
   ['accommodations', 'Accommodations & Listings'], ['policies', 'Policies & House Rules'],
   ['rates', 'Rates, Fees & Taxes'], ['availability', 'Availability & Calendar'], ['workflows', 'Host & Guest Workflows'],
+  ['readiness', 'Ready for real activity'],
 ] as const;

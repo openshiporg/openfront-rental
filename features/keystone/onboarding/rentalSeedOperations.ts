@@ -1,25 +1,35 @@
 // Accommodation record payloads retained from the archived Rental seeder.
 // Called only by the authorized, per-item create-or-reuse GraphQL command.
 // The injected database adapter forbids updates to pre-existing merchant records.
-import crypto from 'node:crypto';
 import { buildOwnerStatement, ownerStatementIdempotencyKey } from '../utils/ownerStatementAccounting';
 import { propertyTaskRuleKey } from '../utils/propertyTaskLifecycle';
 import { createReservationLineItemsFromQuote, createStayBookingSnapshot } from '../utils/stayBookingSnapshot';
-import { hashPublicOwnershipToken } from '../utils/publicTokenAccess';
+import { createPublicOwnershipToken, hashPublicOwnershipToken } from '../utils/publicTokenAccess';
 import { calculateStayQuote } from '../utils/stayPricing';
+import { listingBookingSnapshot } from '../utils/stayListing';
+import { effectiveStayRatePlan, stayCalculationInput } from '../utils/stayBookingRules';
+import { onlineQuoteReadinessProblem } from '../utils/stayEligibility';
 import { findAccommodationUnitCapacityConflict, findListingCapacityConflict, lockAccommodationUnitCapacity, lockListingCapacity } from '../utils/reservationAllocation';
+import { FIXTURE_ORIGIN, fixtureEvidence } from '../utils/fixtureOrigin';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function dateOnly(offsetDays: number) {
-  const now = new Date();
-  const utc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offsetDays);
+/**
+ * Sample dates are relative to the setup run's persisted anchor date, so resuming setup
+ * on another day keeps every reservation, block, rate and task consistent with one run.
+ */
+function dateOnly(anchor: string | undefined, offsetDays: number) {
+  const base = anchor && /^\d{4}-\d{2}-\d{2}$/.test(anchor) ? new Date(`${anchor}T00:00:00.000Z`) : new Date();
+  const utc = Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate() + offsetDays);
   return new Date(utc).toISOString().slice(0, 10);
 }
 
-function timestamp(offsetDays: number, hour = 12) {
-  return new Date(`${dateOnly(offsetDays)}T${String(hour).padStart(2, '0')}:00:00.000Z`);
+function timestamp(anchor: string | undefined, offsetDays: number, hour = 12) {
+  return new Date(`${dateOnly(anchor, offsetDays)}T${String(hour).padStart(2, '0')}:00:00.000Z`);
 }
+
+/** Setup never records real-world facts: these notes mark what a sample record is not. */
+const SAMPLE_STAY_NOTE = 'Sample stay created by setup. No payment, signature or deposit has been recorded for it.';
 
 function getListingSeed(seed: any, slug: string) {
   for (const property of seed.properties || []) {
@@ -96,6 +106,16 @@ async function assertSeedCapacityAvailable(db: any, {
 export async function seedProperties(db: any, seed: any, phase: 'properties' | 'accommodations' | 'policies' | 'rates') {
   const hostId = seed.hostOrganization.id;
   const listingIds = new Map<string, string>();
+  // Setup never overwrites archived history (the database refuses it too): stop with a clear reason.
+  const seedPropertyIds = (seed.properties || []).map((item: any) => item.id);
+  const seedListingIds = (seed.properties || []).map((item: any) => item.listing?.id).filter(Boolean);
+  const [archivedProperty, archivedListing] = await Promise.all([
+    db.property.findFirst({ where: { id: { in: seedPropertyIds }, status: 'archived' }, select: { name: true } }),
+    db.listing.findFirst({ where: { id: { in: seedListingIds }, status: 'archived' }, select: { title: true } }),
+  ]);
+  if (archivedProperty || archivedListing) {
+    throw new Error(`Sample ${archivedProperty ? `property “${archivedProperty.name}”` : `listing “${archivedListing.title}”`} was archived. Setup can’t re-create archived records.`);
+  }
 
   for (const propertySeed of seed.properties || []) {
     const { address, unit, listing, ...property } = propertySeed;
@@ -136,7 +156,8 @@ export async function seedProperties(db: any, seed: any, phase: 'properties' | '
       }
     }
 
-    const { amenities, collections, media, houseRules, cleaningFeeCents, serviceFeeBasisPoints, taxBasisPoints, ...listingData } = listing;
+    // Ratings are earned from published reviews only, so setup never writes review aggregates.
+    const { amenities, collections, media, houseRules, cleaningFeeCents, serviceFeeBasisPoints, taxBasisPoints, reviewAverageHundredths: _average, reviewCount: _count, ...listingData } = listing;
     const amenityIds = amenities.map((slug: string) => seed.amenities.find((item: any) => item.slug === slug)?.id).filter(Boolean);
     const collectionIds = collections.map((slug: string) => seed.collections.find((item: any) => item.slug === slug)?.id).filter(Boolean);
     const updateListingRelations = {
@@ -213,8 +234,8 @@ export async function seedProperties(db: any, seed: any, phase: 'properties' | '
     });
     await db.seasonalRate.upsert({
       where: { id: `${ratePlanId}_peak` },
-      update: { hostOrganizationId: hostId, ratePlanId, name: 'Peak season', startDate: dateOnly(45), endDate: dateOnly(105), adjustmentBasisPoints: 1500, minimumStay: Math.max(listing.minimumStay, 3), priority: 10, isActive: true },
-      create: { id: `${ratePlanId}_peak`, hostOrganizationId: hostId, ratePlanId, name: 'Peak season', startDate: dateOnly(45), endDate: dateOnly(105), adjustmentBasisPoints: 1500, minimumStay: Math.max(listing.minimumStay, 3), priority: 10, isActive: true },
+      update: { hostOrganizationId: hostId, ratePlanId, name: 'Peak season', startDate: dateOnly(seed.anchorDate, 45), endDate: dateOnly(seed.anchorDate, 105), adjustmentBasisPoints: 1500, minimumStay: Math.max(listing.minimumStay, 3), priority: 10, isActive: true },
+      create: { id: `${ratePlanId}_peak`, hostOrganizationId: hostId, ratePlanId, name: 'Peak season', startDate: dateOnly(seed.anchorDate, 45), endDate: dateOnly(seed.anchorDate, 105), adjustmentBasisPoints: 1500, minimumStay: Math.max(listing.minimumStay, 3), priority: 10, isActive: true },
     });
     await db.feeDefinition.upsert({
       where: { id: `${listing.id}_fee_cleaning` },
@@ -246,59 +267,36 @@ export async function seedGuests(db: any, seed: any) {
   }
 }
 
-function listingSnapshot(seed: any, property: any, listing: any, unit: any) {
-  return {
-    id: listing.id,
-    title: listing.title,
-    slug: listing.slug,
-    subtitle: listing.subtitle,
-    description: listing.description,
-    currencyCode: seed.settings.currencyCode,
-    thumbnail: listing.media[0]?.imagePath || null,
-    host: { id: seed.hostOrganization.id, name: seed.hostOrganization.name, slug: seed.hostOrganization.slug, publicBio: seed.hostOrganization.publicBio },
-    property: {
-      id: property.id,
-      name: property.name,
-      timezone: property.timezone,
-      checkInFrom: property.checkInFrom,
-      checkInUntil: property.checkInUntil,
-      checkOutBy: property.checkOutBy,
-      address: property.address,
-    },
-    accommodation: unit,
-    media: listing.media.map((item: any, order: number) => ({ ...item, order, url: item.imagePath })),
-    amenities: listing.amenities.map((slug: string) => seed.amenities.find((item: any) => item.slug === slug)).filter(Boolean),
-    houseRules: listing.houseRules,
-  };
-}
-
-function calculateSeedQuote(seed: any, reservationSeed: any) {
+/**
+ * Sample stays are quoted exactly as a guest's quote is: the listing graph actually saved
+ * (which may be a reused merchant record) is read with the same selection, priced by its
+ * effective rate plan through the same calculator input (full party, pets and inclusive
+ * taxes included), and snapshotted with the same projection. No template values are used.
+ */
+async function calculateSeedQuote(seed: any, reservationSeed: any) {
   const { property, listing, unit } = getListingSeed(seed, reservationSeed.listingSlug);
-  const checkIn = dateOnly(reservationSeed.checkInOffsetDays);
-  const checkOut = dateOnly(reservationSeed.checkInOffsetDays + reservationSeed.nights);
-  const quote = calculateStayQuote({
+  const checkIn = dateOnly(seed.anchorDate, reservationSeed.checkInOffsetDays);
+  const checkOut = dateOnly(seed.anchorDate, reservationSeed.checkInOffsetDays + reservationSeed.nights);
+  if (typeof seed.loadListing !== 'function') throw new Error('Sample stays need the saved listing to be read.');
+  const saved = await seed.loadListing(listing.id);
+  if (!saved?.accommodationUnit?.id) throw new Error('Set up the listing, its accommodation and rates before its sample stay.');
+  const plan = effectiveStayRatePlan(saved);
+  const readiness = onlineQuoteReadinessProblem(plan, saved);
+  if (readiness || !plan) throw new Error(`${listing.title}: ${readiness || 'no published nightly rate'}`);
+  const quote = calculateStayQuote(stayCalculationInput(saved, plan, {
     checkIn,
     checkOut,
-    baseNightlyRateCents: listing.baseNightlyRateCents,
-    currencyCode: seed.settings.currencyCode,
-    baseMinimumStay: listing.minimumStay,
     guestCount: reservationSeed.adults + reservationSeed.children,
-    maxGuests: unit.maxGuests,
-    securityDepositCents: listing.securityDepositCents,
-    fees: [
-      { name: 'Cleaning fee', feeType: 'cleaning', kind: 'fixed', amountCents: listing.cleaningFeeCents, taxable: true },
-      { name: 'Direct booking service', feeType: 'service', kind: 'percentage', percentageBasisPoints: listing.serviceFeeBasisPoints, taxable: true },
-    ],
-    taxes: [{ name: 'Lodging tax', rateBasisPoints: listing.taxBasisPoints }],
-  });
-  return { property, listing, unit, checkIn, checkOut, quote };
+    pets: reservationSeed.pets || 0,
+  }));
+  return { property, listing, unit, checkIn, checkOut, quote, listingSnapshot: listingBookingSnapshot(saved), cancellationPolicy: plan.cancellationPolicy };
 }
 
 export async function seedReservations(db: any, seed: any) {
   const hostId = seed.hostOrganization.id;
   for (const reservationSeed of seed.reservations || []) {
     if (await db.reservation.findUnique({ where: { id: reservationSeed.id } })) continue;
-    const { property, listing, unit, checkIn, checkOut, quote } = calculateSeedQuote(seed, reservationSeed);
+    const { property, listing, unit, checkIn, checkOut, quote, listingSnapshot, cancellationPolicy } = await calculateSeedQuote(seed, reservationSeed);
     const guest = seed.guests.find((item: any) => item.id === reservationSeed.guestId);
     const party = {
       primaryGuest: { id: guest.id, name: guest.name, email: guest.email, phone: guest.phone },
@@ -309,26 +307,32 @@ export async function seedReservations(db: any, seed: any) {
       invitedGuests: [],
     };
     const quoteSnapshot = { ...quote, quoteNumber: `Q-${reservationSeed.confirmationCode}` };
-    const bookingSnapshot = createStayBookingSnapshot({
-      listing: listingSnapshot(seed, property, listing, unit),
-      guestParty: party,
-      cancellationPolicy: seed.cancellationPolicy,
-      quote: quoteSnapshot,
-    });
-    const amountPaidCents = reservationSeed.amountPaid === 'full' ? quote.totalAmountCents : 0;
+    const bookingSnapshot = {
+      ...createStayBookingSnapshot({
+        listing: listingSnapshot,
+        guestParty: party,
+        cancellationPolicy,
+        quote: quoteSnapshot,
+      }),
+      provenance: 'onboarding_sample',
+    };
+    // Sample stays carry no collected money, signature or deposit: only real activity records those.
+    const amountPaidCents = 0;
+    const active = ['pending', 'confirmed', 'in_stay'].includes(reservationSeed.status);
     const now = new Date();
-    const checkedInAt = ['in_stay', 'completed'].includes(reservationSeed.status) ? timestamp(reservationSeed.checkInOffsetDays, 16) : null;
-    const checkedOutAt = reservationSeed.status === 'completed' ? timestamp(reservationSeed.checkInOffsetDays + reservationSeed.nights, 10) : null;
+    const checkedInAt = ['in_stay', 'completed'].includes(reservationSeed.status) ? timestamp(seed.anchorDate, reservationSeed.checkInOffsetDays, 16) : null;
+    const checkedOutAt = reservationSeed.status === 'completed' ? timestamp(seed.anchorDate, reservationSeed.checkInOffsetDays + reservationSeed.nights, 10) : null;
     const reservationData = {
       hostOrganizationId: hostId,
       listingId: listing.id,
       accommodationUnitId: unit.id,
       guestId: guest.id,
       confirmationCode: reservationSeed.confirmationCode,
-      tripTokenHash: hashPublicOwnershipToken(reservationSeed.tripToken),
+      // Per-installation random link; the host reissues it to a real guest when needed.
+      tripTokenHash: hashPublicOwnershipToken(createPublicOwnershipToken()),
       tripTokenExpiresAt: new Date(new Date(`${checkOut}T00:00:00.000Z`).getTime() + 30 * DAY_MS),
       status: reservationSeed.status,
-      paymentStatus: reservationSeed.paymentStatus,
+      paymentStatus: 'unpaid',
       source: reservationSeed.source,
       checkInDate: checkIn,
       checkOutDate: checkOut,
@@ -336,7 +340,7 @@ export async function seedReservations(db: any, seed: any) {
       scheduledCheckOutTime: property.checkOutBy,
       checkedInAt,
       checkedOutAt,
-      currencyCode: seed.settings.currencyCode,
+      currencyCode: quote.currencyCode,
       lodgingSubtotalCents: quote.lodgingSubtotalCents,
       feeTotalCents: quote.feeTotalCents,
       taxTotalCents: quote.taxTotalCents,
@@ -346,7 +350,10 @@ export async function seedReservations(db: any, seed: any) {
       amountPaidCents,
       bookingSnapshot,
       guestNotes: '',
-      internalNotes: `Seeded ${reservationSeed.source} stay workflow.`,
+      internalNotes: SAMPLE_STAY_NOTE,
+      // Authoritative origin, written by this setup run: never real capacity, money or assent.
+      fixtureOrigin: FIXTURE_ORIGIN,
+      fixtureEvidence: fixtureEvidence('setup_run', { anchorDate: seed.anchorDate, setupRecordId: reservationSeed.id }),
     };
     const reservationBlockId = `${reservationSeed.id}_block`;
     await assertSeedCapacityAvailable(db, {
@@ -374,32 +381,30 @@ export async function seedReservations(db: any, seed: any) {
     }
     await db.calendarBlock.upsert({
       where: { id: reservationBlockId },
-      update: { hostOrganizationId: hostId, listingId: listing.id, reservationId: reservationSeed.id, startDate: checkIn, endDate: checkOut, reason: 'reservation', status: 'active', source: reservationSeed.source === 'direct' ? 'direct' : 'channel_api', notes: reservationSeed.confirmationCode },
-      create: { id: reservationBlockId, hostOrganizationId: hostId, listingId: listing.id, reservationId: reservationSeed.id, startDate: checkIn, endDate: checkOut, reason: 'reservation', status: 'active', source: reservationSeed.source === 'direct' ? 'direct' : 'channel_api', notes: reservationSeed.confirmationCode },
+      update: { hostOrganizationId: hostId, listingId: listing.id, reservationId: reservationSeed.id, startDate: checkIn, endDate: checkOut, reason: 'reservation', status: 'active', source: reservationSeed.source === 'direct' ? 'direct' : 'channel_api', notes: reservationSeed.confirmationCode, fixtureOrigin: FIXTURE_ORIGIN },
+      create: { id: reservationBlockId, hostOrganizationId: hostId, listingId: listing.id, reservationId: reservationSeed.id, startDate: checkIn, endDate: checkOut, reason: 'reservation', status: 'active', source: reservationSeed.source === 'direct' ? 'direct' : 'channel_api', notes: reservationSeed.confirmationCode, fixtureOrigin: FIXTURE_ORIGIN },
     });
 
     const agreementId = `${reservationSeed.id}_agreement`;
-    await db.stayAgreement.upsert({
-      where: { id: agreementId },
-      update: { hostOrganizationId: hostId, guestId: guest.id, cancellationPolicyId: seed.cancellationPolicy.id, agreementNumber: `AGR-${reservationSeed.confirmationCode}`, signingTokenHash: hashPublicOwnershipToken(reservationSeed.agreementToken), signingTokenExpiresAt: timestamp(30), status: reservationSeed.agreementStatus, title: `Stay terms for ${listing.title}`, signerEmail: guest.email, signatureName: reservationSeed.agreementStatus === 'signed' ? guest.name : '', signedAt: reservationSeed.agreementStatus === 'signed' ? now : null, termsSnapshot: { listing: bookingSnapshot.listing, cancellationPolicy: seed.cancellationPolicy, houseRules: listing.houseRules } },
-      create: { id: agreementId, hostOrganizationId: hostId, guestId: guest.id, cancellationPolicyId: seed.cancellationPolicy.id, agreementNumber: `AGR-${reservationSeed.confirmationCode}`, signingTokenHash: hashPublicOwnershipToken(reservationSeed.agreementToken), signingTokenExpiresAt: timestamp(30), status: reservationSeed.agreementStatus, title: `Stay terms for ${listing.title}`, signerEmail: guest.email, signatureName: reservationSeed.agreementStatus === 'signed' ? guest.name : '', signedAt: reservationSeed.agreementStatus === 'signed' ? now : null, termsSnapshot: { listing: bookingSnapshot.listing, cancellationPolicy: seed.cancellationPolicy, houseRules: listing.houseRules } },
-    });
+    const agreementData = {
+      hostOrganizationId: hostId, guestId: guest.id, cancellationPolicyId: cancellationPolicy?.id || null,
+      agreementNumber: `AGR-${reservationSeed.confirmationCode}`,
+      signingTokenHash: hashPublicOwnershipToken(createPublicOwnershipToken()),
+      signingTokenExpiresAt: timestamp(seed.anchorDate, 30),
+      // Only a guest signing through their link records a signature.
+      status: active ? 'sent' : 'draft',
+      title: `Stay terms for ${listing.title}`, signerEmail: guest.email, signatureName: '', signedAt: null,
+      termsSnapshot: { listing: bookingSnapshot.listing, cancellationPolicy: bookingSnapshot.cancellationPolicy, houseRules: bookingSnapshot.listing.houseRules || [], checkInDate: checkIn, checkOutDate: checkOut },
+    };
+    await db.stayAgreement.upsert({ where: { id: agreementId }, update: agreementData, create: { id: agreementId, ...agreementData } });
     const depositId = `${reservationSeed.id}_deposit`;
     await db.securityDeposit.upsert({
       where: { id: depositId },
-      update: { hostOrganizationId: hostId, depositNumber: `DEP-${reservationSeed.confirmationCode}`, status: reservationSeed.status === 'completed' ? 'released' : 'held', amountCents: quote.securityDepositCents, capturedAmountCents: 0, currencyCode: seed.settings.currencyCode, heldAt: now, releasedAt: reservationSeed.status === 'completed' ? now : null },
-      create: { id: depositId, hostOrganizationId: hostId, depositNumber: `DEP-${reservationSeed.confirmationCode}`, status: reservationSeed.status === 'completed' ? 'released' : 'held', amountCents: quote.securityDepositCents, capturedAmountCents: 0, currencyCode: seed.settings.currencyCode, heldAt: now, releasedAt: reservationSeed.status === 'completed' ? now : null },
+      // Required and uncollected: holding or releasing a deposit is a real event the host records.
+      update: { hostOrganizationId: hostId, depositNumber: `DEP-${reservationSeed.confirmationCode}`, status: 'required', amountCents: quote.securityDepositCents, capturedAmountCents: 0, currencyCode: quote.currencyCode, heldAt: null, releasedAt: null },
+      create: { id: depositId, hostOrganizationId: hostId, depositNumber: `DEP-${reservationSeed.confirmationCode}`, status: 'required', amountCents: quote.securityDepositCents, capturedAmountCents: 0, currencyCode: quote.currencyCode, heldAt: null, releasedAt: null },
     });
     await db.reservation.update({ where: { id: reservationSeed.id }, data: { agreementId, securityDepositId: depositId } });
-
-    if (amountPaidCents > 0) {
-      const paymentId = `${reservationSeed.id}_payment`;
-      await db.payment.upsert({
-        where: { id: paymentId },
-        update: { hostOrganizationId: hostId, reservationId: reservationSeed.id, guestId: guest.id, paymentProviderId: seed.paymentProvider.id, amountCents: amountPaidCents, refundedAmountCents: 0, currencyCode: seed.settings.currencyCode, status: 'succeeded', paymentMethod: 'manual', provider: 'pp_system_default', providerPaymentId: `manual-${reservationSeed.confirmationCode}`, idempotencyKey: `seed-${reservationSeed.confirmationCode}`, data: { kind: 'seeded_manual_capture' }, processedAt: now },
-        create: { id: paymentId, hostOrganizationId: hostId, reservationId: reservationSeed.id, guestId: guest.id, paymentProviderId: seed.paymentProvider.id, amountCents: amountPaidCents, refundedAmountCents: 0, currencyCode: seed.settings.currencyCode, status: 'succeeded', paymentMethod: 'manual', provider: 'pp_system_default', providerPaymentId: `manual-${reservationSeed.confirmationCode}`, idempotencyKey: `seed-${reservationSeed.confirmationCode}`, data: { kind: 'seeded_manual_capture' }, processedAt: now },
-      });
-    }
 
     const conversationId = `${reservationSeed.id}_conversation`;
     await db.conversation.upsert({
@@ -411,27 +416,11 @@ export async function seedReservations(db: any, seed: any) {
       const messageId = `${conversationId}_message_${index + 1}`;
       await db.message.upsert({
         where: { id: messageId },
-        update: { hostOrganizationId: hostId, conversationId, ...message, status: message.direction === 'inbound' ? 'received' : 'delivered', sentAt: timestamp(reservationSeed.checkInOffsetDays - 2 + index, 14 + index) },
-        create: { id: messageId, hostOrganizationId: hostId, conversationId, ...message, status: message.direction === 'inbound' ? 'received' : 'delivered', sentAt: timestamp(reservationSeed.checkInOffsetDays - 2 + index, 14 + index) },
+        update: { hostOrganizationId: hostId, conversationId, ...message, status: message.direction === 'inbound' ? 'received' : 'delivered', sentAt: timestamp(seed.anchorDate, reservationSeed.checkInOffsetDays - 2 + index, 14 + index) },
+        create: { id: messageId, hostOrganizationId: hostId, conversationId, ...message, status: message.direction === 'inbound' ? 'received' : 'delivered', sentAt: timestamp(seed.anchorDate, reservationSeed.checkInOffsetDays - 2 + index, 14 + index) },
       });
     }
 
-    if (reservationSeed.review) {
-      await db.review.upsert({
-        where: { id: `${reservationSeed.id}_review_guest` },
-        update: { hostOrganizationId: hostId, reservationId: reservationSeed.id, listingId: listing.id, guestId: guest.id, direction: 'guest_to_host', status: 'published', ...reservationSeed.review, submittedAt: timestamp(reservationSeed.checkInOffsetDays + reservationSeed.nights + 1), publishAfter: timestamp(reservationSeed.checkInOffsetDays + reservationSeed.nights + 14), publishedAt: timestamp(reservationSeed.checkInOffsetDays + reservationSeed.nights + 2) },
-        create: { id: `${reservationSeed.id}_review_guest`, hostOrganizationId: hostId, reservationId: reservationSeed.id, listingId: listing.id, guestId: guest.id, direction: 'guest_to_host', status: 'published', ...reservationSeed.review, submittedAt: timestamp(reservationSeed.checkInOffsetDays + reservationSeed.nights + 1), publishAfter: timestamp(reservationSeed.checkInOffsetDays + reservationSeed.nights + 14), publishedAt: timestamp(reservationSeed.checkInOffsetDays + reservationSeed.nights + 2) },
-      });
-    }
-    if (reservationSeed.payout) {
-      const gross = quote.totalAmountCents;
-      const net = gross - reservationSeed.payout.platformFeeCents - reservationSeed.payout.managerFeeCents;
-      await db.payout.upsert({
-        where: { id: `${reservationSeed.id}_payout` },
-        update: { hostOrganizationId: hostId, reservationId: reservationSeed.id, payoutNumber: `PAY-${reservationSeed.confirmationCode}`, status: reservationSeed.payout.status, currencyCode: seed.settings.currencyCode, grossAmountCents: gross, platformFeeCents: reservationSeed.payout.platformFeeCents, managerFeeCents: reservationSeed.payout.managerFeeCents, refundAmountCents: 0, netAmountCents: net, providerPayoutId: `manual-payout-${reservationSeed.confirmationCode}`, scheduledAt: timestamp(reservationSeed.checkInOffsetDays + reservationSeed.nights + 1), paidAt: timestamp(reservationSeed.checkInOffsetDays + reservationSeed.nights + 2), data: { kind: 'manual_owner_payout' } },
-        create: { id: `${reservationSeed.id}_payout`, hostOrganizationId: hostId, reservationId: reservationSeed.id, payoutNumber: `PAY-${reservationSeed.confirmationCode}`, status: reservationSeed.payout.status, currencyCode: seed.settings.currencyCode, grossAmountCents: gross, platformFeeCents: reservationSeed.payout.platformFeeCents, managerFeeCents: reservationSeed.payout.managerFeeCents, refundAmountCents: 0, netAmountCents: net, providerPayoutId: `manual-payout-${reservationSeed.confirmationCode}`, scheduledAt: timestamp(reservationSeed.checkInOffsetDays + reservationSeed.nights + 1), paidAt: timestamp(reservationSeed.checkInOffsetDays + reservationSeed.nights + 2), data: { kind: 'manual_owner_payout' } },
-      });
-    }
   }
 }
 
@@ -439,8 +428,8 @@ export async function seedOperations(db: any, seed: any) {
   const hostId = seed.hostOrganization.id;
   for (const block of seed.calendarBlocks || []) {
     const listingId = getListingSeed(seed, block.listingSlug).listing.id;
-    const startDate = dateOnly(block.startOffsetDays);
-    const endDate = dateOnly(block.startOffsetDays + block.nights);
+    const startDate = dateOnly(seed.anchorDate, block.startOffsetDays);
+    const endDate = dateOnly(seed.anchorDate, block.startOffsetDays + block.nights);
     await assertSeedCapacityAvailable(db, {
       hostOrganizationId: hostId,
       listingId,
@@ -451,8 +440,8 @@ export async function seedOperations(db: any, seed: any) {
     });
     await db.calendarBlock.upsert({
       where: { id: block.id },
-      update: { hostOrganizationId: hostId, listingId, startDate, endDate, reason: block.reason, status: 'active', source: block.source, notes: block.notes },
-      create: { id: block.id, hostOrganizationId: hostId, listingId, startDate, endDate, reason: block.reason, status: 'active', source: block.source, notes: block.notes },
+      update: { hostOrganizationId: hostId, listingId, startDate, endDate, reason: block.reason, status: 'active', source: block.source, notes: block.notes, fixtureOrigin: FIXTURE_ORIGIN },
+      create: { id: block.id, hostOrganizationId: hostId, listingId, startDate, endDate, reason: block.reason, status: 'active', source: block.source, notes: block.notes, fixtureOrigin: FIXTURE_ORIGIN },
     });
   }
   const turnoverRuleId = 'task_rule_departure_turnover';
@@ -480,7 +469,7 @@ export async function seedOperations(db: any, seed: any) {
       taskType: task.taskType,
       status: task.status,
       priority: task.priority,
-      dueAt: timestamp(task.dueOffsetDays),
+      dueAt: timestamp(seed.anchorDate, task.dueOffsetDays),
       assigneeId: task.status === 'assigned' ? operationsAdmin?.id || null : null,
       claimedAt: task.status === 'assigned' ? new Date() : null,
       startedAt: null,
@@ -502,11 +491,12 @@ export async function seedOwnerAccounting(db: any, seed: any) {
   const assignmentId = 'owner_assignment_tidehouse';
   const reservationSeed = seed.reservations.find((item: any) => item.id === 'reservation_tidehouse_completed');
   if (!reservationSeed) return;
-  const { property, quote, checkOut } = calculateSeedQuote(seed, reservationSeed);
-  const periodStart = dateOnly(-60);
-  const periodEnd = dateOnly(1);
-  const payoutId = `${reservationSeed.id}_payout`;
-  const payout = await db.payout.findUnique({ where: { id: payoutId } });
+  const { property } = getListingSeed(seed, reservationSeed.listingSlug);
+  // The draft statement is built from the reservation actually saved, not the template.
+  const reservation = await db.reservation.findUnique({ where: { id: reservationSeed.id } });
+  if (!reservation || reservation.hostOrganizationId !== hostId) throw new Error('Create the sample stay before its owner statement.');
+  const periodStart = dateOnly(seed.anchorDate, -60);
+  const periodEnd = dateOnly(seed.anchorDate, 1);
 
   await db.propertyOwner.upsert({
     where: { id: ownerId },
@@ -518,39 +508,38 @@ export async function seedOwnerAccounting(db: any, seed: any) {
     update: { hostOrganizationId: hostId, ownerId, propertyId: property.id, status: 'active', isPrimary: true, ownershipBasisPoints: 10000, managerCommissionBasisPoints: 1500, effectiveFrom: '2025-01-01', effectiveTo: '', notes: 'Primary owner assignment for Tidehouse Mendocino.' },
     create: { id: assignmentId, hostOrganizationId: hostId, ownerId, propertyId: property.id, status: 'active', isPrimary: true, ownershipBasisPoints: 10000, managerCommissionBasisPoints: 1500, effectiveFrom: '2025-01-01', effectiveTo: '', notes: 'Primary owner assignment for Tidehouse Mendocino.' },
   });
-  if (payout) await db.payout.update({ where: { id: payoutId }, data: { propertyOwnerId: ownerId } });
-
   const statement = buildOwnerStatement({
     ownerId,
     propertyAssignments: [{ propertyId: property.id, ownershipBasisPoints: 10000, managerCommissionBasisPoints: 1500 }],
     periodStart,
     periodEnd,
-    currencyCode: seed.settings.currencyCode,
+    currencyCode: reservation.currencyCode,
     reservations: [{
-      id: reservationSeed.id,
-      confirmationCode: reservationSeed.confirmationCode,
+      id: reservation.id,
+      confirmationCode: reservation.confirmationCode,
       propertyId: property.id,
-      status: reservationSeed.status,
-      source: reservationSeed.source,
-      checkOutDate: checkOut,
-      currencyCode: seed.settings.currencyCode,
-      lodgingSubtotalCents: quote.lodgingSubtotalCents,
-      feeTotalCents: quote.feeTotalCents,
-      taxTotalCents: quote.taxTotalCents,
-      discountTotalCents: 0,
-      totalAmountCents: quote.totalAmountCents,
+      status: reservation.status,
+      source: reservation.source,
+      checkOutDate: reservation.checkOutDate,
+      currencyCode: reservation.currencyCode,
+      lodgingSubtotalCents: reservation.lodgingSubtotalCents,
+      feeTotalCents: reservation.feeTotalCents,
+      taxTotalCents: reservation.taxTotalCents,
+      discountTotalCents: reservation.discountTotalCents || 0,
+      totalAmountCents: reservation.totalAmountCents,
     }],
     refunds: [],
-    payouts: payout ? [{ id: payout.id, ownerId, status: payout.status, amountCents: payout.netAmountCents, paidAt: payout.paidAt?.toISOString() }] : [],
+    // No payout is invented: paying an owner is a real, attested event.
+    payouts: [],
     adjustments: [],
   });
   const statementId = 'owner_statement_tidehouse_current';
   const statementNumber = `OST-${periodEnd.replaceAll('-', '')}-1001`;
-  const snapshot = { version: 1, generatedFrom: 'immutable_reservation_and_payout_evidence', ...statement };
+  const snapshot = { version: 1, generatedFrom: 'immutable_reservation_and_payout_evidence', provenance: 'onboarding_sample', ...statement };
   await db.ownerStatement.upsert({
     where: { id: statementId },
-    update: { hostOrganizationId: hostId, ownerId, statementNumber, idempotencyKey: ownerStatementIdempotencyKey({ ownerId, periodStart, periodEnd, currencyCode: seed.settings.currencyCode }), status: 'approved', periodStart, periodEnd, currencyCode: seed.settings.currencyCode, grossRevenueCents: statement.grossRevenueCents, taxAmountCents: statement.taxAmountCents, refundAmountCents: statement.refundAmountCents, expenseAmountCents: statement.expenseAmountCents, adjustmentAmountCents: statement.adjustmentAmountCents, managerCommissionCents: statement.managerCommissionCents, ownerEarningsCents: statement.ownerEarningsCents, paidOutCents: statement.paidOutCents, balanceDueCents: statement.balanceDueCents, statementSnapshot: snapshot, approvedAt: new Date(), sentAt: null, paidAt: null, paidReference: '' },
-    create: { id: statementId, hostOrganizationId: hostId, ownerId, statementNumber, idempotencyKey: ownerStatementIdempotencyKey({ ownerId, periodStart, periodEnd, currencyCode: seed.settings.currencyCode }), status: 'approved', periodStart, periodEnd, currencyCode: seed.settings.currencyCode, grossRevenueCents: statement.grossRevenueCents, taxAmountCents: statement.taxAmountCents, refundAmountCents: statement.refundAmountCents, expenseAmountCents: statement.expenseAmountCents, adjustmentAmountCents: statement.adjustmentAmountCents, managerCommissionCents: statement.managerCommissionCents, ownerEarningsCents: statement.ownerEarningsCents, paidOutCents: statement.paidOutCents, balanceDueCents: statement.balanceDueCents, statementSnapshot: snapshot, approvedAt: new Date(), sentAt: null, paidAt: null, paidReference: '' },
+    update: { hostOrganizationId: hostId, ownerId, statementNumber, idempotencyKey: ownerStatementIdempotencyKey({ ownerId, periodStart, periodEnd, currencyCode: reservation.currencyCode }), status: 'draft', periodStart, periodEnd, currencyCode: reservation.currencyCode, grossRevenueCents: statement.grossRevenueCents, taxAmountCents: statement.taxAmountCents, refundAmountCents: statement.refundAmountCents, expenseAmountCents: statement.expenseAmountCents, adjustmentAmountCents: statement.adjustmentAmountCents, managerCommissionCents: statement.managerCommissionCents, ownerEarningsCents: statement.ownerEarningsCents, paidOutCents: statement.paidOutCents, balanceDueCents: statement.balanceDueCents, statementSnapshot: snapshot, approvedAt: null, sentAt: null, paidAt: null, paidReference: '' },
+    create: { id: statementId, hostOrganizationId: hostId, ownerId, statementNumber, idempotencyKey: ownerStatementIdempotencyKey({ ownerId, periodStart, periodEnd, currencyCode: reservation.currencyCode }), status: 'draft', periodStart, periodEnd, currencyCode: reservation.currencyCode, grossRevenueCents: statement.grossRevenueCents, taxAmountCents: statement.taxAmountCents, refundAmountCents: statement.refundAmountCents, expenseAmountCents: statement.expenseAmountCents, adjustmentAmountCents: statement.adjustmentAmountCents, managerCommissionCents: statement.managerCommissionCents, ownerEarningsCents: statement.ownerEarningsCents, paidOutCents: statement.paidOutCents, balanceDueCents: statement.balanceDueCents, statementSnapshot: snapshot, approvedAt: null, sentAt: null, paidAt: null, paidReference: '' },
   });
   for (const line of statement.lines) {
     const lineId = `owner_line_${line.lineKey.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -570,7 +559,6 @@ export async function seedOwnerAccounting(db: any, seed: any) {
     };
     await db.ownerStatementLine.upsert({ where: { id: lineId }, update: relationData, create: { id: lineId, ...relationData } });
   }
-  if (payout) await db.payout.update({ where: { id: payoutId }, data: { ownerStatementId: statementId } });
 }
 
 export async function seedChannel(db: any, seed: any) {
@@ -578,45 +566,11 @@ export async function seedChannel(db: any, seed: any) {
   const channel = seed.channel;
   if (!channel) return;
   const listing = getListingSeed(seed, channel.listingSlug).listing;
-  const now = new Date();
-
-  await db.channelConnection.upsert({
-    where: { id: channel.connection.id },
-    update: { ...channel.connection, hostOrganizationId: hostId, lastSyncedAt: now },
-    create: { ...channel.connection, hostOrganizationId: hostId, lastSyncedAt: now },
-  });
+  // Configuration only: no sync, import job or imported block is recorded until a real
+  // calendar is imported through the validated import command.
+  const connection = { ...channel.connection, status: 'pending', hostOrganizationId: hostId, lastSyncedAt: null };
+  await db.channelConnection.upsert({ where: { id: channel.connection.id }, update: connection, create: connection });
   const channelListingId = `${channel.connection.id}_listing`;
-  await db.channelListing.upsert({
-    where: { id: channelListingId },
-    update: { hostOrganizationId: hostId, listingId: listing.id, channelConnectionId: channel.connection.id, externalListingId: channel.externalListingId, status: 'mapped', mapping: { availability: true, rates: false, reservations: false, messages: false }, lastSyncedAt: now },
-    create: { id: channelListingId, hostOrganizationId: hostId, listingId: listing.id, channelConnectionId: channel.connection.id, externalListingId: channel.externalListingId, status: 'mapped', mapping: { availability: true, rates: false, reservations: false, messages: false }, lastSyncedAt: now },
-  });
-  const startDate = dateOnly(channel.startOffsetDays);
-  const endDate = dateOnly(channel.startOffsetDays + channel.nights);
-  const blockId = `${channel.connection.id}_${channel.externalUid}`;
-  await assertSeedCapacityAvailable(db, {
-    hostOrganizationId: hostId,
-    listingId: listing.id,
-    startDate,
-    endDate,
-    excludeCalendarBlockId: blockId,
-    reason: 'channel_import',
-  });
-  await db.calendarBlock.upsert({
-    where: { id: blockId },
-    update: { hostOrganizationId: hostId, listingId: listing.id, startDate, endDate, reason: 'channel_import', status: 'active', source: 'ical', externalUid: channel.externalUid, notes: 'Availability imported from an external calendar.' },
-    create: { id: blockId, hostOrganizationId: hostId, listingId: listing.id, startDate, endDate, reason: 'channel_import', status: 'active', source: 'ical', externalUid: channel.externalUid, notes: 'Availability imported from an external calendar.' },
-  });
-  const syncEventId = `${channel.connection.id}_sync_event`;
-  await db.channelSyncEvent.upsert({
-    where: { id: syncEventId },
-    update: { hostOrganizationId: hostId, channelConnectionId: channel.connection.id, channelListingId, channelReservationId: null, action: 'availability_import', status: 'succeeded', message: 'Imported one availability-only iCalendar event.', payload: { eventCount: 1, externalUid: channel.externalUid }, attempts: 1, occurredAt: now },
-    create: { id: syncEventId, hostOrganizationId: hostId, channelConnectionId: channel.connection.id, channelListingId, action: 'availability_import', status: 'succeeded', message: 'Imported one availability-only iCalendar event.', payload: { eventCount: 1, externalUid: channel.externalUid }, attempts: 1, occurredAt: now },
-  });
-  const checksum = crypto.createHash('sha256').update(`${channel.externalUid}|${startDate}|${endDate}`).digest('hex');
-  await db.dataExchangeJob.upsert({
-    where: { id: `${channel.connection.id}_exchange` },
-    update: { hostOrganizationId: hostId, channelConnectionId: channel.connection.id, listingId: listing.id, direction: 'import', domain: 'availability', format: 'ical', status: 'succeeded', idempotencyKey: `ical:${channel.connection.id}:${checksum}`, payloadSha256: checksum, sourceLabel: 'Operator-provided iCalendar text', processedCount: 1, createdCount: 1, updatedCount: 0, skippedCount: 0, conflictCount: 0, resultSummary: { availabilityOnly: true }, startedAt: now, completedAt: now },
-    create: { id: `${channel.connection.id}_exchange`, hostOrganizationId: hostId, channelConnectionId: channel.connection.id, listingId: listing.id, direction: 'import', domain: 'availability', format: 'ical', status: 'succeeded', idempotencyKey: `ical:${channel.connection.id}:${checksum}`, payloadSha256: checksum, sourceLabel: 'Operator-provided iCalendar text', processedCount: 1, createdCount: 1, updatedCount: 0, skippedCount: 0, conflictCount: 0, resultSummary: { availabilityOnly: true }, startedAt: now, completedAt: now },
-  });
+  const mapping = { hostOrganizationId: hostId, listingId: listing.id, channelConnectionId: channel.connection.id, externalListingId: channel.externalListingId, status: 'mapped', mapping: { availability: true, rates: false, reservations: false, messages: false }, lastSyncedAt: null };
+  await db.channelListing.upsert({ where: { id: channelListingId }, update: mapping, create: { id: channelListingId, ...mapping } });
 }

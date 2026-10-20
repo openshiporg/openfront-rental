@@ -1,6 +1,9 @@
 import {
   GraphQLError,
+  GraphQLIncludeDirective,
+  GraphQLSkipDirective,
   getArgumentValues,
+  getDirectiveValues,
   getNamedType,
   getOperationAST,
   getVariableValues,
@@ -16,7 +19,7 @@ import {
   type GraphQLSchema,
 } from 'graphql';
 import type { Plugin } from 'graphql-yoga';
-import { MAX_GRAPHQL_LIST_TAKE } from './graphql-limits';
+import { MAX_GRAPHQL_LIST_TAKE, graphqlListMaxTake } from './graphql-limits';
 
 /** Bounds multiplicative work along nested Keystone list selections. */
 export const MAX_GRAPHQL_LIST_PATH_MULTIPLIER = MAX_GRAPHQL_LIST_TAKE;
@@ -59,6 +62,12 @@ export function graphqlListPathMultiplierError(
       .filter((definition) => definition.kind === Kind.FRAGMENT_DEFINITION)
       .map((fragment) => [fragment.name.value, fragment]),
   );
+  // Branches excluded by @skip/@include never execute, so they cost nothing.
+  const included = (node: Parameters<typeof getDirectiveValues>[1]) => {
+    if (getDirectiveValues(GraphQLSkipDirective, node, variables.coerced)?.if === true) return false;
+    if (getDirectiveValues(GraphQLIncludeDirective, node, variables.coerced)?.if === false) return false;
+    return true;
+  };
   const limitError = () => new GraphQLError(
     `Nested GraphQL list selections exceed the maximum multiplier (${maxMultiplier})`,
   );
@@ -70,6 +79,7 @@ export function graphqlListPathMultiplierError(
     fragmentStack: Set<string>,
   ): GraphQLError | undefined => {
     for (const selection of selectionSet.selections) {
+      if (!included(selection)) continue;
       if (selection.kind === Kind.FIELD) {
         const field = fieldsFor(parentType)?.[selection.name.value];
         if (!field) continue;
@@ -77,7 +87,8 @@ export function graphqlListPathMultiplierError(
         const takeArgument = field.args.find((argument) => argument.name === 'take');
         if (takeArgument && isListOutputType(field.type)) {
           const requestedTake: unknown = getArgumentValues(field, selection, variables.coerced).take;
-          const take = requestedTake == null ? MAX_GRAPHQL_LIST_TAKE : requestedTake;
+          // An omitted take returns at most the target list's configured maximum take.
+          const take = requestedTake == null ? graphqlListMaxTake(getNamedType(field.type).name) : requestedTake;
           if (typeof take !== 'number' || !Number.isSafeInteger(take)) return limitError();
           const effectiveTake = Math.abs(take);
           if (effectiveTake > maxMultiplier) return limitError();

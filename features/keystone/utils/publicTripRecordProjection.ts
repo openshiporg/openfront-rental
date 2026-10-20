@@ -1,5 +1,5 @@
 const GUEST_PARTY_COUNTS = ['adults', 'children', 'infants', 'pets'] as const;
-const PUBLIC_TRIP_AGREEMENT_FIELDS = ['agreementNumber', 'status', 'title', 'signatureName', 'signedAt'] as const;
+const PUBLIC_TRIP_AGREEMENT_FIELDS = ['agreementNumber', 'status', 'title', 'signatureName', 'signedAt', 'signedBySetup'] as const;
 
 export function publicTripGuestPartyProjection(value: unknown): Record<string, number> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;

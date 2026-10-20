@@ -27,6 +27,8 @@ export const OutboxEvent = list({
         { label: 'Pending', value: 'pending' },
         { label: 'Processing', value: 'processing' },
         { label: 'Delivered', value: 'delivered' },
+        // The target may or may not have accepted it; reconciled from the target's receipt, never resent blindly.
+        { label: 'Outcome unknown', value: 'unknown' },
         { label: 'Failed', value: 'failed' },
       ],
       defaultValue: 'pending',
@@ -35,6 +37,11 @@ export const OutboxEvent = list({
     availableAt: timestamp({ defaultValue: { kind: 'now' } }),
     processedAt: timestamp(),
     lastError: text({ ui: { displayMode: 'textarea' } }),
+    // The current claim's lease identity and when its dispatch started (set only while processing).
+    leaseToken: text({ db: { isNullable: true }, ui: { itemView: { fieldMode: 'hidden' }, listView: { fieldMode: 'hidden' } } }),
+    dispatchStartedAt: timestamp({ ui: { itemView: { fieldMode: 'read' } } }),
+    // Append-only per-attempt outcomes: target, attempt, lease, outcome and the target's receipt.
+    deliveryEvidence: json({ ui: { itemView: { fieldMode: 'read' } } }),
     ...trackingFields,
   },
 });

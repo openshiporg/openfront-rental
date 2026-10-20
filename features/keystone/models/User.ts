@@ -1,6 +1,6 @@
 import { list } from '@keystone-6/core';
 import { allOperations, denyAll } from '@keystone-6/core/access';
-import { checkbox, password, relationship, select, text } from '@keystone-6/core/fields';
+import { checkbox, json, password, relationship, select, text } from '@keystone-6/core/fields';
 
 import { isSignedIn, permissions, rules } from '../access';
 import { trackingFields } from './trackingFields';
@@ -36,13 +36,26 @@ export const User = list({
       isOrderable: false,
       isIndexed: 'unique',
       validation: { isRequired: true },
+      // Only a people manager changes a sign-in email. Guest self-service email change is held
+      // until a verified-address policy exists: a current password doesn't prove the new address.
+      access: { update: permissions.canManagePeople },
     }),
     password: password({
       access: {
         read: denyAll,
-        update: ({ session, item }) => permissions.canManagePeople({ session }) || session?.itemId === item.id,
+        // No raw self update: a guest changes their own password through changeGuestPassword,
+        // which checks the current password against this exact account inside the write.
+        update: permissions.canManagePeople,
       },
+      ui: { itemView: { fieldMode: (args) => (permissions.canManagePeople(args) ? 'edit' : 'read') } },
       validation: { isRequired: true },
+    }),
+    registrationEvidence: json({
+      access: { read: permissions.canManagePeople, create: denyAll, update: denyAll },
+      ui: {
+        description: 'Store documents shown and accepted when a guest registered on the storefront (versions and time). Recorded once; never edited.',
+        itemView: { fieldMode: 'read' }, createView: { fieldMode: 'hidden' }, listView: { fieldMode: 'hidden' },
+      },
     }),
     role: relationship({
       ref: 'Role.assignedTo',
@@ -63,13 +76,21 @@ export const User = list({
         { label: 'Dismissed', value: 'dismissed' },
       ],
       defaultValue: 'not_started',
-      access: { update: () => false },
+      // Only the verified onboarding command changes this; nobody can create a user as already set up.
+      access: { create: () => false, update: () => false },
     }),
-    hostMemberships: relationship({ ref: 'HostMembership.user', many: true, access: { create: denyAll, update: denyAll } }),
-    guestProfile: relationship({ ref: 'GuestProfile.user', ui: { itemView: { fieldMode: 'read' } } }),
-    sentMessages: relationship({ ref: 'Message.senderUser', many: true }),
-    authoredReviews: relationship({ ref: 'Review.authorUser', many: true }),
-    assignedPropertyTasks: relationship({ ref: 'PropertyTask.assignee', many: true }),
+    hostMemberships: relationship({ ref: 'HostMembership.user', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
+    guestProfile: relationship({ ref: 'GuestProfile.user', access: { create: denyAll, update: denyAll }, ui: { itemView: { fieldMode: 'read' } } }),
+    customerReservations: relationship({
+      ref: 'Reservation.bookedBy',
+      many: true,
+      access: { create: denyAll, update: denyAll },
+      ui: { displayMode: 'count', itemView: { fieldMode: 'read' }, createView: { fieldMode: 'hidden' } },
+    }),
+    // Authorship and assignment are set by the send, review and task commands, never by editing a user.
+    sentMessages: relationship({ ref: 'Message.senderUser', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
+    authoredReviews: relationship({ ref: 'Review.authorUser', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
+    assignedPropertyTasks: relationship({ ref: 'PropertyTask.assignee', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

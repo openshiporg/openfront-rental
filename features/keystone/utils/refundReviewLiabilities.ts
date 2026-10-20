@@ -12,6 +12,7 @@ export async function createUncoveredRefundReviewLiabilities(tx: any, {
   reason,
   liabilityType,
   operationPrefix,
+  review = false,
 }: {
   reservation: { id: string; confirmationCode: string; hostOrganizationId: string; currencyCode: string };
   payments: Array<{ id: string; status: string | null; amountCents: number; refundedAmountCents?: number | null }>;
@@ -21,6 +22,12 @@ export async function createUncoveredRefundReviewLiabilities(tx: any, {
   reason: string;
   liabilityType: string;
   operationPrefix: string;
+  /**
+   * The amount depends on the captured policy (a guest cancellation or no-show), so it opens
+   * as a refund under the host's review, not as money owed. Host cancellations and money held
+   * above the stay total are owed and open as pending.
+   */
+  review?: boolean;
 }) {
   const openByPayment = new Map<string, number>();
   let openTotalCents = 0;
@@ -55,7 +62,7 @@ export async function createUncoveredRefundReviewLiabilities(tx: any, {
     const idempotencyKey = `${operationPrefix}:${identity}`;
     const existing = await tx.refund.findUnique({ where: { idempotencyKey } });
     if (existing) {
-      if (existing.status !== 'pending' || existing.amountCents !== amountCents || existing.paymentId !== payment.id) {
+      if (existing.status !== (review ? 'review' : 'pending') || existing.amountCents !== amountCents || existing.paymentId !== payment.id) {
         throw new Error('An existing refund review identity conflicts with the uncovered liability.');
       }
       uncoveredCents -= amountCents;
@@ -69,13 +76,14 @@ export async function createUncoveredRefundReviewLiabilities(tx: any, {
         paymentId: payment.id,
         refundNumber: `REF-REV-${reservation.confirmationCode}-${id.slice(0, 8).toUpperCase()}`,
         idempotencyKey,
-        status: 'pending',
+        status: review ? 'review' : 'pending',
         reason,
         amountCents,
         currencyCode: reservation.currencyCode,
         data: {
           liabilityType,
-          policyReviewRequired: true,
+          policyReviewRequired: review,
+          ...(review ? { candidate: true } : {}),
           reviewOnly: true,
           transferCompleted: false,
         },
@@ -86,5 +94,7 @@ export async function createUncoveredRefundReviewLiabilities(tx: any, {
     uncoveredCents -= amountCents;
   }
   if (uncoveredCents > 0) throw new Error('Settled payment evidence cannot cover the required refund review liability.');
-  return { created, createdCents, openTotalCents: openTotalCents + createdCents };
+  // Refunds under review are candidates, not liabilities: they never add to what's owed.
+  const owedCents = review ? 0 : createdCents;
+  return { created, createdCents: owedCents, reviewCents: review ? createdCents : 0, openTotalCents: openTotalCents + owedCents };
 }

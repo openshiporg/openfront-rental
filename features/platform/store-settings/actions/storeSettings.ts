@@ -14,12 +14,21 @@ export type OperatorMarketplaceSettings = {
   publicDescription?: string | null;
   supportEmail?: string | null;
   supportPhone?: string | null;
+  supportHours?: string | null;
+  officeAddress?: string | null;
+  privacyPolicyUrl?: string | null;
+  privacyPolicyVersion?: string | null;
+  termsUrl?: string | null;
+  termsVersion?: string | null;
+  allowTestBookings?: boolean | null;
   currencyCode: string;
   locale: string;
   timezone: string;
   defaultMapLatitude?: number | null;
   defaultMapLongitude?: number | null;
   accentHue: number;
+  logoIcon?: string | null;
+  logoColor?: string | null;
   isPublished: boolean;
 };
 
@@ -35,8 +44,8 @@ export type StoreSettingsActionState = {
 };
 
 const SETTINGS_FIELDS = `
-  id name tagline homepageHeadline publicDescription supportEmail supportPhone
-  currencyCode locale timezone defaultMapLatitude defaultMapLongitude accentHue isPublished
+  id name tagline homepageHeadline publicDescription supportEmail supportPhone supportHours officeAddress
+  privacyPolicyUrl privacyPolicyVersion termsUrl termsVersion allowTestBookings currencyCode locale timezone defaultMapLatitude defaultMapLongitude accentHue logoIcon logoColor isPublished
 `;
 
 async function authorizeSettingsManager() {
@@ -47,9 +56,9 @@ async function authorizeSettingsManager() {
       }
     }
   `);
-  if (!auth.success) return { ok: false as const, message: 'Storefront settings authorization could not be verified.' };
+  if (!auth.success) return { ok: false as const, message: 'Store Settings permission could not be verified.' };
   if (!canManageStoreSettings(auth.data.authenticatedItem)) {
-    return { ok: false as const, message: 'You do not have permission to manage storefront settings.' };
+    return { ok: false as const, message: 'You do not have permission to manage Store Settings.' };
   }
   return { ok: true as const };
 }
@@ -63,7 +72,7 @@ export async function getOperatorMarketplaceSettings(): Promise<StoreSettingsLoa
       marketplaceSettings { ${SETTINGS_FIELDS} }
     }
   `);
-  if (!response.success) return { status: 'error', message: response.error || 'Storefront settings could not be loaded.' };
+  if (!response.success) return { status: 'error', message: response.error || 'Store Settings could not be loaded.' };
   const settings = response.data.marketplaceSettings;
   return settings ? { status: 'ready', settings } : { status: 'unconfigured', settings: null };
 }
@@ -81,7 +90,7 @@ export async function saveMarketplaceSettings(
   const current = await keystoneClient<{ marketplaceSettings: { id: string } | null }>(`
     query CurrentMarketplaceSettings { marketplaceSettings { id } }
   `);
-  if (!current.success) return { ok: false, message: current.error || 'Storefront settings could not be checked.' };
+  if (!current.success) return { ok: false, message: current.error || 'Store Settings could not be checked.' };
 
   const operation = current.data.marketplaceSettings
     ? `mutation UpdateMarketplaceSettings($data: MarketplaceSettingsUpdateInput!) {
@@ -92,7 +101,7 @@ export async function saveMarketplaceSettings(
       }`;
 
   const response = await keystoneClient<{ settings: OperatorMarketplaceSettings }>(operation, { data: parsed.data });
-  if (!response.success) return { ok: false, message: response.error || 'Storefront settings could not be saved.' };
+  if (!response.success) return { ok: false, message: response.error || 'Store Settings could not be saved.' };
 
   revalidatePath('/dashboard/platform/store-settings');
   revalidatePath('/', 'layout');
@@ -100,6 +109,6 @@ export async function saveMarketplaceSettings(
     ok: true,
     message: parsed.data.isPublished
       ? 'Storefront identity and theme saved and published.'
-      : 'Storefront settings saved. The public storefront remains unpublished.',
+      : 'Store Settings saved. The public storefront remains unpublished.',
   };
 }

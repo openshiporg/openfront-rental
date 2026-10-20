@@ -29,14 +29,17 @@ export function assertStayQuoteMatchesSnapshot(record: any) {
   const issuedListing = snapshot?.listing;
   const issuedHostId = issuedListing?.host?.id;
   const issuedUnitId = issuedListing?.accommodation?.id;
-  const issuedRatePlanId = issuedListing?.ratePlans?.[0]?.id;
+  const issuedPlan = issuedListing?.ratePlans?.[0];
+  // A listing selling on its base nightly rate has no rate plan row to connect.
+  const issuedRatePlanId = issuedPlan?.isBaseRate === true && issuedPlan.id == null ? null : issuedPlan?.id;
 
   if (
     !issuedQuote
     || !issuedListing?.id
     || !issuedHostId
     || !issuedUnitId
-    || !issuedRatePlanId
+    || issuedRatePlanId === undefined
+    || (issuedRatePlanId !== null && !issuedRatePlanId)
     || typeof issuedListing.bookingMode !== 'string'
     || typeof issuedListing.instantBook !== 'boolean'
   ) throw quoteChanged();
