@@ -6,6 +6,7 @@ type User {
   name: String
   email: String
   password: PasswordState
+  registrationEvidence: JSON
   role: Role
   phone: String
   isActive: Boolean
@@ -204,6 +205,7 @@ input UserUpdateInput {
   name: String
   email: String
   password: String
+  registrationEvidence: JSON
   role: RoleRelateToOneForUpdateInput
   phone: String
   isActive: Boolean
@@ -277,6 +279,7 @@ input UserCreateInput {
   name: String
   email: String
   password: String
+  registrationEvidence: JSON
   role: RoleRelateToOneForCreateInput
   phone: String
   isActive: Boolean
@@ -564,6 +567,9 @@ type MarketplaceSettings {
   officeAddress: String
   privacyPolicyUrl: String
   termsUrl: String
+  privacyPolicyVersion: String
+  termsVersion: String
+  allowTestBookings: Boolean
   currencyCode: String
   locale: String
   timezone: String
@@ -596,6 +602,9 @@ input MarketplaceSettingsWhereInput {
   officeAddress: StringFilter
   privacyPolicyUrl: StringFilter
   termsUrl: StringFilter
+  privacyPolicyVersion: StringFilter
+  termsVersion: StringFilter
+  allowTestBookings: BooleanFilter
   currencyCode: StringFilter
   locale: StringFilter
   timezone: StringFilter
@@ -643,6 +652,9 @@ input MarketplaceSettingsOrderByInput {
   officeAddress: OrderDirection
   privacyPolicyUrl: OrderDirection
   termsUrl: OrderDirection
+  privacyPolicyVersion: OrderDirection
+  termsVersion: OrderDirection
+  allowTestBookings: OrderDirection
   currencyCode: OrderDirection
   locale: OrderDirection
   timezone: OrderDirection
@@ -667,6 +679,9 @@ input MarketplaceSettingsUpdateInput {
   officeAddress: String
   privacyPolicyUrl: String
   termsUrl: String
+  privacyPolicyVersion: String
+  termsVersion: String
+  allowTestBookings: Boolean
   currencyCode: String
   locale: String
   timezone: String
@@ -696,6 +711,9 @@ input MarketplaceSettingsCreateInput {
   officeAddress: String
   privacyPolicyUrl: String
   termsUrl: String
+  privacyPolicyVersion: String
+  termsVersion: String
+  allowTestBookings: Boolean
   currencyCode: String
   locale: String
   timezone: String
@@ -1354,6 +1372,7 @@ type Property {
   unitsCount(where: AccommodationUnitWhereInput! = {}): Int
   listings(where: ListingWhereInput! = {}, orderBy: [ListingOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ListingWhereUniqueInput): [Listing!]
   listingsCount(where: ListingWhereInput! = {}): Int
+  listingSummary: JSON
   ownerAssignments(where: PropertyOwnerAssignmentWhereInput! = {}, orderBy: [PropertyOwnerAssignmentOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyOwnerAssignmentWhereUniqueInput): [PropertyOwnerAssignment!]
   ownerAssignmentsCount(where: PropertyOwnerAssignmentWhereInput! = {}): Int
   tasks(where: PropertyTaskWhereInput! = {}, orderBy: [PropertyTaskOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: PropertyTaskWhereUniqueInput): [PropertyTask!]
@@ -2206,6 +2225,7 @@ type Listing {
   bookingWindowDays: Int
   reviewAverageHundredths: Int
   reviewCount: Int
+  onlineReadiness: JSON
   thumbnail: String
   media(where: ListingMediaWhereInput! = {}, orderBy: [ListingMediaOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: ListingMediaWhereUniqueInput): [ListingMedia!]
   mediaCount(where: ListingMediaWhereInput! = {}): Int
@@ -2833,6 +2853,7 @@ type CalendarBlock {
   status: String
   source: String
   externalUid: String
+  fixtureOrigin: String
   notes: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -2857,6 +2878,7 @@ input CalendarBlockWhereInput {
   status: StringNullableFilter
   source: StringNullableFilter
   externalUid: StringFilter
+  fixtureOrigin: StringNullableFilter
   notes: StringFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
@@ -2870,6 +2892,7 @@ input CalendarBlockOrderByInput {
   status: OrderDirection
   source: OrderDirection
   externalUid: OrderDirection
+  fixtureOrigin: OrderDirection
   notes: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
@@ -2886,6 +2909,7 @@ input CalendarBlockUpdateInput {
   status: String
   source: String
   externalUid: String
+  fixtureOrigin: String
   notes: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -2919,6 +2943,7 @@ input CalendarBlockCreateInput {
   status: String
   source: String
   externalUid: String
+  fixtureOrigin: String
   notes: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -3807,6 +3832,9 @@ type Reservation {
   totalAmountCents: Int
   amountPaidCents: Int
   bookingSnapshot: JSON
+  fixtureOrigin: String
+  fixtureEvidence: JSON
+  tripLinkDelivery: JSON
   guestNotes: String
   internalNotes: String
   lineItems(where: ReservationLineItemWhereInput! = {}, orderBy: [ReservationLineItemOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ReservationLineItemWhereUniqueInput): [ReservationLineItem!]
@@ -3884,6 +3912,7 @@ input ReservationWhereInput {
   securityDepositCents: IntNullableFilter
   totalAmountCents: IntNullableFilter
   amountPaidCents: IntNullableFilter
+  fixtureOrigin: StringNullableFilter
   guestNotes: StringFilter
   internalNotes: StringFilter
   lineItems: ReservationLineItemManyRelationFilter
@@ -3948,6 +3977,7 @@ input ReservationOrderByInput {
   securityDepositCents: OrderDirection
   totalAmountCents: OrderDirection
   amountPaidCents: OrderDirection
+  fixtureOrigin: OrderDirection
   guestNotes: OrderDirection
   internalNotes: OrderDirection
   createdAt: OrderDirection
@@ -3988,6 +4018,9 @@ input ReservationUpdateInput {
   totalAmountCents: Int
   amountPaidCents: Int
   bookingSnapshot: JSON
+  fixtureOrigin: String
+  fixtureEvidence: JSON
+  tripLinkDelivery: JSON
   guestNotes: String
   internalNotes: String
   lineItems: ReservationLineItemRelateToManyForUpdateInput
@@ -4103,6 +4136,9 @@ input ReservationCreateInput {
   totalAmountCents: Int
   amountPaidCents: Int
   bookingSnapshot: JSON
+  fixtureOrigin: String
+  fixtureEvidence: JSON
+  tripLinkDelivery: JSON
   guestNotes: String
   internalNotes: String
   lineItems: ReservationLineItemRelateToManyForCreateInput
@@ -4708,6 +4744,8 @@ type Payment {
   providerPaymentId: String
   idempotencyKey: String
   data: JSON
+  tenderKind: String
+  refundAvailability: JSON
   processedAt: DateTime
   errorMessage: String
   processedBy: User
@@ -5546,6 +5584,7 @@ type Conversation {
   guestAccessTokenHash: String
   guestAccessTokenExpiresAt: DateTime
   guestAccessTokenRevokedAt: DateTime
+  guestLinkDelivery: JSON
   guestEmail: String
   lastMessageAt: DateTime
   messages(where: MessageWhereInput! = {}, orderBy: [MessageOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: MessageWhereUniqueInput): [Message!]
@@ -5609,6 +5648,7 @@ input ConversationUpdateInput {
   guestAccessTokenHash: String
   guestAccessTokenExpiresAt: DateTime
   guestAccessTokenRevokedAt: DateTime
+  guestLinkDelivery: JSON
   guestEmail: String
   lastMessageAt: DateTime
   messages: MessageRelateToManyForUpdateInput
@@ -5639,6 +5679,7 @@ input ConversationCreateInput {
   guestAccessTokenHash: String
   guestAccessTokenExpiresAt: DateTime
   guestAccessTokenRevokedAt: DateTime
+  guestLinkDelivery: JSON
   guestEmail: String
   lastMessageAt: DateTime
   messages: MessageRelateToManyForCreateInput
@@ -6286,6 +6327,7 @@ type ChannelListing {
   status: String
   mapping: JSON
   lastSyncedAt: DateTime
+  lastImportIssue: JSON
   channelReservations(where: ChannelReservationWhereInput! = {}, orderBy: [ChannelReservationOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelReservationWhereUniqueInput): [ChannelReservation!]
   channelReservationsCount(where: ChannelReservationWhereInput! = {}): Int
   syncEvents(where: ChannelSyncEventWhereInput! = {}, orderBy: [ChannelSyncEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: ChannelSyncEventWhereUniqueInput): [ChannelSyncEvent!]
@@ -6335,6 +6377,7 @@ input ChannelListingUpdateInput {
   status: String
   mapping: JSON
   lastSyncedAt: DateTime
+  lastImportIssue: JSON
   channelReservations: ChannelReservationRelateToManyForUpdateInput
   syncEvents: ChannelSyncEventRelateToManyForUpdateInput
   createdAt: DateTime
@@ -6355,6 +6398,7 @@ input ChannelListingCreateInput {
   status: String
   mapping: JSON
   lastSyncedAt: DateTime
+  lastImportIssue: JSON
   channelReservations: ChannelReservationRelateToManyForCreateInput
   syncEvents: ChannelSyncEventRelateToManyForCreateInput
   createdAt: DateTime
@@ -6730,6 +6774,9 @@ type OutboxEvent {
   availableAt: DateTime
   processedAt: DateTime
   lastError: String
+  leaseToken: String
+  dispatchStartedAt: DateTime
+  deliveryEvidence: JSON
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -6754,6 +6801,8 @@ input OutboxEventWhereInput {
   availableAt: DateTimeNullableFilter
   processedAt: DateTimeNullableFilter
   lastError: StringFilter
+  leaseToken: StringNullableFilter
+  dispatchStartedAt: DateTimeNullableFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
 }
@@ -6769,6 +6818,8 @@ input OutboxEventOrderByInput {
   availableAt: OrderDirection
   processedAt: OrderDirection
   lastError: OrderDirection
+  leaseToken: OrderDirection
+  dispatchStartedAt: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
 }
@@ -6785,6 +6836,9 @@ input OutboxEventUpdateInput {
   availableAt: DateTime
   processedAt: DateTime
   lastError: String
+  leaseToken: String
+  dispatchStartedAt: DateTime
+  deliveryEvidence: JSON
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -6806,6 +6860,9 @@ input OutboxEventCreateInput {
   availableAt: DateTime
   processedAt: DateTime
   lastError: String
+  leaseToken: String
+  dispatchStartedAt: DateTime
+  deliveryEvidence: JSON
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -7122,37 +7179,50 @@ type Mutation {
   sendUserPasswordResetLink(email: String!): Boolean!
   redeemUserPasswordResetToken(email: String!, token: String!, password: String!): RedeemUserPasswordResetTokenResult
   quoteStay(listingId: ID!, checkIn: String!, checkOut: String!, adults: Int!, children: Int, infants: Int, pets: Int): QuoteStayResult!
-  createStayReservation(quoteToken: String!, guestName: String!, guestEmail: String!, guestPhone: String, invitedGuests: JSON, guestNotes: String, acceptedTermsVersion: String, receiptKey: String): CreateStayReservationResult!
+  createStayReservation(quoteToken: String!, guestName: String!, guestEmail: String!, guestPhone: String, invitedGuests: JSON, guestNotes: String, acceptedTermsVersion: String, acceptedStoreTermsVersion: String, privacyNoticeVersion: String, simulation: Boolean, receiptKey: String): CreateStayReservationResult!
+
+  """
+  Returns the receipt of a checkout this same browser already completed (24 hours, same key and session).
+  """
+  recoverStayCheckout(quoteToken: String!, receiptKey: String!): CreateStayReservationResult
   cancelStayQuote(quoteId: ID!): CancelStayQuoteResult!
-  requestStayCancellation(tripToken: String!, reason: String, confirmCancellation: Boolean, expectedRefundCents: Int): StayCancellationResult!
+  requestStayCancellation(tripToken: String!, reason: String, confirmCancellation: Boolean, expectedRefundCents: Int, expectedAssessmentId: String): StayCancellationResult!
   signStayAgreement(token: String!, signatureName: String!, acceptTerms: Boolean): StayAgreementMutationResult!
   transitionStayReservation(reservationId: ID!, transition: String!, note: String): StayReservationMutationResult!
   reassignStayReservation(reservationId: ID!, targetAccommodationUnitId: ID!, reason: String!): JSON!
   amendConfirmedStay(reservationId: ID!, expectedCheckInDate: String!, expectedCheckOutDate: String!, checkInDate: String!, checkOutDate: String!, reason: String!, idempotencyKey: String!): JSON!
-  initiateStayPayment(reservationId: ID!, paymentProviderCode: String, amountCents: Int, operationKey: String): StayPaymentResult!
+
+  """
+  Opens one manual receipt. \`operationKey\` identifies this submission: the same key returns the same receipt.
+  """
+  initiateStayPayment(reservationId: ID!, paymentProviderCode: String, amountCents: Int, operationKey: String!): StayPaymentResult!
   captureStayPayment(paymentId: ID!): StayPaymentResult!
   startGuestStayPayment(tripToken: String!): JSON!
   completeGuestStayPayment(tripToken: String!, paymentId: ID!): JSON!
   generateOwnerStatement(ownerId: ID!, periodStart: String!, periodEnd: String!, currencyCode: String): JSON!
-  transitionOwnerStatement(statementId: ID!, transition: String!, reference: String): JSON!
+
+  """
+  Approve, send, pay or void an owner statement. Paying needs structured transfer evidence (amount, currency, date, payee, method, reference, custody, attestation).
+  """
+  transitionOwnerStatement(statementId: ID!, transition: String!, reference: String, transfer: JSON, operationKey: String): JSON!
   createOperationsTask(propertyId: ID!, listingId: ID, reservationId: ID, assigneeId: ID, title: String!, taskType: String!, priority: String, dueAt: String, notes: String): JSON!
   transitionPropertyTask(taskId: ID!, action: String!, assigneeId: ID, completionNotes: String, completionEvidence: JSON): JSON!
   importListingCalendar(channelConnectionId: ID!, listingId: ID!, calendarText: String!, sourceLabel: String): JSON!
   exportListingCalendar(listingId: ID!): JSON!
   exportHostArchive(hostOrganizationId: ID!): JSON!
   refundStayPayment(paymentId: ID!, refundId: ID, operationKey: String!, amountCents: Int!, reason: String, confirmFundsReturned: Boolean!, manualEvidenceReference: String!): JSON!
-  transitionSecurityDeposit(depositId: ID!, transition: String!, amountCents: Int, reference: String): JSON!
+  transitionSecurityDeposit(depositId: ID!, transition: String!, amountCents: Int, reference: String, confirmEvidence: Boolean, operationKey: String): JSON!
   createStayDamageClaim(reservationId: ID!, description: String!, claimedAmountCents: Int!, evidence: JSON): JSON!
-  transitionDamageClaim(claimId: ID!, transition: String!, approvedAmountCents: Int): JSON!
+  transitionDamageClaim(claimId: ID!, transition: String!, approvedAmountCents: Int, settlementMethod: String, settlementReference: String, confirmSettlement: Boolean, receivedOn: String, custody: String): JSON!
   updateOnboardingStatus(status: String!): OnboardingStatusResult!
   rentalOnboarding(input: JSON!, operationId: String, mode: String!): JSON!
   submitGuestInquiry(name: String!, email: String!, message: String!, listingSlug: String): JSON!
   replyToGuestThread(token: String!, message: String!): JSON!
   sendTripMessage(tripToken: String!, topic: String, message: String!): JSON!
   submitStayReview(tripToken: String!, overallRating: Int!, cleanlinessRating: Int, accuracyRating: Int, communicationRating: Int, locationRating: Int, valueRating: Int, body: String, privateFeedback: String): JSON!
-  registerGuestAccount(name: String!, email: String!, password: String!): JSON!
+  registerGuestAccount(name: String!, email: String!, password: String!, acceptedTermsOfUseVersion: String, privacyNoticeVersion: String): JSON!
   openAccountTrip(confirmationCode: String!): JSON!
-  recoverStayTrip(confirmationCode: String!, email: String!, addToAccount: Boolean): JSON!
+  recoverStayTrip(confirmationCode: String!, email: String!, addToAccount: Boolean, networkProof: String): JSON!
   claimStayTrip(tripToken: String!): JSON!
   updateMyGuestProfile(name: String!, phone: String): JSON!
   changeGuestEmail(email: String!, currentPassword: String!): JSON!
@@ -7163,7 +7233,11 @@ type Mutation {
   """
   hostStayCommand(command: String!, input: JSON!): JSON!
   deliverOutboxEvents(limit: Int, hostOrganizationId: ID): JSON!
-  runPropertyTaskRules(hostOrganizationId: ID!): JSON!
+
+  """
+  Creates missing before-arrival tasks a page of rules at a time; pass the returned nextRuleCursor to continue.
+  """
+  runPropertyTaskRules(hostOrganizationId: ID!, afterRuleId: String): JSON!
 }
 
 union UserAuthenticationWithPasswordResult = UserAuthenticationWithPasswordSuccess | UserAuthenticationWithPasswordFailure
@@ -7351,7 +7425,7 @@ type Query {
   redirectToInit: Boolean
   publicMarketplaceSettings: PublicMarketplaceSettingsResult!
   searchStays(destination: String, checkIn: String, checkOut: String, adults: Int, children: Int, infants: Int, pets: Int, propertyTypes: [String!], amenitySlugs: [String!], bedrooms: Int, beds: Int, bathroomsHalfUnits: Int, minTotalCents: Int, maxTotalCents: Int, instantBook: Boolean, listingIds: [ID!], collectionSlug: String, offset: Int, limit: Int): SearchStaysResult!
-  publicListing(slug: String!): JSON
+  publicListing(slug: String!, reviewsBefore: String): JSON
   publicStayAgreement(token: String!): JSON
   publicStayQuote(token: String!): JSON
   publicTrip(token: String!, messagesBefore: String): JSON
@@ -7359,17 +7433,22 @@ type Query {
   publicGuestThread(token: String!, messagesBefore: String): JSON
   myGuestAccount(tripsOffset: Int): JSON
   guestPasswordResetAvailable: Boolean!
-  publicStayAvailability(slug: String!): JSON
+  publicStayAvailability(slug: String!, from: String, days: Int): JSON
 
   """
   Id and name of the host organizations where the operator holds the given reports or payouts permission.
   """
-  permittedHostOrganizations(permission: String!): JSON!
+  permittedHostOrganizations(permission: String!, search: String): JSON!
 
   """
   Per-currency owner statement totals and payout counts for the owners the operator can read.
   """
   ownerFinanceSummary: JSON!
+
+  """
+  IDs of the listings you can read that are priced and bookable online now, and of your readable properties with a bookable listing (no prices or terms).
+  """
+  listingReadinessIndex: JSON!
 }
 
 union AuthenticatedItem = User
@@ -7522,7 +7601,10 @@ type PublicMarketplaceSettingsResult {
   supportHours: String
   officeAddress: String
   privacyPolicyUrl: String
+  privacyPolicyVersion: String
   termsUrl: String
+  termsVersion: String
+  testBookingsAvailable: Boolean
   currencyCode: String
   locale: String
   timezone: String
@@ -7569,8 +7651,13 @@ type CreateStayReservationResult {
   totalAmountCents: Int!
   listing: JSON
   tripToken: String!
-  agreementToken: String!
+
+  """
+  Null when a recovered receipt's agreement link was reissued, revoked or expired since booking.
+  """
+  agreementToken: String
   recovered: Boolean
+  testMode: Boolean
 }
 
 type CancelStayQuoteResult {
@@ -7595,6 +7682,9 @@ type StayCancellationResult {
   confirmationCode: String!
   status: String!
   refundPendingCents: Int!
+
+  """Refunds opened for the host's review (not owed until assessed)."""
+  refundReviewCents: Int
   refundAssessment: String
 }
 

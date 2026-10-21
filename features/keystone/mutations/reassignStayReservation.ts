@@ -57,7 +57,7 @@ export async function reassignStayReservation(_root: unknown, args: ReassignStay
         testMode: true,
       },
     });
-    if (locked?.testMode) throw new Error('This is a test booking: it holds no unit, so it can’t be reassigned.');
+    if (beforeLock?.testMode) throw new Error('This is a test booking: it holds no unit, so it can’t be reassigned.');
     if (!beforeLock?.hostOrganizationId || beforeLock.hostOrganizationId !== current.hostOrganizationId) {
       throw new Error('Reservation not found.');
     }

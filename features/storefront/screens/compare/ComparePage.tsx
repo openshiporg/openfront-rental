@@ -17,7 +17,7 @@ export async function ComparePage({ searchParams }: { searchParams?: Promise<Sea
   const params = (await searchParams) || {};
   const slugs = comparisonSlugs(params.home);
   const query = searchQuery(params, { offset: '' });
-  const responses = await Promise.all(slugs.map(getPublicStay));
+  const responses = await Promise.all(slugs.map(slug => getPublicStay(slug)));
   const stays = responses.flatMap(response => response.stay ? [response.stay] : []);
   const checkIn = single(params.checkIn);
   const checkOut = single(params.checkOut);

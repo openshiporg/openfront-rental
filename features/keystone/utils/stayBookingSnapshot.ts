@@ -21,7 +21,16 @@ export type StayConsentEvidence = {
   acceptedAt: string;
   acceptedBy: { kind: 'guest'; email: string; userId: string | null };
   statement: string;
+  /** The store terms and privacy notice in force at checkout, or that none was published. */
+  storeTermsOfUse?: { status: 'accepted'; url: string; version: string } | { status: 'not_published' };
+  privacyNotice?: { status: 'shown'; url: string; version: string } | { status: 'not_published' };
 };
+
+/** Lets a checkout receipt be replayed only by the same session with the same details. */
+export type StayConversionEvidence = { version: number; receiptKeyHash: string; requestFingerprint?: string; actorUserId: string | null };
+
+/** Recorded when the guest chose a test booking: no dates held, test-card payments only. */
+export type StaySimulationEvidence = { kind: 'test_booking'; chosenBy: 'guest'; statement: string };
 
 export type StayBookingSnapshotInput = {
   capturedAt?: Date;
@@ -30,7 +39,8 @@ export type StayBookingSnapshotInput = {
   cancellationPolicy: JsonObject;
   quote: StayQuoteSnapshot;
   consent?: StayConsentEvidence;
-  conversion?: { receiptKeyHash: string };
+  conversion?: StayConversionEvidence;
+  simulation?: StaySimulationEvidence;
 };
 
 export type StayBookingSnapshot = {
@@ -41,7 +51,8 @@ export type StayBookingSnapshot = {
   cancellationPolicy: JsonObject;
   quote: StayQuoteSnapshot;
   consent?: StayConsentEvidence;
-  conversion?: { receiptKeyHash: string };
+  conversion?: StayConversionEvidence;
+  simulation?: StaySimulationEvidence;
 };
 
 /**
@@ -76,6 +87,7 @@ export function createStayBookingSnapshot(input: StayBookingSnapshotInput): Stay
     quote: structuredClone(input.quote),
     ...(input.consent ? { consent: structuredClone(input.consent) } : {}),
     ...(input.conversion ? { conversion: { ...input.conversion } } : {}),
+    ...(input.simulation ? { simulation: { ...input.simulation } } : {}),
   };
 }
 

@@ -2,6 +2,7 @@
 
 import { keystoneClient } from '@/features/dashboard/lib/keystoneClient';
 import { OPERATIONAL_PROPERTY_SELECTION, operationalLocalToday } from '@/features/platform/operations/lib/operationalProperty';
+import { zonedTodayIso } from '@/features/keystone/utils/stayBookingRules';
 
 const STAY = `id confirmationCode status paymentStatus testMode fixtureOrigin checkInDate checkOutDate totalAmountCents amountPaidCents currencyCode guest { name } listing { title property { name timezone } } ${OPERATIONAL_PROPERTY_SELECTION}`;
 const PREVIEW = 25;

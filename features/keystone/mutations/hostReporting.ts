@@ -296,20 +296,20 @@ export async function hostOperationsReport(
     // classified here rather than with JSON filters, which would drop payments missing a key.
     const REPORT_ROW_PAGE = 2000;
     const REPORT_ROW_LIMIT = 100_000;
-    const readAll = async (delegate: any, args: any) => {
+    const readSettledRows = async (delegate: any, args: any) => {
       const rows: any[] = [];
       for (let skip = 0; ; skip += REPORT_ROW_PAGE) {
         const page = await delegate.findMany({ ...args, orderBy: [{ id: 'asc' }], skip, take: REPORT_ROW_PAGE });
         rows.push(...page);
-        if (rows.length > REPORT_ROW_LIMIT) throw new Error('This range has too many payments to total. Choose a shorter range.');
+        if (rows.length > REPORT_ROW_LIMIT) throw reportError('BAD_USER_INPUT', 'This range has too many payments to total. Choose a shorter range.');
         if (page.length < REPORT_ROW_PAGE) return rows;
       }
     };
-    const settledPayments = await readAll(tx.payment, {
+    const settledPayments = await readSettledRows(tx.payment, {
       where: { hostOrganizationId, status: { in: settledPaymentStatuses }, AND: [datedInRange] },
       select: { amountCents: true, currencyCode: true, provider: true, data: true },
     });
-    const succeededRefunds = await readAll(tx.refund, {
+    const succeededRefunds = await readSettledRows(tx.refund, {
       where: { hostOrganizationId, status: 'succeeded', AND: [datedInRange] },
       select: { amountCents: true, currencyCode: true, paymentId: true, payment: { select: { provider: true, data: true } }, reservation: { select: { testMode: true } } },
     });

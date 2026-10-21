@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { storefrontFontClass } from '../lib/fonts';
 
 export function StorefrontRouteLoading() {
@@ -28,7 +30,7 @@ export function StorefrontRouteError({ reset }: { reset: () => void }) {
           <p>Try loading it again. If you just submitted a reservation, use Find my trip with your confirmation code and email before booking again.</p>
           <div className="stay-actions">
             <button type="button" className="stay-button" onClick={reset}>Try again</button>
-            <a className="stay-text-link" href="/trips">Open your trip</a>
+            <Link className="stay-text-link" href="/trips">Open your trip</Link>
           </div>
         </div>
       </section>
