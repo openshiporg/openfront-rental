@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { s3ForcePathStyle } from './features/keystone/lib/s3-storage';
 
 import { parseStorageEndpoint } from './features/keystone/lib/storage-endpoint';
 
@@ -7,7 +8,7 @@ import { parseStorageEndpoint } from './features/keystone/lib/storage-endpoint';
 function storageImagePattern() {
   try {
     const endpoint = process.env.S3_ENDPOINT ? parseStorageEndpoint(process.env.S3_ENDPOINT) : null;
-    return endpoint ? [{ protocol: endpoint.protocol, hostname: endpoint.hostname, port: endpoint.port, pathname: '/**' }] : [];
+    return endpoint ? [{ protocol: endpoint.protocol, hostname: s3ForcePathStyle(endpoint.origin) ? endpoint.hostname : `${process.env.S3_BUCKET_NAME}.${endpoint.hostname}`, port: endpoint.port, pathname: '/**' }] : [];
   } catch {
     return [];
   }
