@@ -17,22 +17,17 @@ const boundedModels = withGraphqlListMaxTake(models);
 
 const sessionConfig = createKeystoneSessionConfig(resolveSessionSecret());
 
-// As in E-commerce: development keeps local defaults; production must configure real storage
-// instead of silently uploading with placeholder credentials.
-function productionEnv(name: string, developmentFallback: string): string {
-  const value = process.env[name]?.trim();
-  if (value) return value;
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(`${name} is required in production`);
-  }
-  return developmentFallback;
+// Storage is optional at startup: without the five S3_* settings the app still starts and
+// uploads fail at the storage provider until a bucket is configured.
+function storageEnv(name: string, developmentFallback: string): string {
+  return process.env[name]?.trim() || developmentFallback;
 }
 
-const bucketName = productionEnv("S3_BUCKET_NAME", "keystone-test");
-const region = productionEnv("S3_REGION", "ap-southeast-2");
-const accessKeyId = productionEnv("S3_ACCESS_KEY_ID", "keystone");
-const secretAccessKey = productionEnv("S3_SECRET_ACCESS_KEY", "keystone");
-const endpoint = parseStorageEndpoint(productionEnv("S3_ENDPOINT", "https://sfo3.digitaloceanspaces.com")).origin;
+const bucketName = storageEnv("S3_BUCKET_NAME", "keystone-test");
+const region = storageEnv("S3_REGION", "ap-southeast-2");
+const accessKeyId = storageEnv("S3_ACCESS_KEY_ID", "keystone");
+const secretAccessKey = storageEnv("S3_SECRET_ACCESS_KEY", "keystone");
+const endpoint = parseStorageEndpoint(storageEnv("S3_ENDPOINT", "https://sfo3.digitaloceanspaces.com")).origin;
 
 const { withAuth } = createAuth({
   listKey: "User",
