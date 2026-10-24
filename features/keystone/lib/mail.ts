@@ -70,7 +70,7 @@ export async function sendPasswordResetEmail(resetToken: string, to: string, bas
   const info = await transport.sendMail({
     to,
     from: process.env.SMTP_FROM,
-    subject: "Your password reset token!",
+    subject: "Reset your password",
     html: passwordResetEmail({ url }),
   });
   if (process.env.MAIL_USER?.includes("ethereal.email")) {

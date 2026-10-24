@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { SectionNav } from '../../components/Journey';
 import { LegalLinks, legalDocuments } from '../../components/LegalLinks';
 import { StorefrontShell } from '../../components/StorefrontShell';
+import { resolveStorefrontBrand } from '../../lib/brand';
 import { getPublicMarketplaceSettings } from '../../lib/data/marketplace';
 import { depositPolicyCopy, paymentPolicyCopy, refundPolicyCopy } from '../../lib/payment-copy';
 
@@ -13,6 +14,7 @@ export async function PoliciesPage() {
   const legal = settings.status === 'published' ? settings : null;
   const documents = legalDocuments(legal);
   const cardEnabled = legal?.testBookingsAvailable === true;
+  const brand = resolveStorefrontBrand(settings);
   return <StorefrontShell activeNav="help"><main id="stay-main" className="stay-shell">
     <header className="stay-page-head">
       <p className="stay-overline">Know before you go</p>
@@ -31,7 +33,7 @@ export async function PoliciesPage() {
         <section id="cancellation" className="stay-article">
           <h2>Cancellation & refunds</h2>
           <p>Read the home’s policy in the dated quote and in the agreement captured for your reservation. Cancellation conditions can differ by home and rate. This website doesn’t promise a universal free-cancellation window or an automatic full refund.</p>
-          <p>{refundPolicyCopy} Message the host with any question about an amount due or a refund.</p>
+          <p>{refundPolicyCopy(cardEnabled)} Message the host with any question about an amount due or a refund.</p>
         </section>
         <section id="rules" className="stay-article">
           <h2>House rules & agreements</h2>
@@ -41,10 +43,10 @@ export async function PoliciesPage() {
         <section id="privacy" className="stay-article">
           <h2>Keeping trip information private</h2>
           <p>Guest access uses private trip and agreement links. Anyone holding a valid link can see its permitted details, so keep the full links private. If you lose a link, the Your trip page explains how to get back to your booking.</p>
-          <p>Contact details entered at booking are sent to the host. Arrival notes should contain only information needed for your stay. Card details are entered in Stripe’s secure form and are never stored by this website.</p>
+          <p>Contact details entered at booking are sent to the host. Arrival notes should contain only information needed for your stay.{cardEnabled ? ' Test-card details are entered in Stripe’s secure form and are never stored by this website.' : ''}</p>
           {documents.privacyPolicy || documents.termsOfUse
             ? <LegalLinks context="booking" {...documents} />
-            : <p>The host’s formal privacy notice and legal documents aren’t published on this page. Contact the published support address for the host’s applicable documents and any information request.</p>}
+            : <p>The host’s formal privacy notice and legal documents aren’t published on this page. {brand?.email ? 'Contact the published support address' : <Link href="/help#message-host">Message the host</Link>} for the host’s applicable documents and any information request.</p>}
           <Link className="stay-text-link" href="/help">Contact & policy questions</Link>
         </section>
       </div>

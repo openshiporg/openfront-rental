@@ -27,12 +27,12 @@ export function formatMoneyParts(locale: string, amount?: number | null, currenc
   };
 }
 
-/** Calendar cells: "$325", "$1.2K". */
+/** Calendar cells: "$325", "$373.75" (never rounded, so it matches the quote), "$1.2K". */
 export function formatMoneyCompact(locale: string, amount?: number | null, currency = 'USD') {
   const value = minorToMajorUnits(amount || 0, currency);
-  return new Intl.NumberFormat(locale, value >= 1000
-    ? { style: 'currency', currency, notation: 'compact', maximumFractionDigits: 1 }
-    : { style: 'currency', currency, maximumFractionDigits: 0 }).format(value);
+  return value >= 1000
+    ? new Intl.NumberFormat(locale, { style: 'currency', currency, notation: 'compact', maximumFractionDigits: 1 }).format(value)
+    : formatMoney(locale, amount, currency);
 }
 
 export function formatRating(hundredths?: number | null) {

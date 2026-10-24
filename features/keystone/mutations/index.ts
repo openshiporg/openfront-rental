@@ -31,12 +31,14 @@ import { listingReadinessResolvers, listingReadinessTypeDefs } from './listingRe
 import { updateOnboardingStatus } from './updateOnboardingStatus';
 import { rentalOnboarding } from '../onboarding/rentalOnboarding';
 import { installCalendarBlockGraphqlBoundary } from '../utils/calendarBlockGraphqlBoundary';
+import { installPasswordResetGraphqlBoundary } from '../utils/passwordResetGraphqlBoundary';
 import { outboxDeliveryResolvers, outboxDeliveryTypeDefs } from '../workers/outboxDelivery';
 
 const graphql = String.raw;
 
 export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
   installCalendarBlockGraphqlBoundary(baseSchema);
+  installPasswordResetGraphqlBoundary(baseSchema);
   return mergeSchemas({
     schemas: [baseSchema],
     typeDefs: [graphql`

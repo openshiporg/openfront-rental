@@ -72,6 +72,12 @@ function PrivateServiceShell({ children, activeNav }: { children: ReactNode; act
   );
 }
 
+/** An email that wraps after the @ on narrow screens instead of mid-word. */
+function EmailText({ email }: { email: string }) {
+  const at = email.lastIndexOf('@');
+  return at > 0 ? <span>{email.slice(0, at)}@<wbr />{email.slice(at + 1)}</span> : <span>{email}</span>;
+}
+
 export async function StorefrontShell({
   children,
   activeNav = 'none',
@@ -129,7 +135,7 @@ export async function StorefrontShell({
             <div className="stay-footer-col">
               <p className="stay-footer-head">Talk to us</p>
               {contactPhone ? <a href={contactPhone}>{brand.phone}</a> : null}
-              {brand.email ? <a href={`mailto:${brand.email}`}>{brand.email}</a> : null}
+              {brand.email ? <a href={`mailto:${brand.email}`}><EmailText email={brand.email} /></a> : null}
               <Link href="/help#message-host">Message the host</Link>
             </div>
           </div>

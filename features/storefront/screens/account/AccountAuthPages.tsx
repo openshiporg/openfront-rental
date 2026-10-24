@@ -24,9 +24,10 @@ export async function SignInPage({ searchParams }: { searchParams?: Promise<Sear
   const next = safeAccountNext(single(query.next));
   const { account } = await getGuestAccount();
   if (account) redirect(next);
+  const resetAvailable = await getPasswordResetAvailable();
   return <AuthLayout overline="Your account" title={<>Sign <em>in</em></>} aside={<>
     <div><div><h3>New here?</h3><p>Create an account to keep your trips together.</p><Link className="stay-text-link" href={`/account/register?next=${encodeURIComponent(next)}`}>Create an account</Link></div></div>
-    <div><div><h3>Forgot your password?</h3><Link className="stay-text-link" href={`/account/reset?next=${encodeURIComponent(next)}`}>Reset it</Link></div></div>
+    {resetAvailable ? <div><div><h3>Forgot your password?</h3><Link className="stay-text-link" href={`/account/reset?next=${encodeURIComponent(next)}`}>Reset it</Link></div></div> : null}
     <div><div><h3>Booked as a guest?</h3><p>Find your trip with its confirmation code and booking email.</p><Link className="stay-text-link" href="/trips#find-trip">Find my trip</Link></div></div>
   </>}>
     {query.created ? <div className="stay-alert stay-alert-ok" role="status"><p>Your account is ready. Sign in to continue.</p></div> : null}

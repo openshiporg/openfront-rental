@@ -129,6 +129,9 @@
 .stay-root .stay-menu-toggle { display: none; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0; border: 1px solid var(--stay-line-strong); border-radius: 999px; background: var(--stay-surface); color: var(--stay-ink); }
 .stay-sheet { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; padding: 0 var(--stay-gutter) calc(1.5rem + env(safe-area-inset-bottom)); background: var(--stay-paper); overflow-y: auto; animation: stay-sheet-in .28s var(--stay-ease); }
 .stay-sheet[hidden] { display: none; }
+/* The sticky header is the sheet's stacking context; lift it while the menu is open so the
+   full-screen sheet covers the booking bar and the compare dock. */
+.stay-header:has(.stay-sheet:not([hidden])) { z-index: 75; }
 @keyframes stay-sheet-in { from { opacity: 0; transform: translateY(-8px); } }
 .stay-sheet-head { display: flex; align-items: center; justify-content: space-between; height: var(--stay-header-h); }
 .stay-sheet-nav { display: grid; margin-top: 1rem; }
@@ -146,6 +149,7 @@
 .stay-footer-brand p:not(.stay-footer-wordmark) { max-width: 32ch; font-size: .92rem; color: oklch(78% .02 var(--stay-brand-hue)); }
 .stay-footer-col { display: grid; align-content: start; gap: .1rem; }
 .stay-footer-col a { display: flex; align-items: center; min-height: 2.25rem; font-size: .92rem; }
+.stay-footer-col a > span { min-width: 0; overflow-wrap: anywhere; }
 .stay-footer-head { margin: 0 0 .5rem; font-size: .72rem; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; color: oklch(70% .02 var(--stay-brand-hue)); }
 .stay-footer-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid oklch(40% .025 var(--stay-brand-hue)); font-size: .8rem; color: oklch(72% .02 var(--stay-brand-hue)); }
 .stay-footer-meta a { color: oklch(85% .015 85); }
@@ -391,6 +395,9 @@
 .stay-form-grid > :first-child { grid-column: 1 / -1; }
 .stay-input { display: grid; gap: .4rem; font-size: .86rem; font-weight: 600; color: var(--stay-ink); }
 .stay-optional { font-weight: 450; color: var(--stay-muted); }
+/* Keep "optional" on the label's line so side-by-side inputs stay aligned. */
+.stay-input:has(> .stay-optional) { grid-template-columns: auto 1fr; column-gap: .35rem; align-items: baseline; }
+.stay-input:has(> .stay-optional) > :not(.stay-optional) { grid-column: 1 / -1; }
 .stay-root .stay-input :is(input, textarea, select) { width: 100%; min-width: 0; min-height: 3rem; padding: .7rem .9rem; border: 1px solid var(--stay-line-strong); border-radius: var(--stay-r); background: var(--stay-surface); color: var(--stay-ink); font-size: 1rem; font-weight: 400; transition: border-color .15s, box-shadow .15s; }
 .stay-root .stay-input :is(input, textarea, select):hover { border-color: var(--stay-ink-2); }
 .stay-root .stay-input :is(input, textarea, select):focus { outline: none; border-color: var(--stay-accent); box-shadow: 0 0 0 3px var(--stay-accent-soft); }

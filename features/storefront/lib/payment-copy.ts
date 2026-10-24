@@ -20,4 +20,6 @@ export function paymentPolicyCopy(testBookings: boolean) {
 
 export const depositPolicyCopy = 'A security deposit is never charged with the stay. The host arranges its collection and return separately.';
 
-export const refundPolicyCopy = 'If you cancel from your trip page, it shows what the policy refunds before you confirm. The host returns payments you arranged with them; a test booking’s test-card payment is refunded to that test card. Your trip page shows each refund’s status until it’s complete.';
+export function refundPolicyCopy(testBookings: boolean) {
+  return `If you cancel from your trip page, it shows what the policy refunds before you confirm. The host returns payments you arranged with them${testBookings ? '; a test booking’s test-card payment is refunded to that test card' : ''}. Your trip page shows each refund’s status until it’s complete.`;
+}

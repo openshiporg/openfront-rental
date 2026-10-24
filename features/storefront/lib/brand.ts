@@ -6,6 +6,22 @@ function clean(value?: string | null) {
   return value?.trim() || '';
 }
 
+// Reserved for documentation (RFC 2606/6761); mail to them can never arrive.
+const PLACEHOLDER_EMAIL_DOMAIN = /@(?:[^@\s]+\.)?(?:example\.(?:com|net|org)|example|test|invalid|localhost)$/i;
+
+/** A support address guests can actually write to, or '' for a placeholder. */
+export function reachableSupportEmail(value?: string | null) {
+  const email = clean(value);
+  return email && !PLACEHOLDER_EMAIL_DOMAIN.test(email) ? email : '';
+}
+
+/** A support phone guests can actually call, or '' for a fictional NANP 555-01xx number. */
+export function reachableSupportPhone(value?: string | null) {
+  const phone = clean(value);
+  const digits = phone.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '');
+  return digits.length === 10 && /^\d{3}55501\d{2}$/.test(digits) ? '' : phone;
+}
+
 export function resolveStorefrontBrand(settings: PublicMarketplaceSettingsState) {
   if (settings.status !== 'published') return null;
 
@@ -21,8 +37,8 @@ export function resolveStorefrontBrand(settings: PublicMarketplaceSettingsState)
     tagline: clean(settings.tagline),
     homepageHeadline,
     description: clean(settings.publicDescription),
-    phone: clean(settings.supportPhone),
-    email: clean(settings.supportEmail),
+    phone: reachableSupportPhone(settings.supportPhone),
+    email: reachableSupportEmail(settings.supportEmail),
     currencyCode,
     locale,
     timezone,

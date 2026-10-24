@@ -72,7 +72,7 @@ export async function AccountPage({ searchParams }: { searchParams?: Promise<Sea
   return <StorefrontShell servicing activeNav="account"><main id="stay-main" className="stay-shell">
     <header className="stay-page-head">
       <p className="stay-overline">Your account</p>
-      <h1>Welcome back, <em>{account.name}</em></h1>
+      <h1>Welcome, <em>{account.name}</em></h1>
       <p>{account.email}</p>
     </header>
     {errorMessage ? <div className="stay-alert stay-alert-danger" role="alert"><p>{errorMessage}</p></div> : null}
@@ -106,7 +106,7 @@ export async function AccountPage({ searchParams }: { searchParams?: Promise<Sea
         </section>
         <section className="stay-entry-notes" aria-label="Account options">
           <div><UserRound size={20} strokeWidth={1.6} aria-hidden="true" /><div><h3>Your details</h3><ProfileForm name={account.name} phone={account.phone || ''} /></div></div>
-          <div><UserRound size={20} strokeWidth={1.6} aria-hidden="true" /><div><h3>Sign-in email</h3><p className="stay-muted">You sign in with {account.email}. Changing it needs the store to confirm you control the new address, which it can’t do online yet. Contact the store to change it.</p></div></div>
+          <div><UserRound size={20} strokeWidth={1.6} aria-hidden="true" /><div><h3>Sign-in email</h3><p className="stay-muted">You sign in with {account.email}. Changing it needs the store to confirm you control the new address, which it can’t do online yet. <Link href="/help#message-host">Message the host</Link> to change it.</p></div></div>
           <div><KeyRound size={20} strokeWidth={1.6} aria-hidden="true" /><div><h3>Password</h3>{account.staffCredential
             ? <p className="stay-muted">This sign-in is also a host or owner account. A people manager in the host workspace changes its password.</p>
             : <><PasswordChangeForm /><Link className="stay-text-link" href="/account/reset">Forgot it? Reset by email</Link></>}</div></div>

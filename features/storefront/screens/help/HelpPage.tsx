@@ -93,7 +93,7 @@ export async function HelpPage({ searchParams }: { searchParams?: Promise<Search
           <h2>Know what each record means</h2>
           <p>{paymentPolicyCopy(cardEnabled)} Never put card numbers or identity documents in messages or arrival notes.</p>
           <p>{depositPolicyCopy}</p>
-          <p>{refundPolicyCopy}</p>
+          <p>{refundPolicyCopy(cardEnabled)}</p>
           <p>To question a deposit deduction or damage claim, message the host from your trip page and choose that topic.</p>
           <Link className="stay-text-link" href="/policies">Booking & policy guide</Link>
         </section>

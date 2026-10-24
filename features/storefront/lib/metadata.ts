@@ -26,11 +26,14 @@ export async function buildStorefrontMetadata({
   description,
   path,
   index = true,
+  image,
 }: {
   title?: string;
   description?: string;
   path: string;
   index?: boolean;
+  /** Share image for this page, such as a home's first photo. */
+  image?: string;
 }): Promise<Metadata> {
   const settings = await getPublicMarketplaceSettings();
   const brand = resolveStorefrontBrand(settings);
@@ -68,6 +71,7 @@ export async function buildStorefrontMetadata({
           siteName: brand.name,
           title: pageTitle,
           description: pageDescription,
+          images: image ? [image] : undefined,
         }
       : undefined,
   };

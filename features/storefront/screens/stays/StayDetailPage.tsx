@@ -1,5 +1,6 @@
 import { Bath, Bed, BedDouble, CircleCheck, CircleSlash, Clock, Columns3, DoorOpen, MapPin, MessageSquare, Moon, Ruler, ShieldCheck, Star, Undo2, Users, Wallet, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
 import { AmenityIcon } from '../../components/AmenityIcon';
 import { SectionNav, UnavailableStay } from '../../components/Journey';
@@ -28,7 +29,8 @@ export async function StayDetailPage({ params, searchParams }: { params: Promise
   const { slug } = await params;
   const query = (await searchParams) || {};
   const [{ stay, error }, availability, settings] = await Promise.all([getPublicStay(slug, typeof query.reviewsBefore === 'string' ? query.reviewsBefore : null), getPublicStayAvailability(slug), getPublicMarketplaceSettings()]);
-  if (!stay) return <StorefrontShell><UnavailableStay title={error ? 'This home couldn’t be loaded.' : 'This home is unavailable.'}>{error || 'The home may no longer be published. Explore the current homes or return to your trip.'}</UnavailableStay></StorefrontShell>;
+  if (!stay && !error) notFound();
+  if (!stay) return <StorefrontShell><UnavailableStay title="This home couldn’t be loaded.">{error}</UnavailableStay></StorefrontShell>;
 
   const accommodation = stay.accommodation || {};
   const property = stay.property || {};

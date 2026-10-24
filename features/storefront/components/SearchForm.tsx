@@ -37,7 +37,8 @@ function SearchFields({ params, variant }: { params: SearchParams; variant: 'pag
     pets: countParam(params.pets, 0, 4),
   }));
   const [bedrooms, setBedrooms] = useState(() => countParam(params.bedrooms));
-  const [instantBook, setInstantBook] = useState(() => single(params.instantBook));
+  // Only the values search understands count as a filter; anything else is ignored.
+  const [instantBook, setInstantBook] = useState(() => ['true', 'false'].includes(single(params.instantBook)) ? single(params.instantBook) : '');
   const [datesOpen, setDatesOpen] = useState(false);
   const [error, setError] = useState('');
   const filterCount = (bedrooms ? 1 : 0) + (instantBook ? 1 : 0);

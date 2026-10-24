@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 
 import { addDaysIso, addMonths, longDate, monthIndexOf, monthOrdinal, monthTitle, monthWeeks } from '../lib/dates';
-import { formatMoneyCompact } from '../lib/format';
+import { formatMoney, formatMoneyCompact } from '../lib/format';
 import type { NightAvailability } from '../lib/night-availability';
 import type { NightlyRate } from '../lib/stay-estimate';
 import { useStorefrontLocale } from './StorefrontLocale';
@@ -236,7 +236,7 @@ export function StayCalendar({ range, onSelect, earliest, months = 1, monthsAhea
                         isStart ? 'check-in' : null,
                         day === range.checkOut ? 'checkout' : null,
                         ruled ? ruled : null,
-                        rate && !isEnd && !unavailable ? `${formatMoneyCompact(locale, rate.amountCents, currencyCode)} per night${rate.source !== 'Base rate' ? `, ${rate.source}` : ''}` : null,
+                        rate && !isEnd && !unavailable ? `${formatMoney(locale, rate.amountCents, currencyCode)} per night${rate.source !== 'Base rate' ? `, ${rate.source}` : ''}` : null,
                       ].filter(Boolean).join(', ');
                       return (
                         <span role="gridcell" key={day} aria-selected={isStart || day === range.checkOut || inRange}>
