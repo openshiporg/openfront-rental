@@ -20,7 +20,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const page = await searchPublicStays({ offset, limit: PAGE });
     if (page.error) break;
     if (!offset) collections = page.collections;
-    slugs.push(...page.results.map((stay) => stay.slug).filter(Boolean));
+    // Homes without a published photo aren't ready to promote to search engines.
+    slugs.push(...page.results.filter((stay) => stay.slug && (stay.thumbnail || stay.media?.some((photo) => photo?.url))).map((stay) => stay.slug));
     if (page.results.length < PAGE || offset + PAGE >= page.totalCount) break;
   }
   return [

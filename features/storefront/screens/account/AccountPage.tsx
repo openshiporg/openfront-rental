@@ -6,7 +6,7 @@ import { RecoverTripForm } from '../../components/GuestJourneyForms';
 import { StorefrontShell } from '../../components/StorefrontShell';
 import { signOutGuestAction } from '../../lib/data/account-actions';
 import { openAccountTripAction } from '../../lib/data/guest-actions';
-import { getGuestAccount } from '../../lib/data/guest';
+import { getGuestAccount, getPasswordResetAvailable } from '../../lib/data/guest';
 import { formatMoney, formatStayDate, formatType } from '../../lib/format';
 import { single, type SearchParams } from '../../lib/navigation';
 import { getStorefrontLocale } from '../../lib/data/storefront-locale';
@@ -20,7 +20,10 @@ export async function AccountPage({ searchParams }: { searchParams?: Promise<Sea
   const locale = await getStorefrontLocale();
   const query = (await searchParams) || {};
   const requestedOffset = Number.parseInt(single(query.tripsOffset), 10);
-  const { account, error } = await getGuestAccount(Number.isSafeInteger(requestedOffset) && requestedOffset > 0 ? requestedOffset : 0);
+  const [{ account, error }, resetAvailable] = await Promise.all([
+    getGuestAccount(Number.isSafeInteger(requestedOffset) && requestedOffset > 0 ? requestedOffset : 0),
+    getPasswordResetAvailable(),
+  ]);
   const errorMessage = accountErrors[single(query.error)] || error;
 
   if (!account) {
@@ -109,7 +112,7 @@ export async function AccountPage({ searchParams }: { searchParams?: Promise<Sea
           <div><UserRound size={20} strokeWidth={1.6} aria-hidden="true" /><div><h3>Sign-in email</h3><p className="stay-muted">You sign in with {account.email}. Changing it needs the store to confirm you control the new address, which it can’t do online yet. <Link href="/help#message-host">Message the host</Link> to change it.</p></div></div>
           <div><KeyRound size={20} strokeWidth={1.6} aria-hidden="true" /><div><h3>Password</h3>{account.staffCredential
             ? <p className="stay-muted">This sign-in is also a host or owner account. A people manager in the host workspace changes its password.</p>
-            : <><PasswordChangeForm /><Link className="stay-text-link" href="/account/reset">Forgot it? Reset by email</Link></>}</div></div>
+            : <><PasswordChangeForm />{resetAvailable ? <Link className="stay-text-link" href="/account/reset">Forgot it? Reset by email</Link> : null}</>}</div></div>
           {account.hasHostAccess ? <div><UserRound size={20} strokeWidth={1.6} aria-hidden="true" /><div><h3>Host workspace</h3><Link className="stay-text-link" href="/dashboard">Open the host workspace</Link></div></div> : null}
           <div><LogOut size={20} strokeWidth={1.6} aria-hidden="true" /><div><h3>Sign out</h3><form action={signOutGuestAction}><button type="submit" className="stay-button stay-button-quiet">Sign out</button></form></div></div>
         </section>

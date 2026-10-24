@@ -393,7 +393,7 @@
 .stay-form fieldset:disabled { opacity: .6; }
 .stay-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
 .stay-form-grid > :first-child { grid-column: 1 / -1; }
-.stay-input { display: grid; gap: .4rem; font-size: .86rem; font-weight: 600; color: var(--stay-ink); }
+.stay-input { display: grid; align-content: start; gap: .4rem; font-size: .86rem; font-weight: 600; color: var(--stay-ink); }
 .stay-optional { font-weight: 450; color: var(--stay-muted); }
 /* Keep "optional" on the label's line so side-by-side inputs stay aligned. */
 .stay-input:has(> .stay-optional) { grid-template-columns: auto 1fr; column-gap: .35rem; align-items: baseline; }
