@@ -6,14 +6,14 @@ Openfront Rental is a self-hostable platform for professional short-term accommo
 
 ## Demo
 
-<a href="https://housekind.openship.org"><img src="public/images/stays/juniper-house-01.jpg" alt="Accommodation image included in the Rental storefront" width="600"></a>
+<a href="https://rental.openship.org"><img src="public/images/stays/juniper-house-01.jpg" alt="Accommodation image included in the Rental storefront" width="600"></a>
 
 Housekind
 
 | | |
 |---|---|
-| **Storefront** | [housekind.openship.org](https://housekind.openship.org) |
-| **Dashboard** | [housekind.openship.org/dashboard](https://housekind.openship.org/dashboard) |
+| **Storefront** | [rental.openship.org](https://rental.openship.org) |
+| **Dashboard** | [rental.openship.org/dashboard](https://rental.openship.org/dashboard) |
 | **User** | `housekind@openship.org` |
 | **Password** | `TwgDfZxLLDmyK7PGgTYu` |
 
