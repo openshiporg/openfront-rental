@@ -5,7 +5,7 @@
  */
 export function stayPaymentSummary({ testBookings }: { testBookings: boolean; instantBook?: boolean }) {
   if (!testBookings) return 'Payment is arranged directly with the host.';
-  return 'Payment is arranged directly with the host. To try card checkout, you can choose a test booking instead: it holds no dates and is paid only with a Stripe test card, so no real money is charged.';
+  return 'Payment is arranged directly with the host. Want to try card checkout? Choose a test booking at checkout instead: it holds no dates and takes only a Stripe test card, so no real money is charged.';
 }
 
 export function stayPaymentShort(_options: { testBookings: boolean; instantBook?: boolean }) {

@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 
 import { addDaysIso, addMonths, longDate, monthIndexOf, monthOrdinal, monthTitle, monthWeeks } from '../lib/dates';
-import { formatMoney, formatMoneyCompact } from '../lib/format';
+import { formatMoney, formatMoneyCompactParts } from '../lib/format';
 import type { NightAvailability } from '../lib/night-availability';
 import type { NightlyRate } from '../lib/stay-estimate';
 import { useStorefrontLocale } from './StorefrontLocale';
@@ -77,7 +77,10 @@ export function StayCalendar({ range, onSelect, earliest, months = 1, monthsAhea
   const first = monthIndexOf(earliest);
   const minOrdinal = monthOrdinal(first.year, first.monthIndex);
   const maxOrdinal = minOrdinal + monthsAhead - 1;
-  const anchor = monthIndexOf(range.checkIn && range.checkIn >= earliest ? range.checkIn : earliest);
+  // With under a week of bookable days left in the first month, open on the next one
+  // (the previous-month arrow still reaches those days).
+  const lateInMonth = monthIndexOf(addDaysIso(earliest, 6)).monthIndex !== first.monthIndex;
+  const anchor = range.checkIn && range.checkIn >= earliest ? monthIndexOf(range.checkIn) : lateInMonth && months === 1 ? addMonths(first.year, first.monthIndex, 1) : first;
   const [visible, setVisible] = useState(() => clampMonth(anchor, minOrdinal, maxOrdinal - months + 1));
   const [hover, setHover] = useState<string | null>(null);
   const [focusDay, setFocusDay] = useState<string | null>(null);
@@ -191,7 +194,9 @@ export function StayCalendar({ range, onSelect, earliest, months = 1, monthsAhea
   }
 
   const showsPast = firstVisibleDay < earliest || Boolean(availability?.hasBlockedIn(firstVisibleDay, lastVisibleDay));
-  const showsUnknown = Boolean(availability && (availability.unknown(firstVisibleDay) || availability.unknown(addDaysIso(lastVisibleDay, -1))));
+  // Past days are never loaded, so they don't count as "loading".
+  const firstBookableVisible = firstVisibleDay < earliest ? earliest : firstVisibleDay;
+  const showsUnknown = Boolean(availability && ((firstBookableVisible < lastVisibleDay && availability.unknown(firstBookableVisible)) || availability.unknown(addDaysIso(lastVisibleDay, -1))));
   const atStart = monthOrdinal(visible.year, visible.monthIndex) <= minOrdinal;
   const atEnd = monthOrdinal(visible.year, visible.monthIndex) + months - 1 >= maxOrdinal;
 
@@ -226,7 +231,8 @@ export function StayCalendar({ range, onSelect, earliest, months = 1, monthsAhea
                       const isPreview = Boolean(previewEnd && !range.checkOut && day > range.checkIn && day <= previewEnd);
                       const ruled = choosingCheckout && day > range.checkIn && !past && !unavailable && !beyondLimit ? rule?.(range.checkIn, day) || null : null;
                       const rate = rates?.[day];
-                      const priceLabel = isEnd ? 'Out' : unknown ? '…' : unavailable ? '—' : rate ? formatMoneyCompact(locale, rate.amountCents, currencyCode) : '';
+                      const cellPrice = rate ? formatMoneyCompactParts(locale, rate.amountCents, currencyCode) : null;
+                      const priceLabel: ReactNode = isEnd ? 'Out' : unknown ? '…' : unavailable ? '—' : cellPrice ? <>{cellPrice.whole}{cellPrice.fraction ? <small className="stay-cal-cents">{cellPrice.fraction}</small> : null}{cellPrice.tail}</> : '';
                       const classes = ['stay-cal-day', isStart && 'is-start', isEnd && 'is-end', inRange && 'is-range', isPreview && 'is-preview', ruled && 'is-ruled', unavailable && 'is-unavailable', rate && !unavailable && rate.source !== 'Base rate' && 'is-seasonal'].filter(Boolean).join(' ');
                       const description = [
                         longDate(locale, day),

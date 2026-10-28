@@ -35,6 +35,19 @@ export function formatMoneyCompact(locale: string, amount?: number | null, curre
     : formatMoney(locale, amount, currency);
 }
 
+/** A calendar cell's price split so the minor units can be set smaller: { whole: '$281', fraction: '.75', tail: '' }. Never rounded below $1,000. */
+export function formatMoneyCompactParts(locale: string, amount?: number | null, currency = 'USD') {
+  if (minorToMajorUnits(amount || 0, currency) >= 1000) return { whole: formatMoneyCompact(locale, amount, currency), fraction: '', tail: '' };
+  const { value, minimumFractionDigits, maximumFractionDigits } = moneyParts(amount, currency);
+  const parts = new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits, maximumFractionDigits }).formatToParts(value);
+  const join = (list: Intl.NumberFormatPart[]) => list.map(part => part.value).join('');
+  const start = parts.findIndex(part => part.type === 'decimal');
+  if (start < 0) return { whole: join(parts), fraction: '', tail: '' };
+  let end = start + 1;
+  while (end < parts.length && parts[end].type === 'fraction') end += 1;
+  return { whole: join(parts.slice(0, start)), fraction: join(parts.slice(start, end)), tail: join(parts.slice(end)) };
+}
+
 export function formatRating(hundredths?: number | null) {
   return typeof hundredths === 'number' && hundredths > 0 ? (hundredths / 100).toFixed(2) : null;
 }

@@ -43,7 +43,8 @@
   -webkit-font-smoothing: antialiased;
 }
 .stay-root *, .stay-root *::before, .stay-root *::after { box-sizing: border-box; }
-.stay-root :is(h1, h2, h3, h4, p, figure, dl, dd, ol, ul, blockquote) { margin-top: 0; }
+/* :where keeps this reset at class weight, so component rules below can still set a top margin. */
+.stay-root :where(h1, h2, h3, h4, p, figure, dl, dd, ol, ul, blockquote) { margin-top: 0; }
 .stay-root :is(h1, h2, h3) { text-wrap: balance; }
 .stay-root p { text-wrap: pretty; }
 .stay-root :is(h1, h2) { font-family: var(--stay-display); font-weight: 400; letter-spacing: -.022em; line-height: 1.04; font-optical-sizing: auto; }
@@ -182,6 +183,7 @@
 .stay-hero-feature:hover img { transform: scale(1.025); }
 .stay-hero-feature::after { content: ''; position: absolute; inset: 55% 0 0; background: linear-gradient(to top, oklch(18% .03 var(--stay-brand-hue) / .72), transparent); z-index: 0; }
 .stay-hero-caption { position: absolute; left: 1rem; right: 1rem; bottom: 1rem; z-index: 1; display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; color: oklch(98% .01 85); }
+.stay-hero-caption > span:first-child { text-shadow: 0 1px 14px oklch(15% .03 var(--stay-brand-hue) / .55); }
 .stay-hero-caption small { display: block; margin-bottom: .2rem; font-size: .72rem; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
 .stay-hero-caption strong { display: block; font-family: var(--stay-display); font-size: clamp(1.5rem, 2.4vw, 2rem); font-weight: 400; line-height: 1.1; letter-spacing: -.015em; }
 .stay-hero-caption .stay-hero-price { flex: none; padding: .45rem .85rem; border-radius: 999px; background: oklch(98% .01 85 / .92); color: var(--stay-ink); font-size: .85rem; font-weight: 600; backdrop-filter: blur(8px); }
@@ -192,7 +194,9 @@
 .stay-section-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem 3rem; margin-bottom: 2rem; }
 .stay-section-head h2 { margin: 0; max-width: 18ch; }
 .stay-section-head > p, .stay-section-head > div > p { max-width: 40ch; margin: 0; color: var(--stay-ink-2); }
-.stay-collection-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 1rem; }
+.stay-collection-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; }
+/* Outranks `.stay-root a { color: inherit }`, which left these photo tiles with dark ink titles. */
+.stay-root :is(.stay-collection-chip, .stay-collection-tile) { color: oklch(98% .01 85); }
 .stay-collection-chip { position: relative; display: flex; align-items: flex-end; min-height: 11rem; padding: 1.1rem; border-radius: var(--stay-r-lg); overflow: hidden; background: var(--stay-paper-3); color: oklch(98% .01 85); text-decoration: none; isolation: isolate; }
 .stay-collection-chip img { z-index: -2; transition: transform .8s var(--stay-ease); }
 .stay-collection-chip::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(to top, oklch(18% .03 var(--stay-brand-hue) / .78), oklch(18% .03 var(--stay-brand-hue) / .05) 70%); }
@@ -547,6 +551,7 @@
 .stay-article h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); }
 .stay-article p { color: var(--stay-ink-2); }
 .stay-article p:last-of-type { margin-bottom: 0; }
+.stay-article p + p { margin-top: .7rem; }
 .stay-article .stay-text-link { margin-top: .5rem; }
 .stay-contact-band { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 1.5rem 3rem; align-items: center; margin-bottom: 2.5rem; padding: clamp(1.5rem, 4vw, 2.5rem); border-radius: var(--stay-r-xl); background: var(--stay-ink); color: oklch(92% .012 85); }
 .stay-contact-band h2 { color: oklch(98% .01 85); }
@@ -605,6 +610,7 @@
   .stay-trip-photo { order: -1; min-height: 12rem; aspect-ratio: 16 / 8; }
 }
 @media (max-width: 760px) {
+  .stay-hero-feature::after { inset: 35% 0 0; }
   .stay-root { --stay-header-h: 3.75rem; }
   .stay-wordmark { font-size: 1.3rem; }
   .stay-wordmark-mark { width: 1.5rem; height: 1.5rem; }

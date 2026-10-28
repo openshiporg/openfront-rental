@@ -46,7 +46,7 @@ export async function StayCheckoutPage({ params }: { params: Promise<{ quoteToke
   const paymentBody = (instant
     ? 'Your reservation starts unpaid. Agree the payment method and timing with your host after confirmation. Any security deposit is separate.'
     : 'Nothing is charged while the host reviews your request. Once they confirm, agree the payment method and timing with them. Any security deposit is separate.')
-    + (testBookings ? ' This store also offers test bookings for trying card checkout: choose one below. A test booking holds no dates and takes no real money.' : '');
+    + (testBookings ? ' Want to try card checkout instead? Choose a test booking below: it holds no dates and takes no real money.' : '');
   // This browser's saved key for the quote, or a new one: resubmitting or reloading after a
   // lost response returns the same booking.
   const receiptKey = await checkoutReceiptKeyFor(quoteToken);
