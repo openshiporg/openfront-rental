@@ -2,6 +2,8 @@
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fopenshiporg%2Fopenfront-rental&env=DATABASE_URL%2CSESSION_SECRET%2CNEXT_PUBLIC_APP_URL%2CS3_BUCKET_NAME%2CS3_REGION%2CS3_ENDPOINT%2CS3_ACCESS_KEY_ID%2CS3_SECRET_ACCESS_KEY)
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/openfront-rental)
+
 Openfront Rental is a self-hostable platform for professional short-term accommodation managers. Guests can search stays, request quotes, reserve accommodation, sign agreements, and review private trip information. Hosts use the dashboard for properties, listings, calendars, pricing, reservations, guest messages, property tasks, payments, and owner statements.
 
 **Documentation:** [docs.openship.org/docs/openfront/rental](https://docs.openship.org/docs/openfront/rental)
