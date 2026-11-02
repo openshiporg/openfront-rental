@@ -44,7 +44,7 @@ export async function PoliciesPage() {
         <section id="privacy" className="stay-article">
           <h2>Keeping trip information private</h2>
           <p>Guest access uses private trip and agreement links. Anyone holding a valid link can see its permitted details, so keep the full links private. If you lose a link, the Your trip page explains how to get back to your booking.</p>
-          <p>Contact details entered at booking are sent to the host. Arrival notes should contain only information needed for your stay.{cardEnabled ? ' Test-card details are entered in Stripe’s secure form and are never stored by this website.' : ''}</p>
+          <p>Contact details entered at booking are sent to the host. Arrival notes should contain only information needed for your stay.{cardEnabled ? ' Card details are entered in Stripe’s secure form and are never stored by this website.' : ''}</p>
           {documents.privacyPolicy || documents.termsOfUse
             ? <LegalLinks context="booking" {...documents} />
             : <p>The host’s formal privacy notice and legal documents aren’t published on this page. {brand?.email ? 'Contact the published support address' : <Link href="/help#message-host">Message the host</Link>} for the host’s applicable documents and any information request.</p>}
