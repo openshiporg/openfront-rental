@@ -80,6 +80,19 @@ test('4. a demo user cannot change the store name, logo or URL settings', async 
   await refused(run('MarketplaceSettings', 'delete', DEMO, { item: { id: 's' } }));
 });
 
+test('4b. unchanged protected values pass, changed ones are refused', async () => {
+  const item = { id: 's', name: 'Housekind', tagline: null, logoIcon: 'a', logoColor: '#111111' };
+  await run('MarketplaceSettings', 'update', DEMO, { item, inputData: { name: ' Housekind ', tagline: '', logoIcon: 'a', logoColor: '#111111', supportEmail: 'x@y.z', taxRate: 8 } });
+  await refused(run('MarketplaceSettings', 'update', DEMO, { item, inputData: { name: 'Other', supportEmail: 'x@y.z' } }));
+  await refused(run('MarketplaceSettings', 'update', DEMO, { item, inputData: { name: 'Housekind', logoColor: '#000000' } }));
+  await refused(run('MarketplaceSettings', 'update', DEMO, { item, inputData: { tagline: 'New' } }));
+  await refused(run('MarketplaceSettings', 'update', DEMO, { inputData: { name: 'Housekind' } }));
+  await run('HostOrganization', 'update', DEMO, { item: { id: 'o', name: 'Org', slug: 'org' }, inputData: { name: 'Org', slug: 'org' } });
+  await refused(run('HostOrganization', 'update', DEMO, { item: { id: 'o', name: 'Org', slug: 'org' }, inputData: { slug: 'new' } }));
+  await refused(run('User', 'update', DEMO, { item: { id: 'demo', password: 'x' }, inputData: { password: 'x' } }));
+  await refused(run('User', 'update', DEMO, { item: { id: 'demo', isActive: true }, inputData: { isActive: false } }));
+});
+
 test('a demo user can still edit a booking and its own onboarding state', async () => {
   await run('Listing', 'update', DEMO, { item: { id: 'p' }, inputData: { status: 'confirmed' } });
   assert.equal(productHookRan, 1, 'the existing Listing hook still runs');
