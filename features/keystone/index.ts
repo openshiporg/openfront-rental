@@ -8,13 +8,12 @@ import { extendGraphqlSchema } from "./mutations";
 import { sendPasswordResetEmail } from "./lib/mail";
 import { resolvePostgresDatabaseUrl, resolveSessionSecret } from "./lib/runtimeSecrets";
 import { createKeystoneSessionConfig } from "./sessionPolicy";
-import { withDemoGuard } from "./lib/demo-guard";
 import { withGraphqlListMaxTake } from "./security/graphql-limits";
 import { parseStorageEndpoint } from "./lib/storage-endpoint";
 
 const databaseURL = resolvePostgresDatabaseUrl();
 
-const boundedModels = withGraphqlListMaxTake(withDemoGuard(models));
+const boundedModels = withGraphqlListMaxTake(models);
 
 const sessionConfig = createKeystoneSessionConfig(resolveSessionSecret());
 

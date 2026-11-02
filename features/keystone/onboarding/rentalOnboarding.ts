@@ -1,4 +1,3 @@
-import { assertNotDemo } from '../lib/demo-guard';
 import crypto from 'node:crypto';
 
 import { getSeedForTemplate, type AccommodationSeed } from '../../platform/onboarding/utils/dataUtils';
@@ -307,8 +306,6 @@ async function createItem(db: any, seed: AccommodationSeed & { anchorDate?: stri
  */
 export async function rentalOnboarding(_root: unknown, args: { input: RentalOnboardingInput; operationId?: string; mode: string }, context: any) {
   await authorize(context);
-  // Onboarding rewrites host and settings records through Prisma, past the list hooks.
-  await assertNotDemo(context);
   const seed = resolveRentalOnboardingSeed(args.input);
   if (!['create', 'verify', 'complete'].includes(args.mode)) throw new Error('Unknown onboarding command.');
   for (let attempt = 0; ; attempt++) {

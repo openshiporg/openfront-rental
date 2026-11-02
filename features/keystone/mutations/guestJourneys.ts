@@ -1,5 +1,4 @@
 // Guest-facing journeys: accounts, trip recovery, host messaging, reviews.
-import { assertNotDemo } from '../lib/demo-guard';
 import crypto from 'node:crypto';
 
 import { sendGuestLinkEmail } from '../lib/guestMail';
@@ -483,7 +482,6 @@ async function myGuestAccount(_root: unknown, args: { tripsOffset?: number | nul
 /** The signed-in guest's own name and phone. Booking-time contact snapshots are unchanged. */
 async function updateMyGuestProfile(_root: unknown, args: { name: string; phone?: string | null }, context: any) {
   const itemId = requireSessionUser(context);
-  await assertNotDemo(context);
   const name = cleanText(args.name, 'Name', 200);
   const phone = cleanText(args.phone, 'Phone', 64, false);
   await context.sudo().db.User.updateOne({ where: { id: itemId }, data: { name, phone } });
@@ -514,7 +512,6 @@ async function changeGuestEmail(_root: unknown, _args: { email: string; currentP
  */
 async function changeGuestPassword(_root: unknown, args: { currentPassword: string; newPassword: string; confirmPassword: string }, context: any) {
   const itemId = requireSessionUser(context);
-  await assertNotDemo(context);
   const newPassword = typeof args.newPassword === 'string' ? args.newPassword : '';
   if (newPassword.length < 10 || newPassword.length > 200) throw new Error('Use a password of 10 to 200 characters.');
   if (newPassword !== args.confirmPassword) return { ok: false, reason: 'mismatch' };

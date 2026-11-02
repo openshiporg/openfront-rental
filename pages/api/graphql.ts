@@ -3,7 +3,6 @@ import { createYoga, type Plugin } from 'graphql-yoga';
 // @ts-ignore
 import processRequest from 'graphql-upload/processRequest.js';
 
-import { useDemoGuardErrors } from '../../features/keystone/lib/demo-guard';
 import { keystoneContext } from '../../features/keystone/context';
 import { MAX_GRAPHQL_PARSE_TOKENS, rentalQueryLimits } from '../../features/keystone/security/graphql-limits';
 import { graphqlListPathMultiplierPlugin } from '../../features/keystone/security/graphql-query-cost';
@@ -97,7 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   return createYoga({
     ...getGraphiQLOptions(),
-    plugins: [graphqlRequestLimitsPlugin, graphqlListPathMultiplierPlugin, useDemoGuardErrors()],
+    plugins: [graphqlRequestLimitsPlugin, graphqlListPathMultiplierPlugin],
     graphqlEndpoint: '/api/graphql',
     schema: keystoneContext.graphql.schema,
     context: ({ req: yogaReq, res: yogaRes }: { req: any; res: any }) => keystoneContext.withRequest(yogaReq, yogaRes),
