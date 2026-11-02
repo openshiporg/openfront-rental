@@ -169,6 +169,12 @@ export async function ReservationDetailPage({
   const refundablePayments = (reservation.refundablePayments || []).filter((payment: any) => payment.amountCents > payment.refundedAmountCents);
   const refundCurrencies = [...new Set<string>(refundablePayments.map((payment: any) => payment.currencyCode))];
   const closed = ['cancelled', 'no_show'].includes(reservation.status);
+  // A closed stay whose every collected payment went back to the guest owes nothing and is
+  // shown as refunded, not as an unpaid balance.
+  const refundedCents = payments.reduce((sum: number, payment: any) => sum + (payment.refundedAmountCents || 0), 0);
+  const refundedInFull = closed && refundedCents > 0 && Number(reservation.paymentsCount ?? payments.length) <= payments.length && !pendingPayments.length && !openRefundCount
+    && payments.every((payment: any) => payment.status === 'refunded' || !['succeeded', 'partially_refunded'].includes(payment.status));
+  const balanceDue = refundedInFull ? 0 : outstanding;
   const request = ['inquiry', 'quoted', 'pending'].includes(reservation.status);
 
   const isEarly = (transition: ReservationTransition) => (transition === 'check_in' && today < reservation.checkInDate)
@@ -191,7 +197,7 @@ export async function ReservationDetailPage({
       title={guest?.name || 'Guest details pending'}
       badges={<>
         <StatusBadge status={reservation.status} label={reservationLabel(reservation.status)} tone={operationalTone(reservation.status)} />
-        <StatusBadge status={reservation.paymentStatus} label={`${reservationLabel(reservation.paymentStatus)} payment`} tone={outstanding ? 'warning' : reservation.paymentStatus === 'refund_pending' ? 'warning' : 'success'} />
+        <StatusBadge status={refundedInFull ? 'refunded' : reservation.paymentStatus} label={`${reservationLabel(refundedInFull ? 'refunded' : reservation.paymentStatus)} payment`} tone={balanceDue ? 'warning' : reservation.paymentStatus === 'refund_pending' ? 'warning' : 'success'} />
         {reservation.testMode ? <StatusBadge status="test" label="Test booking · no dates held, test money only" tone="warning" /> : null}
         {reservation.fixtureOrigin ? <StatusBadge status="sample" label="Setup sample · not a real stay, money or signature" tone="warning" /> : null}
       </>}
@@ -232,7 +238,7 @@ export async function ReservationDetailPage({
         // still owes (a retained cancellation or no-show charge) depends on the cancellation policy,
         // which isn't assessed here. Refunds owed are shown separately.
         closed
-          ? { label: 'Balance due', value: outstanding ? 'Not assessed' : formatMoney(0, currency), hint: outstanding ? `${formatMoney(outstanding, currency)} unpaid · cancellation charges not assessed` : `${formatMoney(reservation.amountPaidCents, currency)} paid`, tone: outstanding ? 'warning' : 'success', icon: Banknote }
+          ? { label: 'Balance due', value: balanceDue ? 'Not assessed' : formatMoney(0, currency), hint: balanceDue ? `${formatMoney(balanceDue, currency)} unpaid · cancellation charges not assessed` : refundedInFull ? `${formatMoney(refundedCents, currency)} refunded` : `${formatMoney(reservation.amountPaidCents, currency)} paid`, tone: balanceDue ? 'warning' : 'success', icon: Banknote }
           : { label: 'Balance due', value: formatMoney(outstanding, currency), hint: `${formatMoney(reservation.amountPaidCents, currency)} paid`, tone: outstanding ? 'warning' : 'success', icon: Banknote },
         { label: 'Refund due', value: !openRefundTotals ? '—' : openRefundTotals.length ? formatCurrencyTotals(openRefundTotals) : formatMoney(0, currency), hint: reviewRefunds.length ? `${plural(reviewRefunds.length, 'refund')} to assess` : owedRefunds.length ? plural(owedRefunds.length, 'open refund') : 'nothing open', tone: openRefundCount ? 'warning' : undefined, icon: RotateCcw },
         { label: 'Agreement', value: reservation.agreement ? reservationLabel(reservation.agreement.status) : 'Not issued', hint: reservation.agreement?.agreementNumber, tone: reservation.agreement?.status === 'signed' ? 'success' : 'warning', icon: FileSignature },
@@ -297,7 +303,7 @@ export async function ReservationDetailPage({
               footer={<tfoot className="text-sm">
                 <tr><td colSpan={3} className="border-t px-4 pt-3 text-right text-muted-foreground">Stay total</td><td className="border-t px-4 pt-3 text-right font-semibold tabular-nums">{formatMoney(reservation.totalAmountCents, currency)}</td></tr>
                 <tr><td colSpan={3} className="px-4 py-1 text-right text-muted-foreground">Paid</td><td className="px-4 py-1 text-right tabular-nums">−{formatMoney(reservation.amountPaidCents, currency)}</td></tr>
-                <tr><td colSpan={3} className="px-4 pb-3 text-right font-medium">Balance due</td><td className={`px-4 pb-3 text-right font-semibold tabular-nums ${outstanding ? toneText.warning : ''}`}>{closed && outstanding ? 'Not assessed' : formatMoney(outstanding, currency)}</td></tr>
+                <tr><td colSpan={3} className="px-4 pb-3 text-right font-medium">Balance due</td><td className={`px-4 pb-3 text-right font-semibold tabular-nums ${balanceDue ? toneText.warning : ''}`}>{closed && balanceDue ? 'Not assessed' : formatMoney(balanceDue, currency)}</td></tr>
               </tfoot>}
               columns={[
                 { id: 'charge', header: 'Charge', cell: (item: any) => <div className="min-w-0"><span className="font-medium">{item.description}</span><SubLine>{sentence(item.lineType)}<span className="md:hidden">{item.serviceDate ? ` · ${formatDay(item.serviceDate)}` : ''}</span></SubLine></div> },
