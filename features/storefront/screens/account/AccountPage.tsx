@@ -64,7 +64,7 @@ export async function AccountPage({ searchParams }: { searchParams?: Promise<Sea
     {trips.map(trip => <li key={trip.confirmationCode}>
       <span><strong>{trip.listing?.title || 'Your stay'}</strong><span className="stay-muted"> · {formatStayDate(locale, trip.checkInDate)} — {formatStayDate(locale, trip.checkOutDate)}{trip.checkOutBy ? `, checkout by ${trip.checkOutBy}` : ''}{trip.timeZone ? ` (${trip.timeZone.replaceAll('_', ' ')} time)` : active.includes(trip.status) ? ' (home’s time zone not shown)' : ''}</span></span>
       <span className={`stay-status is-${trip.status}`}>{formatType(trip.status)}</span>
-      <p>{trip.confirmationCode} · {formatMoney(locale, trip.totalAmountCents, trip.currencyCode)} · payment {formatType(trip.paymentStatus).toLowerCase()}{trip.testMode ? ' · test booking' : ''}</p>
+      <p>{trip.confirmationCode} · {formatMoney(locale, trip.totalAmountCents, trip.currencyCode)} · payment {formatType(trip.paymentStatus).toLowerCase()}</p>
       <div className="stay-actions">
         <form action={openAccountTripAction}><input type="hidden" name="confirmationCode" value={trip.confirmationCode} /><button type="submit" className="stay-button stay-button-quiet">Open trip<ArrowRight size={16} aria-hidden="true" /></button></form>
         {trip.listing?.bookAgainSlug ? <Link className="stay-text-link" href={`/stays/${encodeURIComponent(trip.listing.bookAgainSlug)}`}>Book again</Link> : null}

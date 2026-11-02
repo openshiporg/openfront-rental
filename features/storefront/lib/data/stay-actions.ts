@@ -1,4 +1,5 @@
 'use server';
+import { stripeCheckoutEnabled } from '@/features/integrations/payment/stripe';
 
 import { redirect } from 'next/navigation';
 
@@ -97,8 +98,8 @@ export async function bookStayAction(formData: FormData) {
   if (!response.success) return { error: guestSafeBookingError((response as any).error) || publicActionFailureMessage('booking') };
   const reservation = response.data.createStayReservation;
   // A signed-in guest's booking is saved to their account in the same commit (server side).
-  // Card payment is offered only for a confirmed test booking.
-  const card = reservation.testMode === true && reservation.status === 'confirmed';
+  // A confirmed stay goes straight to card payment on the trip page when Stripe is set up.
+  const card = stripeCheckoutEnabled() && reservation.status === 'confirmed';
   let emailed = false;
   if (passwordResetEmailConfigured() && !reservation.recovered && reservation.agreementToken) {
     const test = reservation.testMode === true;

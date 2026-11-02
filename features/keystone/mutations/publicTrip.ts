@@ -1,3 +1,4 @@
+import { isTestTender } from '../utils/paymentReconciliation';
 import crypto from 'node:crypto';
 
 import { cancellationEntitlement } from '../utils/cancellationEntitlement';
@@ -45,7 +46,7 @@ export async function publicTrip(_root: unknown, args: { token: string; messages
           damageClaims(orderBy: [{ createdAt: asc }], take: 20) { claimNumber status description claimedAmountCents approvedAmountCents currencyCode submittedAt resolvedAt }
           guestParty { adults children infants pets updatedAt }
           lineItems(orderBy: [{ createdAt: asc }]) { id lineType description serviceDate quantity unitAmountCents totalAmountCents currencyCode metadataSnapshot }
-          payments(orderBy: [{ createdAt: desc }]) { id amountCents refundedAmountCents currencyCode status paymentMethod provider processedAt }
+          payments(orderBy: [{ createdAt: desc }]) { id amountCents refundedAmountCents currencyCode status paymentMethod provider processedAt data }
           refunds(orderBy: [{ createdAt: desc }]) { id refundNumber status reason amountCents currencyCode processedAt }
           amendments(orderBy: [{ createdAt: asc }]) { id previousCheckInDate previousCheckOutDate checkInDate checkOutDate currencyCode reason delta createdAt beforeSnapshot afterSnapshot }
           agreement { agreementNumber status title signatureName signedAt signatureEvidence }
@@ -177,7 +178,7 @@ export async function publicTrip(_root: unknown, args: { token: string; messages
       const signedBySetup = Boolean(reservation.fixtureOrigin) && agreement.status === 'signed' && signatureEvidence?.via !== 'signing_link';
       return signedBySetup ? { ...publicReservation.agreement, signatureName: null, signedAt: null, signedBySetup } : { ...publicReservation.agreement, signedBySetup: false };
     })() : null,
-    payments: (rawPayments || []).map((payment: any) => ({ ...payment, isTest: payment.provider === 'pp_stripe_stripe' })),
+    payments: (rawPayments || []).map(({ data, ...payment }: any) => ({ ...payment, isTest: isTestTender({ provider: payment.provider, data }) })),
     cancellationPreview: ['pending', 'confirmed'].includes(reservation.status)
       ? cancellationEntitlement({
           bookingSnapshot: snapshot,

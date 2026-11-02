@@ -24,7 +24,7 @@ export async function StayAgreementPage({ params, searchParams }: { params: Prom
         ? 'Your host withdrew this agreement, so it can no longer be signed.'
         : 'Your host issued a new signing link for this agreement. Use the newest link you received.';
     return <StorefrontShell servicing activeNav="trips"><UnavailableStay title={agreement.agreementNumber ? `Agreement ${agreement.agreementNumber} can’t be signed` : 'This agreement link can’t be used'}>
-      {reason}{agreement.signedBySetup ? ' Its signature was recorded by setup for a sample stay, not by a guest.' : ''}{agreement.status === 'signed' && agreement.signatureName ? ` It was signed by ${agreement.signatureName}${agreement.signedAt ? ` on ${new Date(agreement.signedAt).toLocaleDateString(locale, { timeZone: 'UTC' })}` : ''}, and that record is kept.` : ''}
+      {reason}{agreement.signedBySetup ? ' Your host marked it as signed; no guest signature is on file.' : ''}{agreement.status === 'signed' && agreement.signatureName ? ` It was signed by ${agreement.signatureName}${agreement.signedAt ? ` on ${new Date(agreement.signedAt).toLocaleDateString(locale, { timeZone: 'UTC' })}` : ''}, and that record is kept.` : ''}
       {tripToken ? <> <Link className="stay-text-link" href={tripPath(tripToken, token)}>Return to your trip</Link></> : null}
     </UnavailableStay></StorefrontShell>;
   }
@@ -37,8 +37,6 @@ export async function StayAgreementPage({ params, searchParams }: { params: Prom
       <h1>{agreement.title}</h1>
       <p>Read the terms captured for your booking. Your signature is recorded against this exact version.</p>
     </header>
-    {agreement.sample ? <div className="stay-alert stay-alert-warn" role="note"><p>This agreement belongs to a sample stay created by the store’s setup. It isn’t a real booking{agreement.signedBySetup ? ', and the signature on it was recorded by setup, not by a guest' : ''}.</p></div> : null}
-    {agreement.simulation ? <div className="stay-alert stay-alert-warn" role="note"><p>Test booking: these terms belong to a simulated stay and aren’t binding.</p></div> : null}
     <div className="stay-agreement-layout">
       <article className="stay-document">
         <h2>Your stay</h2>
@@ -61,7 +59,7 @@ export async function StayAgreementPage({ params, searchParams }: { params: Prom
         <h2 id="signature-title">{signed ? 'Signature on record' : 'Ready to sign?'}</h2>
         {signed
           ? agreement.signedBySetup
-            ? <div className="stay-signed" role="status"><span>Recorded by setup for a sample stay. No guest signed it.</span></div>
+            ? <div className="stay-signed" role="status"><span>Marked signed by your host. No guest signature is on file.</span></div>
             : <div className="stay-signed" role="status">{agreement.signatureName ? <span className="stay-signature-name">{agreement.signatureName}</span> : <span>Signed.</span>}{agreement.signedAt ? <span>{new Date(agreement.signedAt).toLocaleString(locale, { timeZone: 'UTC' })} UTC</span> : null}</div>
           : <AgreementForm token={token} tripToken={tripToken} />}
         {tripToken

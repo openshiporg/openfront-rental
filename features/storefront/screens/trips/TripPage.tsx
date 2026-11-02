@@ -167,8 +167,6 @@ export async function TripPage({ params, searchParams }: { params: Promise<{ tok
   return <StorefrontShell servicing activeNav="trips"><main id="stay-main" className="stay-shell stay-trip-page">
     {query.booked ? <><BookingSteps step={3} /><ClearCheckoutDraft /></> : null}
     <div className="stay-trip-flash">
-      {trip.sample ? <div className="stay-alert stay-alert-warn" role="note"><Wallet size={16} aria-hidden="true" /><p>Sample stay: created by the store’s setup to show how trips work. It isn’t a real booking; any payment, deposit or signature on it was recorded by setup, not by a guest.</p></div> : null}
-      {trip.testMode ? <div className="stay-alert stay-alert-warn" role="note"><Wallet size={16} aria-hidden="true" /><p>Test booking: it was chosen as a test at checkout. It holds no dates and isn’t a real stay. Card payments for it use Stripe test cards, and no real money is charged.</p></div> : null}
       {query.cancel_review && canCancel ? <div className="stay-alert stay-alert-warn" role="status"><X size={16} aria-hidden="true" /><p>The refund for cancelling has changed. Review the new amount under Plans can change before you confirm.</p></div> : null}
       {query.booked ? <div className="stay-alert stay-alert-ok" role="status"><Check size={16} aria-hidden="true" /><p>Reservation {trip.confirmationCode} is on record. {statusCopy[trip.status] || 'Check its current status below.'}</p></div> : null}
       {query.emailed ? <div className="stay-alert stay-alert-ok" role="status"><Check size={16} aria-hidden="true" /><p>We emailed your trip link to the booking address. Save this page’s link as well.</p></div> : null}
@@ -251,7 +249,7 @@ export async function TripPage({ params, searchParams }: { params: Promise<{ tok
 
         <section id="payment" className="stay-panel stay-trip-section" aria-labelledby="payment-title">
           <h2 id="payment-title">Payment & records</h2>
-          <p className="stay-muted">Status: <strong>{formatType(trip.paymentStatus)}{trip.testMode ? ' (test mode)' : ''}</strong>. {cardEnabled ? 'Test card payments appear here once Stripe confirms them; ' : ''}payments arranged with your host are recorded by the host.</p>
+          <p className="stay-muted">Status: <strong>{formatType(trip.paymentStatus)}</strong>. {cardEnabled ? 'Card payments appear here once Stripe confirms them; ' : ''}payments arranged with your host are recorded by the host.</p>
           <div className="stay-money-grid">
             <div className="stay-money"><span>Stay total</span><strong>{formatMoney(locale, trip.totalAmountCents, trip.currencyCode)}</strong></div>
             <div className="stay-money"><span>Paid</span><strong>{formatMoney(locale, trip.amountPaidCents, trip.currencyCode)}</strong></div>
@@ -299,7 +297,7 @@ export async function TripPage({ params, searchParams }: { params: Promise<{ tok
         <section id="agreement" className="stay-panel stay-trip-section" aria-labelledby="agreement-title">
           <h2 id="agreement-title">Your agreement</h2>
           {signed && trip.agreement?.signedBySetup
-            ? <p className="stay-muted">This is a sample stay created by the store’s setup. Its agreement was marked signed by setup, not by a guest, so it isn’t a guest signature.</p>
+            ? <p className="stay-muted">Your host marked this agreement as signed. No guest signature is on file.</p>
             : signed
             ? <div className="stay-signed"><span className="stay-signature-name">{trip.agreement.signatureName}</span>{trip.agreement.signedAt ? <span>Signed {new Date(trip.agreement.signedAt).toLocaleString(locale, { timeZone: 'UTC' })} UTC</span> : null}</div>
             : <p className="stay-muted">{trip.agreement ? `Status: ${formatType(trip.agreement.status)}.` : 'An agreement record isn’t available.'}{stopped && !signed ? ' No signature is needed for a cancelled stay.' : ''}</p>}
