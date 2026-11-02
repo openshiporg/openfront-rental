@@ -1,7 +1,6 @@
-import { LOGO_ICONS } from './untitled-logo-registry';
-
-// Unsaved stores use 3Portals from the donor library, without a settings write.
-export const DEFAULT_STORE_LOGO_ICON = LOGO_ICONS.find((icon) => icon.id === '3portals')!.lightSvg;
+// Housekind option A: a gabled home and open doorway. Shared by onboarding and
+// unsaved-store previews; an existing store's chosen mark is never overwritten.
+export const DEFAULT_STORE_LOGO_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none"><path d="M5 23 24 7l19 16M11 19v23h26V19M20 42V28h8v14" stroke="#155eef" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 // Forest hue rotation, independent of the storefront accent.
 export const DEFAULT_LIBRARY_LOGO_COLOR = '266';
 export const DEFAULT_STORE_LOGO_COLOR = '0';
