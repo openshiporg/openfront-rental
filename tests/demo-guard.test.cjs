@@ -71,22 +71,16 @@ test('3. a demo user cannot create, delete or update users, including the real a
   await refused(run('User', 'update', DEMO, { item: { id: 'admin' }, inputData: { name: 'Hacked' } }));
 });
 
-test('4. a demo user cannot change the store name, logo or URL settings', async () => {
-  for (const field of ['name', 'tagline', 'logoIcon', 'logoColor']) {
-    await refused(run('MarketplaceSettings', 'update', DEMO, { item: { id: 's' }, inputData: { [field]: 'x' } }));
-  }
-  await refused(run('HostOrganization', 'update', DEMO, { item: { id: 'h' }, inputData: { slug: 'x' } }));
-  await refused(run('MarketplaceSettings', 'create', DEMO, { inputData: {} }));
-  await refused(run('MarketplaceSettings', 'delete', DEMO, { item: { id: 's' } }));
+test('4. changed name, tagline and logo ALLOWED; host slug and roles stay protected', async () => {
+  const item = { id: 's', name: 'Housekind', tagline: null, logoIcon: 'a', logoColor: '#111111' };
+  await run('MarketplaceSettings', 'update', DEMO, { item, inputData: { name: 'Housekind QA', tagline: 'New', logoIcon: 'b', logoColor: '#000000' } });
+  await run('MarketplaceSettings', 'update', DEMO, { inputData: { name: 'No stored item' } });
+  await run('HostOrganization', 'update', DEMO, { item: { id: 'h', name: 'Org', slug: 'org' }, inputData: { name: 'Org QA' } });
+  await refused(run('HostOrganization', 'update', DEMO, { item: { id: 'h', slug: 'org' }, inputData: { slug: 'x' } }));
+  await refused(run('Role', 'update', DEMO, { item: { id: 'r' }, inputData: { name: 'Y' } }));
 });
 
-test('4b. unchanged protected values pass, changed ones are refused', async () => {
-  const item = { id: 's', name: 'Housekind', tagline: null, logoIcon: 'a', logoColor: '#111111' };
-  await run('MarketplaceSettings', 'update', DEMO, { item, inputData: { name: ' Housekind ', tagline: '', logoIcon: 'a', logoColor: '#111111', supportEmail: 'x@y.z', taxRate: 8 } });
-  await refused(run('MarketplaceSettings', 'update', DEMO, { item, inputData: { name: 'Other', supportEmail: 'x@y.z' } }));
-  await refused(run('MarketplaceSettings', 'update', DEMO, { item, inputData: { name: 'Housekind', logoColor: '#000000' } }));
-  await refused(run('MarketplaceSettings', 'update', DEMO, { item, inputData: { tagline: 'New' } }));
-  await refused(run('MarketplaceSettings', 'update', DEMO, { inputData: { name: 'Housekind' } }));
+test('4b. unchanged host slug passes, changed slug is refused', async () => {
   await run('HostOrganization', 'update', DEMO, { item: { id: 'o', name: 'Org', slug: 'org' }, inputData: { name: 'Org', slug: 'org' } });
   await refused(run('HostOrganization', 'update', DEMO, { item: { id: 'o', name: 'Org', slug: 'org' }, inputData: { slug: 'new' } }));
   await refused(run('User', 'update', DEMO, { item: { id: 'demo', password: 'x' }, inputData: { password: 'x' } }));
@@ -147,7 +141,7 @@ test('a demo user can still change other User fields on its own record', async (
 });
 
 test('day-to-day lists are outside the policy: listing photos, payments and refunds are never guarded', async () => {
-  assert.deepEqual(Object.keys(DEMO_GUARD_POLICY).sort(), ['HostOrganization', 'MarketplaceSettings', 'Role', 'User']);
+  assert.deepEqual(Object.keys(DEMO_GUARD_POLICY).sort(), ['HostOrganization', 'Role', 'User']);
   const mutations = fs.readFileSync(path.join(root, 'features/keystone/mutations/stayFinancialOperations.ts'), 'utf8')
     + fs.readFileSync(path.join(root, 'features/keystone/mutations/stayRefundOperations.ts'), 'utf8');
   assert.doesNotMatch(mutations, /assertNotDemo|demo-guard/);
