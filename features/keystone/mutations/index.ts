@@ -57,7 +57,6 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         privacyPolicyVersion: String
         termsUrl: String
         termsVersion: String
-        testBookingsAvailable: Boolean
         currencyCode: String
         locale: String
         timezone: String
@@ -214,7 +213,6 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
           acceptedTermsVersion: String
           acceptedStoreTermsVersion: String
           privacyNoticeVersion: String
-          simulation: Boolean
           receiptKey: String
         ): CreateStayReservationResult!
         "Returns the receipt of a checkout this same browser already completed (24 hours, same key and session)."

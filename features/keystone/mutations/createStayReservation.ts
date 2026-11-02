@@ -19,7 +19,6 @@ import { resolveActiveStayQuote } from '../utils/stayQuoteAccess';
 import { assertStayListingMatchesSnapshot, assertStayQuoteMatchesSnapshot } from '../utils/stayQuoteIntegrity';
 import { listingSellabilityProblem } from '../utils/stayEligibility';
 import { assertStorefrontSelling, readStorefrontSales } from '../utils/storefrontSales';
-import { stripeCheckoutEnabled } from '../../integrations/payment/stripe';
 import { REAL_CAPACITY_BLOCK } from '../utils/fixtureOrigin';
 
 type CreateStayReservationArgs = {
@@ -36,7 +35,6 @@ type CreateStayReservationArgs = {
   /** The store's privacy policy version shown at checkout: a notice, not consent. */
   privacyNoticeVersion?: string | null;
   /** The guest explicitly chose a test booking (store permission and Stripe test mode required). */
-  simulation?: boolean | null;
   /** Per-checkout secret: a retry with it returns the booking already made, never a second one. */
   receiptKey?: string | null;
 };
@@ -198,7 +196,6 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
   if (!acceptedTermsVersion) throw new Error('Review and accept the stay terms before reserving.');
   const acceptedStoreTermsVersion = typeof args.acceptedStoreTermsVersion === 'string' ? args.acceptedStoreTermsVersion.trim().slice(0, 60) : '';
   const privacyNoticeVersion = typeof args.privacyNoticeVersion === 'string' ? args.privacyNoticeVersion.trim().slice(0, 60) : '';
-  const simulation = args.simulation === true;
   const receiptKey = validReceiptKey(args.receiptKey);
   if (args.invitedGuests != null && !Array.isArray(args.invitedGuests)) throw new Error('Invited guests must be a list.');
   if ((args.invitedGuests?.length || 0) > 15) throw new Error('A stay can include at most 15 invited guests.');
@@ -233,7 +230,7 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
   const sessionUserId = sessionActorId(context);
   const fingerprint = requestFingerprint({
     quote: tokenHash, guestName, guestEmail, guestPhone, guestNotes, invitedGuests,
-    acceptedTermsVersion, acceptedStoreTermsVersion, privacyNoticeVersion, simulation, actor: sessionUserId,
+    acceptedTermsVersion, acceptedStoreTermsVersion, privacyNoticeVersion, actor: sessionUserId,
   });
   const recover = async () => receiptKey
     ? recoverConvertedCheckout(context, tokenHash, receiptKey, { actorUserId: sessionUserId, fingerprint })
@@ -316,9 +313,6 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
       ]);
       const sellability = listingSellabilityProblem({ status: lockedListing.status, hostOrganization: currentHost, property: currentProperty, accommodationUnit: currentUnit });
       if (sellability) throw new Error(sellability);
-      if (simulation && !(sales.allowTestBookings && stripeCheckoutEnabled())) {
-        throw new Error('Test bookings aren’t available on this storefront. Make an ordinary booking instead.');
-      }
       // The store's own documents: its published terms need acceptance of the exact version
       // shown; its privacy policy is a notice, recorded as shown (not as consent).
       if (sales.termsOfUse && acceptedStoreTermsVersion !== sales.termsOfUse.version) {
@@ -391,7 +385,6 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
             ? { status: 'shown', url: sales.privacyPolicy.url, version: sales.privacyPolicy.version }
             : { status: 'not_published' },
         },
-        ...(simulation ? { simulation: { kind: 'test_booking', chosenBy: 'guest', statement: 'Chosen as a test booking: no dates held, test-card payments only, no real money.' } } : {}),
         ...(receiptKey ? {
           conversion: { version: CONVERSION_VERSION, receiptKeyHash: receiptKeyHash(receiptKey), requestFingerprint: fingerprint, actorUserId: sessionUserId },
         } : {}),
@@ -424,8 +417,8 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
           tripTokenExpiresAt: tripTokenExpiry(checkOutDate),
           status: instant ? 'confirmed' : 'pending',
           paymentStatus: 'unpaid',
-          // Only an explicit, permitted test booking is simulated; every other booking is real.
-          testMode: simulation,
+          // Public bookings are always real.
+          testMode: false,
           ...(bookedById ? { bookedById } : {}),
           source: 'direct',
           checkInDate,
@@ -463,8 +456,7 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
         });
         if (createdLines?.count !== lineInputs.length) throw retryableTransactionError('Reservation line transaction did not commit.');
       }
-      // A test booking holds no real capacity: no calendar block, and capacity checks skip it.
-      if (!simulation) {
+      {
         const createdBlock = await tx.calendarBlock.create({
           data: {
             hostOrganizationId,
@@ -491,7 +483,7 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
           signingTokenHash: hashPublicOwnershipToken(agreementToken),
           signingTokenExpiresAt: publicTokenExpiry(),
           status: 'sent',
-          title: simulation ? `Test booking (not binding): stay terms for ${lockedQuoteSnapshot.listing.title}` : `Stay terms for ${lockedQuoteSnapshot.listing.title}`,
+          title: `Stay terms for ${lockedQuoteSnapshot.listing.title}`,
           signerEmail: guestEmail,
           termsSnapshot: {
             listing: bookingSnapshot.listing,
@@ -499,13 +491,11 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
             cancellationPolicy: bookingSnapshot.cancellationPolicy,
             checkInDate,
             checkOutDate,
-            ...(simulation ? { simulation: true } : {}),
           },
         },
       });
       if (!createdAgreement?.id) throw retryableTransactionError('Stay agreement transaction did not commit.');
-      // A test booking takes no deposit: no real money is held for a simulated stay.
-      if (depositId && !simulation) {
+      if (depositId) {
         const createdDeposit = await tx.securityDeposit.create({
           data: {
             id: depositId,
@@ -520,7 +510,7 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
       }
       const linkedReservation = await tx.reservation.update({
         where: { id: reservationId },
-        data: { agreementId, securityDepositId: simulation ? null : depositId },
+        data: { agreementId, securityDepositId: depositId },
       });
       if (!linkedReservation?.id) throw retryableTransactionError('Reservation relationship transaction did not commit.');
       if (instant) {
@@ -532,7 +522,7 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
           aggregateType: 'Reservation',
           aggregateId: reservationId,
           operationKey: `instant_book:${reservationId}`,
-          payload: { reservationId, confirmationCode: code, status: 'confirmed', transition: 'instant_book', actorUserId: bookedById, balanceDueCents: lockedQuote.totalAmountCents, testMode: simulation },
+          payload: { reservationId, confirmationCode: code, status: 'confirmed', transition: 'instant_book', actorUserId: bookedById, balanceDueCents: lockedQuote.totalAmountCents, testMode: false },
         });
       }
       return created;

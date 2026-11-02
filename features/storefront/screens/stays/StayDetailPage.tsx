@@ -58,7 +58,7 @@ export async function StayDetailPage({ params, searchParams }: { params: Promise
     noticeHours: arrivalRules.advanceNoticeHours,
     windowDays: arrivalRules.bookingWindowDays,
   };
-  const paymentSummary = stayPaymentSummary({ testBookings: stripeCheckoutEnabled(), instantBook: Boolean(stay.instantBook) });
+  const paymentSummary = stayPaymentSummary({ cardPayments: stripeCheckoutEnabled(), instantBook: Boolean(stay.instantBook) });
   const messageHostHref = `/help?stay=${encodeURIComponent(stay.slug)}#message-host`;
   const amenityGroups = Object.entries((stay.amenities || []).reduce<Record<string, any[]>>((groups, amenity) => {
     const key = amenity.category || 'other';

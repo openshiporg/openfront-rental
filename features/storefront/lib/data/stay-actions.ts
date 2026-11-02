@@ -73,10 +73,9 @@ export async function bookStayAction(formData: FormData) {
   const quoteToken = value(formData, 'quoteToken');
   // The receipt key is saved in this browser before anything is booked.
   const receiptKey = await rememberCheckoutReceiptKey(quoteToken, value(formData, 'receiptKey'));
-  const simulation = false;
   const response = await keystoneClient<any>(`
-    mutation CreateStayReservation($quoteToken: String!, $guestName: String!, $guestEmail: String!, $guestPhone: String, $guestNotes: String, $acceptedTermsVersion: String, $acceptedStoreTermsVersion: String, $privacyNoticeVersion: String, $simulation: Boolean, $receiptKey: String) {
-      createStayReservation(quoteToken: $quoteToken, guestName: $guestName, guestEmail: $guestEmail, guestPhone: $guestPhone, guestNotes: $guestNotes, acceptedTermsVersion: $acceptedTermsVersion, acceptedStoreTermsVersion: $acceptedStoreTermsVersion, privacyNoticeVersion: $privacyNoticeVersion, simulation: $simulation, receiptKey: $receiptKey) {
+    mutation CreateStayReservation($quoteToken: String!, $guestName: String!, $guestEmail: String!, $guestPhone: String, $guestNotes: String, $acceptedTermsVersion: String, $acceptedStoreTermsVersion: String, $privacyNoticeVersion: String, $receiptKey: String) {
+      createStayReservation(quoteToken: $quoteToken, guestName: $guestName, guestEmail: $guestEmail, guestPhone: $guestPhone, guestNotes: $guestNotes, acceptedTermsVersion: $acceptedTermsVersion, acceptedStoreTermsVersion: $acceptedStoreTermsVersion, privacyNoticeVersion: $privacyNoticeVersion, receiptKey: $receiptKey) {
         confirmationCode tripToken agreementToken status listing recovered testMode
       }
     }
@@ -90,7 +89,6 @@ export async function bookStayAction(formData: FormData) {
     acceptedTermsVersion: value(formData, 'consent') === 'on' ? value(formData, 'termsVersion') || null : null,
     acceptedStoreTermsVersion: value(formData, 'storeTermsConsent') === 'on' ? value(formData, 'storeTermsVersion') || null : null,
     privacyNoticeVersion: value(formData, 'privacyNoticeVersion') || null,
-    simulation,
     // Same checkout, same key: a retry after a lost response returns the booking already made.
     receiptKey,
   });
@@ -101,13 +99,12 @@ export async function bookStayAction(formData: FormData) {
   const card = stripeCheckoutEnabled() && reservation.status === 'confirmed';
   let emailed = false;
   if (passwordResetEmailConfigured() && !reservation.recovered && reservation.agreementToken) {
-    const test = reservation.testMode === true;
     try {
       await sendGuestLinkEmail({
         to: value(formData, 'guestEmail'),
-        subject: `${test ? '[Test booking] ' : ''}Your stay ${reservation.confirmationCode}`,
-        heading: test ? 'Your test booking is saved' : reservation.status === 'confirmed' ? 'Your stay is confirmed' : 'Your booking request is with the host',
-        body: `${test ? 'This is a test booking: no dates are held and no real money is taken. ' : ''}${reservation.listing?.title ? `${reservation.listing.title}. ` : ''}Confirmation code ${reservation.confirmationCode}. Open your private trip page for payment, your agreement, arrival details and messages with your host.`,
+        subject: `Your stay ${reservation.confirmationCode}`,
+        heading: reservation.status === 'confirmed' ? 'Your stay is confirmed' : 'Your booking request is with the host',
+        body: `${reservation.listing?.title ? `${reservation.listing.title}. ` : ''}Confirmation code ${reservation.confirmationCode}. Open your private trip page for payment, your agreement, arrival details and messages with your host.`,
         path: `/trips/${reservation.tripToken}?agreement=${reservation.agreementToken}`,
         cta: 'Open your trip',
       });

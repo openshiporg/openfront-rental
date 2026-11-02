@@ -17,7 +17,6 @@ export type PublicMarketplaceSettings = {
   privacyPolicyVersion?: string | null;
   termsUrl?: string | null;
   termsVersion?: string | null;
-  testBookingsAvailable?: boolean | null;
   currencyCode: string;
   locale: string;
   timezone: string;
@@ -48,7 +47,6 @@ type PublicMarketplaceSettingsResponse = {
     privacyPolicyVersion?: string | null;
     termsUrl?: string | null;
     termsVersion?: string | null;
-    testBookingsAvailable?: boolean | null;
     currencyCode?: string | null;
     locale?: string | null;
     timezone?: string | null;
@@ -62,7 +60,7 @@ export const getPublicMarketplaceSettings = cache(async function (): Promise<Pub
   const response = await keystoneClient<PublicMarketplaceSettingsResponse>(`
     query PublicMarketplaceSettings {
       publicMarketplaceSettings {
-        status id name tagline homepageHeadline publicDescription supportPhone supportEmail supportHours officeAddress privacyPolicyUrl privacyPolicyVersion termsUrl termsVersion testBookingsAvailable currencyCode locale timezone accentHue logoIcon logoColor
+        status id name tagline homepageHeadline publicDescription supportPhone supportEmail supportHours officeAddress privacyPolicyUrl privacyPolicyVersion termsUrl termsVersion currencyCode locale timezone accentHue logoIcon logoColor
       }
     }
   `);

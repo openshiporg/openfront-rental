@@ -7179,7 +7179,7 @@ type Mutation {
   sendUserPasswordResetLink(email: String!): Boolean!
   redeemUserPasswordResetToken(email: String!, token: String!, password: String!): RedeemUserPasswordResetTokenResult
   quoteStay(listingId: ID!, checkIn: String!, checkOut: String!, adults: Int!, children: Int, infants: Int, pets: Int): QuoteStayResult!
-  createStayReservation(quoteToken: String!, guestName: String!, guestEmail: String!, guestPhone: String, invitedGuests: JSON, guestNotes: String, acceptedTermsVersion: String, acceptedStoreTermsVersion: String, privacyNoticeVersion: String, simulation: Boolean, receiptKey: String): CreateStayReservationResult!
+  createStayReservation(quoteToken: String!, guestName: String!, guestEmail: String!, guestPhone: String, invitedGuests: JSON, guestNotes: String, acceptedTermsVersion: String, acceptedStoreTermsVersion: String, privacyNoticeVersion: String, receiptKey: String): CreateStayReservationResult!
 
   """
   Returns the receipt of a checkout this same browser already completed (24 hours, same key and session).
@@ -7604,7 +7604,6 @@ type PublicMarketplaceSettingsResult {
   privacyPolicyVersion: String
   termsUrl: String
   termsVersion: String
-  testBookingsAvailable: Boolean
   currencyCode: String
   locale: String
   timezone: String
