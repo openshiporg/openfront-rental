@@ -1,9 +1,13 @@
 'use client';
 
 import { useActionState, useState, type FormEvent, type ReactNode } from 'react';
-import { CheckCircle2, CircleAlert, Eye, EyeOff, Globe2, Loader2, Palette, Save, Shapes, Store } from 'lucide-react';
+import { CheckCircle2, CircleAlert, Eye, EyeOff, Globe2, Code, Loader2, Palette, Save, Shapes, Store } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import * as SelectPrimitive from '@radix-ui/react-select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { TimezoneInput } from '@/features/platform/operations/components/FormControls';
@@ -13,9 +17,10 @@ import {
   type OperatorMarketplaceSettings,
   type StoreSettingsActionState,
 } from '../actions/storeSettings';
-import { DEFAULT_STORE_LOGO_ICON, DEFAULT_LIBRARY_LOGO_COLOR, usesDefaultStoreLogo, normalizeStoreLogoColor } from '../lib/store-logo';
+import { DEFAULT_STORE_LOGO_ICON, DEFAULT_LIBRARY_LOGO_COLOR, normalizeStoreLogoColor } from '../lib/store-logo';
 import { logoColorForAccentHue, storefrontAccentHueFromLogoColor, STOREFRONT_ACCENT_PRESETS } from '../lib/theme';
-import { LogoPicker } from './LogoPicker';
+import { HUE_PRESETS, LOGO_ICONS } from '../lib/icon-registry';
+import { StoreSettingsSaveBar } from './StoreSettingsSaveBar';
 import { StoreLogoMark } from './StoreLogoMark';
 
 const initialActionState: StoreSettingsActionState = { ok: false, message: '' };
@@ -64,10 +69,11 @@ function StorefrontPreview({ hue, logoIcon, logoColor, name, tagline, headline, 
 
 export function StoreSettingsForm({ settings }: { settings: OperatorMarketplaceSettings | null }) {
   const [state, formAction, pending] = useActionState(saveMarketplaceSettings, initialActionState);
-  const usesDefaultLogo = usesDefaultStoreLogo(settings?.logoIcon, settings?.logoColor);
-  const [logoIcon, setLogoIcon] = useState(!usesDefaultLogo && settings?.logoIcon ? settings.logoIcon : DEFAULT_STORE_LOGO_ICON);
-  const [logoColor, setLogoColor] = useState(usesDefaultLogo ? DEFAULT_LIBRARY_LOGO_COLOR : normalizeStoreLogoColor(settings?.logoColor));
+  const [logoIcon, setLogoIcon] = useState(settings?.logoIcon || DEFAULT_STORE_LOGO_ICON);
+  const [logoColor, setLogoColor] = useState(settings?.logoIcon ? normalizeStoreLogoColor(settings.logoColor) : DEFAULT_LIBRARY_LOGO_COLOR);
   const accentHue = storefrontAccentHueFromLogoColor(logoColor);
+  // Find matching preset icon, but don't default to first icon if not found
+  const selectedIcon = LOGO_ICONS.find((icon) => icon.lightSvg === logoIcon);
   const [published, setPublished] = useState(settings?.isPublished ?? false);
   const [preview, setPreview] = useState({ name: settings?.name ?? '', tagline: settings?.tagline ?? '', homepageHeadline: settings?.homepageHeadline ?? '' });
 
@@ -80,7 +86,7 @@ export function StoreSettingsForm({ settings }: { settings: OperatorMarketplaceS
 
   return (
     <form action={formAction} onInput={trackPreview} className="min-w-0">
-      <div className="grid min-w-0 items-start gap-8 px-4 pb-8 md:px-6 2xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid min-w-0 items-start gap-8 px-4 pb-24 md:px-6 md:pb-8 2xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-8">
           {!settings ? (
             <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100" role="status">
@@ -118,15 +124,134 @@ export function StoreSettingsForm({ settings }: { settings: OperatorMarketplaceS
 
           <SettingsGroup icon={Shapes} title="Logo" description="Logo color also sets the storefront color.">
             <input type="hidden" name="logoIcon" value={logoIcon} />
-            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-4">
-              <div className="flex size-16 items-center justify-center rounded-lg border bg-background p-2">
-                <StoreLogoMark logoIcon={logoIcon} logoColor={logoColor} className="block size-full [&>svg]:block [&>svg]:size-full" />
-              </div>
-              <LogoPicker value={logoIcon} hue={logoColor} onChange={setLogoIcon} />
-            </div>
-            <div className="mt-5 border-t pt-4">
-              <div className="flex items-center justify-between gap-4"><span className="text-xs font-medium">Logo color</span><output className="font-mono text-xs text-muted-foreground">{logoColor}°</output></div>
-              <input type="range" name="logoColor" min="0" max="359" step="1" value={logoColor} onChange={(event) => setLogoColor(event.target.value)} aria-label="Logo hue rotation" className="mt-3 w-full accent-primary" />
+            <input type="hidden" name="logoColor" value={logoColor} />
+            <div className="space-y-6">
+                {/* Logo Icon Selector */}
+                <div>
+                  <Label>Logo Icon</Label>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Select
+                      value={selectedIcon?.id || ''}
+                      onValueChange={(id) => {
+                        const icon = LOGO_ICONS.find((i) => i.id === id);
+                        if (icon) setLogoIcon(icon.lightSvg);
+                      }}
+                    >
+                      <SelectPrimitive.Trigger
+                        className={cn(
+                          'flex h-12 w-12 shrink-0 rounded-lg border border-input bg-background focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 p-0 overflow-hidden items-center justify-center'
+                        )}
+                      >
+                        <div
+                          dangerouslySetInnerHTML={{ __html: logoIcon }}
+                          style={{ filter: `hue-rotate(${logoColor}deg)` }}
+                          className="[&>svg]:w-6 [&>svg]:h-6"
+                        />
+                      </SelectPrimitive.Trigger>
+                      <SelectContent className="border-border dark:border-blue-700">
+                        {LOGO_ICONS.map((icon) => (
+                          <SelectItem key={icon.id} value={icon.id}>
+                            <span className="flex items-center gap-3">
+                              <div
+                                dangerouslySetInnerHTML={{ __html: icon.lightSvg }}
+                                style={{ filter: `hue-rotate(${logoColor}deg)` }}
+                                className="[&>svg]:w-6 [&>svg]:h-6"
+                              />
+                              <span>
+                                <span className="block font-medium text-gray-900 dark:text-gray-100">
+                                  {icon.name}
+                                </span>
+                              </span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {/* SVG Code Editor Popover */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-12 w-12 shrink-0"
+                          type="button"
+                        >
+                          <Code className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[min(500px,calc(100vw-2rem))]" align="start">
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium mb-2">Edit SVG Code</h4>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Edit the SVG code directly. Changes will be reflected in the icon preview.
+                            </p>
+                          </div>
+                          <Textarea
+                            value={logoIcon}
+                            onChange={(e) => setLogoIcon(e.target.value)}
+                            className="font-mono text-xs min-h-[300px]"
+                            placeholder="<svg>...</svg>"
+                          />
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm text-muted-foreground">Preview:</div>
+                            <div
+                              dangerouslySetInnerHTML={{ __html: logoIcon }}
+                              style={{ filter: `hue-rotate(${logoColor}deg)` }}
+                              className="[&>svg]:w-8 [&>svg]:h-8 flex items-center justify-center p-2 border rounded"
+                            />
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+
+                {/* Logo Color Selector */}
+                <div>
+                  <Label>Logo Color</Label>
+                  <div className="mt-2">
+                    <Select
+                      value={logoColor}
+                      onValueChange={(value) => setLogoColor(value)}
+                    >
+                      <SelectPrimitive.Trigger
+                        className={cn(
+                          'flex h-12 w-12 shrink-0 rounded-lg border border-input bg-background focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 p-0 overflow-hidden items-center justify-center'
+                        )}
+                      >
+                        <SelectValue>
+                          <div
+                            className="w-6 h-6 rounded-full"
+                            style={{
+                              background: `hsl(${(240 + parseInt(logoColor)) % 360}, 70%, 50%)`
+                            }}
+                          />
+                        </SelectValue>
+                      </SelectPrimitive.Trigger>
+                      <SelectContent className="border-border dark:border-blue-700">
+                        <div className="grid grid-cols-4 gap-2 p-2">
+                          {HUE_PRESETS.map((preset) => (
+                            <SelectItem
+                              key={preset.value}
+                              value={preset.value.toString()}
+                              className="cursor-pointer p-0 h-12 w-12 flex items-center justify-center [&>span:first-child]:hidden"
+                            >
+                              <div
+                                className="w-6 h-6 rounded-full"
+                                style={{
+                                  background: `hsl(${(240 + preset.value) % 360}, 70%, 50%)`
+                                }}
+                              />
+                            </SelectItem>
+                          ))}
+                        </div>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
             </div>
           </SettingsGroup>
 
@@ -178,20 +303,17 @@ export function StoreSettingsForm({ settings }: { settings: OperatorMarketplaceS
         </aside>
       </div>
 
-      <div className="sticky bottom-0 z-20 border-t bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div role="status" aria-live="polite" className="min-h-5 text-sm">
-            {state.message ? (
-              <span className={cn('inline-flex items-center gap-1.5', state.ok ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400')}>
-                {state.ok ? <CheckCircle2 aria-hidden="true" className="size-4" /> : <CircleAlert aria-hidden="true" className="size-4" />}{state.message}
-              </span>
-            ) : <span className="text-muted-foreground">{published ? 'Published on save' : 'Saved as unpublished'}</span>}
-          </div>
-          <Button type="submit" disabled={pending} className="sm:w-auto">
-            {pending ? <Loader2 aria-hidden="true" className="animate-spin" /> : <Save aria-hidden="true" />}
-            {pending ? 'Saving…' : settings ? 'Save settings' : 'Create storefront settings'}
-          </Button>
-        </div>
+      <div className="px-4 pb-8 md:px-6">
+        <StoreSettingsSaveBar
+          isSaving={pending}
+          status={state.message || (published ? 'Published on save' : 'Saved as unpublished')}
+          button={
+            <Button type="submit" disabled={pending} className="sm:w-auto">
+              {pending ? <Loader2 aria-hidden="true" className="animate-spin" /> : <Save aria-hidden="true" />}
+              {pending ? 'Saving…' : settings ? 'Save settings' : 'Create storefront settings'}
+            </Button>
+          }
+        />
       </div>
     </form>
   );

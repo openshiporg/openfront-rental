@@ -1,4 +1,4 @@
-import { DEFAULT_STORE_LOGO_ICON, DEFAULT_LIBRARY_LOGO_COLOR, usesDefaultStoreLogo, normalizeStoreLogoColor } from '../../platform/store-settings/lib/store-logo';
+import { DEFAULT_STORE_LOGO_ICON, DEFAULT_LIBRARY_LOGO_COLOR, normalizeStoreLogoColor } from '../../platform/store-settings/lib/store-logo';
 import { storefrontAccentHueFromLogoColor } from '../../platform/store-settings/lib/theme';
 import { sanitizeStoreLogoSvg } from '../utils/storeLogo';
 import { stripeCheckoutEnabled } from '../../integrations/payment/stripe';
@@ -40,7 +40,7 @@ export async function publicMarketplaceSettings(_root: unknown, _args: unknown, 
   if (!settings) return { status: 'unconfigured' };
   if (!settings.isPublished) return { status: 'unpublished' };
 
-  const savedLogo = !usesDefaultStoreLogo(settings.logoIcon, settings.logoColor) && typeof settings.logoIcon === 'string'
+  const savedLogo = typeof settings.logoIcon === 'string'
     ? sanitizeStoreLogoSvg(settings.logoIcon) : '';
   const logoColor = savedLogo ? normalizeStoreLogoColor(settings.logoColor) : DEFAULT_LIBRARY_LOGO_COLOR;
   return {
