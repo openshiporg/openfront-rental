@@ -165,7 +165,7 @@ export function Fields({ fields, value, onChange, forceValidation, invalidFields
   }
 
   return (
-    <div className="grid w-full items-center gap-4">
+    <div className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)] items-center gap-4">
       {rendered.length === 0 && value && Object.keys(value).length === 0
         ? "There are no fields that you can read or edit"
         : rendered}
