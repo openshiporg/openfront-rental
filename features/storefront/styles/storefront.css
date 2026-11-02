@@ -624,7 +624,7 @@
   .stay-rail { display: flex; margin-inline: calc(-1 * var(--stay-gutter)); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .stay-rail::-webkit-scrollbar { display: none; }
   .stay-rail-slide { position: relative; flex: 0 0 100%; aspect-ratio: 4 / 3; padding: 0; border: 0; background: var(--stay-paper-3); scroll-snap-align: start; }
-  .stay-rail-count { display: block; position: absolute; right: .75rem; bottom: .75rem; padding: .2rem .65rem; border-radius: 999px; background: oklch(15% .02 var(--stay-brand-hue) / .7); color: oklch(98% .01 85); font-size: .78rem; font-variant-numeric: tabular-nums; pointer-events: none; }
+  .stay-rail-count { display: block; position: absolute; right: .75rem; bottom: .75rem; padding: 0; color: oklch(99% .005 85); text-shadow: 0 1px 3px oklch(15% .02 var(--stay-brand-hue) / .85); font-size: .8rem; font-variant-numeric: tabular-nums; pointer-events: none; }
   .stay-gallery { margin-top: .25rem; }
   .stay-lightbox-stage { padding: 0; }
   .stay-lightbox-arrow { display: none !important; }
