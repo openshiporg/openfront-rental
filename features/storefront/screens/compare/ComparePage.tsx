@@ -8,6 +8,7 @@ import { StorefrontShell } from '../../components/StorefrontShell';
 import { getPublicStay, searchPublicStays } from '../../lib/data/stays';
 import { isIsoDate, rangeLabel } from '../../lib/dates';
 import { formatMoney } from '../../lib/format';
+import { stripeCheckoutEnabled } from '@/features/integrations/payment/stripe';
 import { comparisonSlugs, countParam, searchQuery, single, type SearchParams } from '../../lib/navigation';
 import { stayPaymentShort } from '../../lib/payment-copy';
 import { getStorefrontLocale } from '../../lib/data/storefront-locale';
@@ -53,7 +54,7 @@ export async function ComparePage({ searchParams }: { searchParams?: Promise<Sea
                   <dl className="stay-compare-facts">
                     <div><dt>Your dates</dt><dd>{dated ? preview?.quote ? `${datesLabel} · ${formatMoney(locale, preview.quote.totalAmountCents, preview.quote.currencyCode)} total` : previews?.error ? 'Price preview unavailable' : 'Not available for these dates, or outside the stay rules' : 'Add dates for a total price'}</dd></div>
                     <div><dt>Sleeping</dt><dd>{stay.accommodation?.bedCount ?? 'Not listed'} beds · {stay.accommodation?.bedroomCount === 0 ? 'Studio' : `${stay.accommodation?.bedroomCount ?? 'Not listed'} bedrooms`}</dd></div>
-                    <div><dt>Booking</dt><dd>{stay.instantBook ? 'Instant confirmation' : 'Host approval required'} · {stayPaymentShort({ testBookings: false, instantBook: Boolean(stay.instantBook) })}</dd></div>
+                    <div><dt>Booking</dt><dd>{stay.instantBook ? 'Instant confirmation' : 'Host approval required'} · {stayPaymentShort({ testBookings: stripeCheckoutEnabled(), instantBook: Boolean(stay.instantBook) })}</dd></div>
                     <div><dt>Amenities</dt><dd>{stay.amenities?.map(item => item.name).join(' · ') || 'Not listed'}</dd></div>
                     <div><dt>House rules</dt><dd>{stay.houseRules?.map(item => `${item.title}${item.description ? `: ${item.description}` : ''}`).join(' · ') || 'Ask the host before booking'}</dd></div>
                     <div><dt>Cancellation</dt><dd>{stay.ratePlans?.[0]?.cancellationPolicy?.summary || 'Review the policy in your dated quote'}</dd></div>

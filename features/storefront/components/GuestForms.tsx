@@ -56,7 +56,7 @@ export function ClearCheckoutDraft() {
   return null;
 }
 
-export function GuestBookingForm({ token, termsVersion, receiptKey, expiresAt, instantBook, editHref, testBookings = false, termsOfUse = null, privacyPolicy = null, account = null, signInHref }: { token: string; termsVersion: string; receiptKey: string; expiresAt: string; instantBook: boolean; editHref: string; testBookings?: boolean; termsOfUse?: LegalDocumentLink | null; privacyPolicy?: LegalDocumentLink | null; account?: { name: string; email: string } | null; signInHref: string }) {
+export function GuestBookingForm({ token, termsVersion, receiptKey, expiresAt, instantBook, editHref, termsOfUse = null, privacyPolicy = null, account = null, signInHref }: { token: string; termsVersion: string; receiptKey: string; expiresAt: string; instantBook: boolean; editHref: string; termsOfUse?: LegalDocumentLink | null; privacyPolicy?: LegalDocumentLink | null; account?: { name: string; email: string } | null; signInHref: string }) {
   const [state, action, pending] = useActionState(bookStayFormAction, initial);
   const [fields, setFields] = useState<GuestDraft>({ guestName: account?.name || '', guestEmail: account?.email || '', guestPhone: '', guestNotes: '' });
   const [restored, setRestored] = useState(false);
@@ -77,9 +77,6 @@ export function GuestBookingForm({ token, termsVersion, receiptKey, expiresAt, i
     try { window.sessionStorage.setItem(`${DRAFT_PREFIX}${token}`, JSON.stringify(next)); } catch { /* storage unavailable */ }
     return next;
   });
-  // Every booking is real unless the guest explicitly chooses a test booking.
-  const [bookingKind, setBookingKind] = useState<'real' | 'test'>('real');
-  const test = testBookings && bookingKind === 'test';
   const remaining = useExpiry(expiresAt);
   const expired = remaining !== null && remaining <= 0;
   return <form action={action} className="stay-form" aria-busy={pending}>
@@ -101,16 +98,12 @@ export function GuestBookingForm({ token, termsVersion, receiptKey, expiresAt, i
         <label className="stay-input">Phone <span className="stay-optional">optional</span><input name="guestPhone" maxLength={64} type="tel" autoComplete="tel" inputMode="tel" value={fields.guestPhone} onChange={event => update('guestPhone', event.target.value)} /></label>
       </div>
       <label className="stay-input">Arrival notes <span className="stay-optional">optional</span><textarea name="guestNotes" maxLength={2000} rows={4} placeholder="Approximate arrival, accessibility questions, or a note for your host" value={fields.guestNotes} onChange={event => update('guestNotes', event.target.value)} /><span className="stay-input-hint">Don’t include payment details, identity documents, or access codes.</span></label>
-      {testBookings ? <fieldset><legend>Booking type</legend>
-        <label className="stay-check"><input type="radio" name="bookingKind" value="real" checked={bookingKind === 'real'} onChange={() => setBookingKind('real')} /><span><strong>A real stay.</strong> You arrange payment directly with the host.</span></label>
-        <label className="stay-check"><input type="radio" name="bookingKind" value="test" checked={bookingKind === 'test'} onChange={() => setBookingKind('test')} /><span><strong>A test booking, to try card checkout.</strong> It isn’t a real stay and holds no dates. You pay with a Stripe test card, so no real money is charged.</span></label>
-      </fieldset> : null}
       <label className="stay-check"><input type="checkbox" name="consent" required /><span>I’ve reviewed the quote, house rules, cancellation terms, and the separate security deposit.</span></label>
       {termsOfUse ? <label className="stay-check"><input type="checkbox" name="storeTermsConsent" required /><span>I agree to the store’s <LegalDocumentAnchor document={termsOfUse} label={`Terms of use (version ${termsOfUse.version})`} />.</span></label> : null}
       {privacyPolicy ? <p className="stay-form-note">Your details are handled as described in the store’s <LegalDocumentAnchor document={privacyPolicy} label={`Privacy policy (version ${privacyPolicy.version})`} />. This is a notice; you aren’t asked to consent to marketing.</p> : null}
-      <SubmitButton pendingLabel={instantBook ? 'Reserving your stay…' : 'Sending your request…'} block>{test ? instantBook ? 'Make test booking & continue to test payment' : 'Send test booking request' : instantBook ? 'Reserve this stay' : 'Send booking request'}<ArrowRight size={16} aria-hidden="true" /></SubmitButton>
+      <SubmitButton pendingLabel={instantBook ? 'Reserving your stay…' : 'Sending your request…'} block>{instantBook ? 'Reserve this stay' : 'Send booking request'}<ArrowRight size={16} aria-hidden="true" /></SubmitButton>
     </fieldset>
-    <p className="stay-form-note" role={pending ? 'status' : undefined}>{pending ? 'Keep this page open while your booking is submitted.' : test ? instantBook ? 'Your test booking is saved first, then you’ll enter a Stripe test card. Save the private trip link shown next.' : 'Once the host confirms your test booking, you can pay with a Stripe test card. Save the private trip link shown next.' : instantBook ? 'No payment is taken at this step. Arrange payment with the host and save your private trip link.' : 'No payment is taken while the host reviews your request. Save your private trip link to follow it.'}</p>
+    <p className="stay-form-note" role={pending ? 'status' : undefined}>{pending ? 'Keep this page open while your booking is submitted.' : instantBook ? 'Next you’ll pay for your stay by card on your private trip page. Save the trip link shown next.' : 'Nothing is charged while the host reviews your request. Once they confirm, you pay by card from your private trip page.'}</p>
   </form>;
 }
 

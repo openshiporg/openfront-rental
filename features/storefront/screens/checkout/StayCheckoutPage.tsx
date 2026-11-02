@@ -43,7 +43,7 @@ export async function StayCheckoutPage({ params }: { params: Promise<{ quoteToke
   const expiry = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }).format(new Date(quote.expiresAt));
   const instant = Boolean(listing.instantBook);
   const signInHref = `/account/sign-in?next=${encodeURIComponent(`/checkout/${quoteToken}`)}`;
-  const paymentTitle = instant ? 'Payment arranged with the host' : 'No charge until the host confirms';
+  const paymentTitle = instant ? (cardPayments ? 'Pay by card after you reserve' : 'Payment arranged with the host') : 'No charge until the host confirms';
   const paymentBody = (instant
     ? (cardPayments ? 'Your reservation is confirmed right away. Pay the balance by card from your trip page, or agree payment with your host. Any security deposit is separate.' : 'Your reservation starts unpaid. Agree the payment method and timing with your host after confirmation. Any security deposit is separate.')
     : (cardPayments ? 'Nothing is charged while the host reviews your request. Once they confirm, pay by card from your trip page or agree payment with them. Any security deposit is separate.' : 'Nothing is charged while the host reviews your request. Once they confirm, agree the payment method and timing with them. Any security deposit is separate.'));
@@ -88,7 +88,7 @@ export async function StayCheckoutPage({ params }: { params: Promise<{ quoteToke
 
         <section className="stay-panel" aria-labelledby="guest-details">
           <h2 id="guest-details"><span className="stay-panel-num">3</span>Who’s coming?</h2>
-          <GuestBookingForm token={quoteToken} termsVersion={quote.termsVersion || ''} receiptKey={receiptKey} expiresAt={quote.expiresAt} instantBook={instant} editHref={editHref} testBookings={false} termsOfUse={documents.termsOfUse} privacyPolicy={documents.privacyPolicy} account={account ? { name: account.name, email: account.email } : null} signInHref={signInHref} />
+          <GuestBookingForm token={quoteToken} termsVersion={quote.termsVersion || ''} receiptKey={receiptKey} expiresAt={quote.expiresAt} instantBook={instant} editHref={editHref} termsOfUse={documents.termsOfUse} privacyPolicy={documents.privacyPolicy} account={account ? { name: account.name, email: account.email } : null} signInHref={signInHref} />
         </section>
       </div>
 

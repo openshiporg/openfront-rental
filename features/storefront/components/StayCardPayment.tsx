@@ -44,7 +44,7 @@ function CardForm({ amountCents, currencyCode, tripPath, paymentId, onVerify }: 
   }}>
     <PaymentElement options={{ layout: 'tabs' }} onReady={() => setReady(true)} onLoadError={() => setError('Card entry could not load. Refresh this page to try again.')} />
     {error ? <p className="stay-alert stay-alert-danger" role="alert">{error}</p> : null}
-    <button className="stay-button stay-button-block" disabled={!stripe || !elements || !ready || busy} type="submit">{busy ? 'Paying…' : `Pay ${formatMoney(locale, amountCents, currencyCode)} (test)`}</button>
+    <button className="stay-button stay-button-block" disabled={!stripe || !elements || !ready || busy} type="submit">{busy ? 'Paying…' : `Pay ${formatMoney(locale, amountCents, currencyCode)}`}</button>
     <p className="stay-form-note" role="status">{busy ? 'Keep this page open while we confirm your payment.' : 'Card payments are processed securely by Stripe. Any security deposit is arranged separately with your host.'}</p>
   </form>;
 }

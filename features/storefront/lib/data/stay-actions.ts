@@ -57,7 +57,6 @@ const GUEST_SAFE_BOOKING_ERRORS = [
   'The stay terms changed. Review them again before reserving.',
   'The store’s terms of use changed. Review them again before reserving.',
   'The store’s privacy policy changed. Review it again before reserving.',
-  'Test bookings aren’t available on this storefront. Make an ordinary booking instead.',
   'New bookings are paused on this storefront. Existing trips are still available.',
   'This stay became unavailable. Request a new quote for different dates.',
   'This stay is not available for booking.',
@@ -74,7 +73,7 @@ export async function bookStayAction(formData: FormData) {
   const quoteToken = value(formData, 'quoteToken');
   // The receipt key is saved in this browser before anything is booked.
   const receiptKey = await rememberCheckoutReceiptKey(quoteToken, value(formData, 'receiptKey'));
-  const simulation = value(formData, 'bookingKind') === 'test';
+  const simulation = false;
   const response = await keystoneClient<any>(`
     mutation CreateStayReservation($quoteToken: String!, $guestName: String!, $guestEmail: String!, $guestPhone: String, $guestNotes: String, $acceptedTermsVersion: String, $acceptedStoreTermsVersion: String, $privacyNoticeVersion: String, $simulation: Boolean, $receiptKey: String) {
       createStayReservation(quoteToken: $quoteToken, guestName: $guestName, guestEmail: $guestEmail, guestPhone: $guestPhone, guestNotes: $guestNotes, acceptedTermsVersion: $acceptedTermsVersion, acceptedStoreTermsVersion: $acceptedStoreTermsVersion, privacyNoticeVersion: $privacyNoticeVersion, simulation: $simulation, receiptKey: $receiptKey) {
