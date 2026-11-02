@@ -42,7 +42,7 @@ export async function PropertyCreatePage() {
             <Section title="What happens next">
               <ol className="space-y-4">
                 {steps.map((step, index) => <li key={step.title} className="flex gap-3">
-                  <span className={index === 0 ? 'grid size-6 shrink-0 place-items-center rounded-full bg-foreground text-[11px] font-semibold text-background' : 'grid size-6 shrink-0 place-items-center rounded-full border text-[11px] font-medium text-muted-foreground'}>{index + 1}</span>
+                  <span className={index === 0 ? 'grid size-6 shrink-0 place-items-center rounded-full bg-foreground text-xs font-semibold text-background' : 'grid size-6 shrink-0 place-items-center rounded-full border text-xs font-medium text-muted-foreground'}>{index + 1}</span>
                   <span className="min-w-0"><span className="block text-sm font-medium">{step.title}</span><span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{step.detail}</span></span>
                 </li>)}
               </ol>

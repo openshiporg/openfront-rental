@@ -53,7 +53,7 @@ export function LogoPicker({ value, hue, onChange }: LogoPickerProps) {
 
   return (
     <div className="min-w-0">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Logo</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Logo</p>
       <Select value={selectedIcon?.id || 'custom'} onValueChange={selectLogo}>
         <SelectTrigger className={triggerClassName} aria-label="Choose a logo">
           <SelectValue />
@@ -99,7 +99,7 @@ export function LogoPicker({ value, hue, onChange }: LogoPickerProps) {
           {selectedIcon ? 'Edit SVG' : 'Custom SVG'}
         </Button>
         {!selectedIcon ? (
-          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="size-3" /> Custom
           </span>
         ) : null}
@@ -110,7 +110,7 @@ export function LogoPicker({ value, hue, onChange }: LogoPickerProps) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold">Custom SVG</p>
-              <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+              <p className="mt-0.5 text-xs leading-4 text-muted-foreground">
                 Paste a complete SVG. Scripts, links, styles, event handlers, and external assets are rejected.
               </p>
             </div>
@@ -129,7 +129,7 @@ export function LogoPicker({ value, hue, onChange }: LogoPickerProps) {
           <Textarea
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            className="mt-3 min-h-32 resize-y font-mono text-[11px] leading-4"
+            className="mt-3 min-h-32 resize-y font-mono text-xs leading-4"
             placeholder='<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">…</svg>'
             spellCheck={false}
             aria-invalid={draft.length > 0 && !hasValidDraft}
@@ -143,7 +143,7 @@ export function LogoPicker({ value, hue, onChange }: LogoPickerProps) {
                 dangerouslySetInnerHTML={{ __html: safeDraft }}
                 aria-hidden="true"
               />
-              <span className={`truncate text-[11px] ${hasValidDraft ? 'text-muted-foreground' : 'text-destructive'}`}>
+              <span className={`truncate text-xs ${hasValidDraft ? 'text-muted-foreground' : 'text-destructive'}`}>
                 {hasValidDraft ? 'Safe preview' : 'Enter a valid, safe SVG document'}
               </span>
             </div>

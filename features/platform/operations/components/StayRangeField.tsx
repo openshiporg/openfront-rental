@@ -156,12 +156,12 @@ export function StayRangeField({
             )}
           >
             <span className={cn('min-w-0 px-3 py-1.5', open && !range.start && 'bg-muted/50')}>
-              <span className="block text-[11px] font-medium text-muted-foreground">{startLabel}</span>
+              <span className="block text-xs font-medium text-muted-foreground">{startLabel}</span>
               <span className={cn('block truncate text-sm', range.start ? 'font-medium' : 'text-muted-foreground/70')}>{range.start ? label(range.start, withYear) : 'Add date'}</span>
             </span>
             <span aria-hidden="true" className="grid place-items-center border-x bg-muted/30 px-2 text-muted-foreground"><ArrowRight className="size-3.5" /></span>
             <span className={cn('min-w-0 px-3 py-1.5', open && range.start && !range.end && 'bg-muted/50')}>
-              <span className="block text-[11px] font-medium text-muted-foreground">{endLabel}</span>
+              <span className="block text-xs font-medium text-muted-foreground">{endLabel}</span>
               <span className={cn('block truncate text-sm', range.end ? 'font-medium' : 'text-muted-foreground/70')}>{range.end ? label(range.end, withYear) : 'Add date'}</span>
             </span>
           </button>

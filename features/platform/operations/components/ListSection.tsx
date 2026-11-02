@@ -37,7 +37,7 @@ export function ViewTabs({ basePath, tabs, view, q, preserve, label = 'Views' }:
       >
         {tab.tone && tab.count ? <Dot tone={tab.tone} /> : null}
         {tab.label}
-        {tab.count != null ? <span className={cn('rounded-md border px-1.5 text-[11px] font-medium leading-[18px] tabular-nums', active ? 'bg-background text-foreground' : 'bg-muted/40 text-muted-foreground')}>{tab.count}</span> : null}
+        {tab.count != null ? <span className={cn('rounded-md border px-1.5 text-xs font-medium leading-[18px] tabular-nums', active ? 'bg-background text-foreground' : 'bg-muted/40 text-muted-foreground')}>{tab.count}</span> : null}
       </Link>;
     })}
   </nav>;

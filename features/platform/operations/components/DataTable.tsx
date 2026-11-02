@@ -36,7 +36,7 @@ export function DataTable<T>({ rows, columns, getKey, rowClassName, caption, foo
   footer?: ReactNode;
   dense?: boolean;
 }) {
-  return <div className="min-w-0 overflow-x-auto">
+  return <div className="relative min-w-0 overflow-x-auto">
     <table className="w-full border-collapse text-sm [&_tbody_tr:last-child>td]:border-b-0">
       {caption ? <caption className="sr-only">{caption}</caption> : null}
       <thead>

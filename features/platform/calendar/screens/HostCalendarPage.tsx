@@ -156,8 +156,8 @@ export async function HostCalendarPage({ searchParams }: { searchParams?: Promis
                 const weekday = new Date(`${day}T12:00:00Z`).getUTCDay();
                 const isToday = day === today;
                 return <div key={day} className={cn('flex flex-col items-center border-r py-1.5 text-center leading-none last:border-r-0', (weekday === 0 || weekday === 6) && 'bg-muted/60')} style={{ gridColumn: `${2 + index * 2} / span 2`, gridRow: 1 }}>
-                  <span className="text-[10px] text-muted-foreground">{'SMTWTFS'[weekday]}</span>
-                  <span className={cn('mt-1 grid size-5 place-items-center rounded-full text-[11px] tabular-nums', isToday ? 'bg-foreground font-semibold text-background' : 'text-foreground/80')}>{Number(day.slice(-2))}</span>
+                  <span className="text-xs text-muted-foreground">{'SMTWTFS'[weekday]}</span>
+                  <span className={cn('mt-1 grid size-5 place-items-center rounded-full text-xs tabular-nums', isToday ? 'bg-foreground font-semibold text-background' : 'text-foreground/80')}>{Number(day.slice(-2))}</span>
                 </div>;
               })}
             </div>
@@ -181,14 +181,14 @@ export async function HostCalendarPage({ searchParams }: { searchParams?: Promis
               return <div key={listing.id} className="group/row grid border-b last:border-b-0" style={{ gridTemplateColumns: columns }}>
                 <div className="sticky left-0 z-20 min-w-0 border-r bg-card px-3 py-2.5 group-hover/row:bg-muted" style={{ gridColumn: 1, gridRow: 1 }}>
                   <p className="truncate text-xs font-medium">{listing.title}</p>
-                  <p className="truncate text-[11px] text-muted-foreground">{listing.property?.address?.publicLocationLabel || listing.property?.name}</p>
-                  <p className="mt-0.5 truncate text-[11px] tabular-nums text-muted-foreground">{occupancyKnown ? <><span className="font-medium text-foreground">{Math.round((listingNights / days.length) * 100)}%</span> booked · {listingNights}n</> : 'Bookings unavailable'}{listingHolds ? ` · ${plural(listingHolds, 'hold')}` : ''}</p>
+                  <p className="truncate text-xs text-muted-foreground">{listing.property?.address?.publicLocationLabel || listing.property?.name}</p>
+                  <p className="mt-0.5 truncate text-xs tabular-nums text-muted-foreground">{occupancyKnown ? <><span className="font-medium text-foreground">{Math.round((listingNights / days.length) * 100)}%</span> booked · {listingNights}n</> : 'Bookings unavailable'}{listingHolds ? ` · ${plural(listingHolds, 'hold')}` : ''}</p>
                 </div>
                 {days.map((day, index) => {
                   const weekday = new Date(`${day}T12:00:00Z`).getUTCDay();
                   return <div key={day} aria-hidden="true" className={cn('border-r last:border-r-0 group-hover/row:bg-muted/30', (weekday === 0 || weekday === 6) && 'bg-muted/30', day === listingToday && 'bg-sky-50 dark:bg-sky-950/30')} style={{ gridColumn: `${2 + index * 2} / span 2`, gridRow: 1 }} />;
                 })}
-                {rowIncomplete ? <div className="relative z-0 my-1 flex items-center justify-end bg-[repeating-linear-gradient(135deg,transparent,transparent_6px,hsl(var(--muted))_6px,hsl(var(--muted))_12px)] px-2 text-[11px] text-muted-foreground" style={{ gridColumn: `2 / ${2 + days.length * 2}`, gridRow: 1 }}><span className="rounded bg-card/90 px-1.5 py-0.5">Not all stays and holds are shown · open dates aren’t confirmed free</span></div> : null}
+                {rowIncomplete ? <div className="relative z-0 my-1 flex items-center justify-end bg-[repeating-linear-gradient(135deg,transparent,transparent_6px,hsl(var(--muted))_6px,hsl(var(--muted))_12px)] px-2 text-xs text-muted-foreground" style={{ gridColumn: `2 / ${2 + days.length * 2}`, gridRow: 1 }}><span className="rounded bg-card/90 px-1.5 py-0.5">Not all stays and holds are shown · open dates aren’t confirmed free</span></div> : null}
                 {listingBlocks.map((block: any) => {
                   const segment = segmentFor(block, monthStart, days.length);
                   if (!segment) return null;
@@ -197,7 +197,7 @@ export async function HostCalendarPage({ searchParams }: { searchParams?: Promis
                   const alias = block.listing?.id !== listing.id ? block.listing?.title || 'another listing of this unit' : null;
                   const label = `${block.reason === 'reservation' ? who || 'Reserved' : style.label}${alias ? ` · via ${alias}` : ''}`;
                   const title = `${style.label}${alias ? ` (via ${alias})` : ''} · ${formatDayRange(block.startDate, block.endDate)}${who ? ` · ${who}` : ''}${block.notes ? ` · ${block.notes}` : ''}`;
-                  const classes = cn('relative z-10 my-2 flex min-w-0 items-center overflow-hidden px-2 text-[11px] font-medium shadow-xs transition-colors', style.bar, segment.continuesBefore ? 'rounded-l-none' : 'rounded-l-md', segment.continuesAfter ? 'rounded-r-none' : 'rounded-r-md');
+                  const classes = cn('relative z-10 my-2 flex min-w-0 items-center overflow-hidden px-2 text-xs font-medium shadow-xs transition-colors', style.bar, segment.continuesBefore ? 'rounded-l-none' : 'rounded-l-md', segment.continuesAfter ? 'rounded-r-none' : 'rounded-r-md');
                   const content = <span className="truncate">{label}{segment.nights > 2 && block.reason === 'reservation' ? <span className="font-normal opacity-80"> · {segment.nights}n</span> : null}</span>;
                   const placement = { gridColumn: `${segment.from} / ${segment.to}`, gridRow: 1 };
                   return block.reservation?.id

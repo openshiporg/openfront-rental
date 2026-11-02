@@ -125,7 +125,7 @@ export function StoreSettingsForm({ settings }: { settings: OperatorMarketplaceS
               <LogoPicker value={logoIcon} hue={logoColor} onChange={setLogoIcon} />
             </div>
             <div className="mt-5 border-t pt-4">
-              <div className="flex items-center justify-between gap-4"><span className="text-xs font-medium">Logo color</span><output className="font-mono text-[11px] text-muted-foreground">{logoColor}°</output></div>
+              <div className="flex items-center justify-between gap-4"><span className="text-xs font-medium">Logo color</span><output className="font-mono text-xs text-muted-foreground">{logoColor}°</output></div>
               <input type="range" name="logoColor" min="0" max="359" step="1" value={logoColor} onChange={(event) => setLogoColor(event.target.value)} aria-label="Logo hue rotation" className="mt-3 w-full accent-primary" />
             </div>
           </SettingsGroup>

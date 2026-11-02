@@ -4,6 +4,7 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { PopoverSelect, PopoverTemporalInput } from './PopoverControls';
 
 export const controlClass = 'h-9 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50';
 
@@ -15,12 +16,15 @@ export function Field({ label, hint, optional, children, className }: { label: R
   </label>;
 }
 
-export function TextInput({ className, ...props }: ComponentProps<'input'>) {
-  return <Input className={cn('h-9 px-3 text-sm', className)} {...props} />;
+export function TextInput({ className, type, ...props }: ComponentProps<'input'>) {
+  // Date, month and time fields open a popover instead of the browser's native picker.
+  if (type === 'date' || type === 'month' || type === 'time') return <PopoverTemporalInput type={type as 'date' | 'month' | 'time'} className={className} {...props} />;
+  return <Input type={type} className={cn('h-9 px-3 text-sm', className)} {...props} />;
 }
 
+/** Popover list with the native <select> contract (name, <option> children, required, onChange). */
 export function Select({ className, children, ...props }: ComponentProps<'select'>) {
-  return <select className={cn(controlClass, 'pr-8', className)} {...props}>{children}</select>;
+  return <PopoverSelect className={className} {...props}>{children}</PopoverSelect>;
 }
 
 export function TextArea({ className, ...props }: ComponentProps<'textarea'>) {

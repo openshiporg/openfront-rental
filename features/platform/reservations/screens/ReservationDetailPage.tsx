@@ -415,11 +415,11 @@ export async function ReservationDetailPage({
                     <input type="hidden" name="transition" value={step.transition} />
                     {step.needsAmount ? <div className="w-36"><MoneyInput required name="approvedAmountCents" currencyCode={claim.currencyCode} aria-label="Approved amount" /></div> : null}
                     {step.transition === 'settle' ? <>
-                      <select required name="settlementMethod" aria-label="How it was settled" className="h-9 rounded-md border bg-background px-2 text-sm" defaultValue="">
+                      <div className="w-56"><Select required name="settlementMethod" aria-label="How it was settled" defaultValue="">
                         <option value="" disabled>How was it settled?</option>
                         <option value="deposit_deduction">Deducted from the deposit</option>
                         <option value="guest_payment">Paid by the guest</option>
-                      </select>
+                      </Select></div>
                       <div className="w-44"><TextInput required minLength={3} maxLength={500} name="settlementReference" placeholder="Reference" aria-label="Settlement reference" /></div>
                       <div className="w-40"><TextInput name="receivedOn" type="date" aria-label="Date the guest’s payment was received (guest payments)" /></div>
                       <div className="w-56"><TextInput name="custody" maxLength={300} placeholder="Where the proof is kept (guest payments)" aria-label="Where the proof of the guest’s payment is kept" /></div>

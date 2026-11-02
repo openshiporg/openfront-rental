@@ -51,7 +51,7 @@ export async function ReservationWorkspacePage({ searchParams }: { searchParams?
       const hint = arrivalHint(reservation, propertyToday(operationalTimeZone(reservation)));
       return <div className="flex items-center gap-3">
         <span className="flex w-11 shrink-0 flex-col items-center rounded-lg border bg-background py-1 leading-none shadow-xs">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{formatDay(reservation.checkInDate, { month: 'short' })}</span>
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{formatDay(reservation.checkInDate, { month: 'short' })}</span>
           <span className="mt-0.5 text-base font-semibold tabular-nums">{formatDay(reservation.checkInDate, { day: 'numeric' })}</span>
         </span>
         <span className="hidden min-w-0 sm:block">

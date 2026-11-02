@@ -98,7 +98,7 @@ function TaskCard({ task, members, now, returnTo, canManage }: { task: any; memb
     </div>
     <TaskInstructions task={task} checklist={checklist} listChecklist={!(canManage && task.status === 'in_progress')} />
     <div className="mt-3 flex items-center justify-between gap-2">
-      <span className="flex min-w-0 items-center gap-2 text-xs"><Avatar name={task.assignee?.name} className="size-6 text-[10px]" /><span className={cn('truncate', !task.assignee && toneText.warning)}>{task.assignee?.name || 'Unassigned'}</span></span>
+      <span className="flex min-w-0 items-center gap-2 text-xs"><Avatar name={task.assignee?.name} className="size-6 text-xs" /><span className={cn('truncate', !task.assignee && toneText.warning)}>{task.assignee?.name || 'Unassigned'}</span></span>
       <StatusBadge status={task.status} className="h-5" />
     </div>
     {blocked && task.completionNotes ? <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs leading-5 text-amber-950 [overflow-wrap:anywhere] dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100"><span className="font-medium">Blocked:</span> {task.completionNotes}</p> : null}
@@ -112,7 +112,7 @@ function TaskCard({ task, members, now, returnTo, canManage }: { task: any; memb
       <details className="group/task">
         <summary className="flex cursor-pointer list-none items-center justify-between rounded-md py-1 text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
           {task.status === 'assigned' || blocked ? 'Reassign, block, or cancel' : 'Block or cancel'}
-          <span className="text-[10px] uppercase tracking-wide group-open/task:hidden">Open</span><span className="hidden text-[10px] uppercase tracking-wide group-open/task:inline">Close</span>
+          <span className="text-xs uppercase tracking-wide group-open/task:hidden">Open</span><span className="hidden text-xs uppercase tracking-wide group-open/task:inline">Close</span>
         </summary>
         <div className="mt-2 space-y-3">
           {task.status === 'assigned' || blocked ? <AssignForm task={task} members={members} returnTo={returnTo} label={task.assignee ? 'Reassign' : 'Assign'} /> : null}

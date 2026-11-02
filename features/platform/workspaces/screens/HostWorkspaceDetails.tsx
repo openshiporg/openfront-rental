@@ -893,7 +893,7 @@ export async function ConversationDetailPage({ params, searchParams }: DetailPro
                     <div className={cn('rounded-2xl border px-4 py-2.5 text-sm leading-6 shadow-xs', inbound ? 'rounded-bl-md bg-muted/50' : 'rounded-br-md bg-background', message.status === 'failed' && 'border-rose-300 dark:border-rose-900')}>
                       <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{message.body}</p>
                     </div>
-                    <p className={cn('mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 px-1 text-[11px] text-muted-foreground', !inbound && 'justify-end')}>
+                    <p className={cn('mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 px-1 text-xs text-muted-foreground', !inbound && 'justify-end')}>
                       {inbound ? <ArrowDownLeft aria-hidden="true" className="size-3" /> : <ArrowUpRight aria-hidden="true" className="size-3" />}
                       <span>{sentence(message.senderType)}</span>
                       <span>·</span>
