@@ -117,7 +117,7 @@
 /* ── Header & navigation ────────────────────────────────── */
 .stay-header { position: sticky; top: 0; z-index: 40; background: var(--stay-paper); border-bottom: 1px solid var(--stay-line); box-shadow: 0 1px 0 color-mix(in oklch, var(--stay-line) 60%, transparent); }
 .stay-header-inner { display: flex; align-items: center; gap: 1.25rem; height: var(--stay-header-h); }
-.stay-wordmark { display: inline-flex; align-items: center; gap: .55rem; margin-right: auto; font-family: var(--stay-display); font-size: 1.5rem; font-weight: 500; letter-spacing: -.02em; line-height: 1; text-decoration: none; white-space: nowrap; color: var(--stay-ink); }
+.stay-wordmark { display: inline-flex; align-items: center; gap: .55rem; margin-right: auto; font-family: var(--stay-body); font-size: 1.5rem; font-weight: 750; letter-spacing: -.04em; line-height: 1; text-decoration: none; white-space: nowrap; color: var(--stay-ink); }
 .stay-wordmark-mark { display: block; flex-shrink: 0; width: 1.75rem; height: 1.75rem; overflow: hidden; }
 .stay-wordmark-mark svg { display: block; width: 100%; height: 100%; }
 .stay-desktop-nav { display: flex; align-items: center; gap: .25rem; }
@@ -146,7 +146,7 @@
 .stay-footer a { color: oklch(96% .01 85); text-decoration: none; }
 .stay-footer a:hover { text-decoration: underline; }
 .stay-footer-top { display: grid; grid-template-columns: 1.6fr repeat(3, minmax(0, 1fr)); gap: 2.5rem; }
-.stay-footer-wordmark { display: flex; align-items: center; gap: .6rem; margin: 0 0 .5rem; font-family: var(--stay-display); font-size: clamp(2.25rem, 4vw, 3.25rem); letter-spacing: -.025em; line-height: 1; color: oklch(97% .01 85); }
+.stay-footer-wordmark { display: flex; align-items: center; gap: .6rem; margin: 0 0 .5rem; font-family: var(--stay-body); font-size: clamp(2.25rem, 4vw, 3.25rem); font-weight: 750; letter-spacing: -.04em; line-height: 1; color: oklch(97% .01 85); }
 .stay-footer-brand p:not(.stay-footer-wordmark) { max-width: 32ch; font-size: .92rem; color: oklch(78% .02 var(--stay-brand-hue)); }
 .stay-footer-col { display: grid; align-content: start; gap: .1rem; }
 .stay-footer-col a { display: flex; align-items: center; min-height: 2.25rem; font-size: .92rem; }
