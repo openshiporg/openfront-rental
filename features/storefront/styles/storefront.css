@@ -658,3 +658,32 @@
   .stay-root :is(.stay-panel, .stay-trip-section) { break-inside: avoid; box-shadow: none; }
   .stay-root a { text-decoration: none; }
 }
+
+/* Capella availability elements, composed inside the existing Housekind presentation. */
+.stay-home-availability { margin-block: 3rem; }
+.stay-home-date-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 640px); align-items: center; gap: 3rem; margin-bottom: 2rem; }
+.stay-home-date-picker { background: var(--stay-surface); border: 1px solid var(--stay-line); border-radius: var(--stay-r-lg); padding: 1rem; }
+.stay-home-date-picker > :last-child { padding: .5rem 1rem; border-top: 1px solid var(--stay-line); }
+.stay-home-availability-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .5rem; border-bottom: 1px solid var(--stay-line); padding-bottom: 1rem; }
+.stay-home-availability-head > span { font-size: .75rem; color: var(--stay-muted); }
+.stay-home-availability-row { display: grid; grid-template-columns: minmax(240px, 1.3fr) minmax(0, 1.5fr) minmax(170px, .7fr) 44px; gap: 1.5rem; align-items: center; padding-block: 1rem; border-bottom: 1px solid var(--stay-line); }
+.stay-home-row-info { display: flex; align-items: center; gap: 1rem; text-decoration: none; }
+.stay-home-row-info img { width: 110px; height: 85px; border-radius: var(--stay-r-sm); flex: none; }
+.stay-home-row-info h3 { font-size: 1rem; margin: 0; }
+.stay-home-row-info p, .stay-home-row-price p { font-size: .75rem; color: var(--stay-muted); margin: .15rem 0 0; }
+.stay-home-row-price strong { font-size: .92rem; }
+.stay-home-strip { display: grid; grid-template-columns: repeat(14, minmax(24px, 1fr)); gap: 3px; overflow-x: auto; padding-bottom: .5rem; }
+.stay-home-day { display: grid; gap: 4px; text-align: center; font-size: .75rem; color: var(--stay-muted); }
+.stay-home-day i { display: block; height: 24px; background: var(--stay-paper-2); border-radius: 3px; }
+.stay-home-day.is-selected.is-free i { background: var(--stay-accent); }
+.stay-home-day.is-booked i { background: #999d9a; }
+.stay-home-day.is-unknown i { background: repeating-linear-gradient(45deg, transparent, transparent 3px, var(--stay-line) 3px, var(--stay-line) 4px); }
+@media (max-width: 1000px) {
+ .stay-home-date-head { grid-template-columns: 1fr; gap: 1rem; }
+ .stay-home-date-picker { width: fit-content; max-width: 100%; }
+ .stay-home-availability-row { grid-template-columns: minmax(0, 1fr) 44px; gap: .75rem; }
+ .stay-home-row-info { grid-column: 1; }
+ .stay-home-strip { grid-column: 1 / -1; grid-row: 2; }
+ .stay-home-row-price { grid-column: 1; grid-row: 3; }
+ .stay-home-availability-row > .stay-icon-button { grid-column: 2; grid-row: 1; }
+}

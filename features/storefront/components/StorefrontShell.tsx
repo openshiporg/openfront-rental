@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { CSSProperties, ReactNode } from 'react';
 
 import { StoreLogoMark } from '@/features/platform/store-settings/components/StoreLogoMark';
+import { storeOwnMark } from '../lib/store-mark';
 
 import { StorefrontLocaleProvider } from './StorefrontLocale';
 import { StorefrontNavigation } from './StorefrontNavigation';
@@ -98,7 +99,7 @@ export async function StorefrontShell({
 
   const contactPhone = phoneHref(brand.phone);
   const style: StorefrontStyle = { '--stay-brand-hue': brand.accentHue };
-  const mark = <StoreLogoMark logoIcon={brand.logoIcon} logoColor={brand.logoColor} className="stay-wordmark-mark" />;
+  const mark = <StoreLogoMark logoIcon={storeOwnMark(brand.logoIcon)} logoColor={brand.logoColor} className="stay-wordmark-mark" />;
   return (
     <div className={`stay-root ${storefrontFontClass}`} style={style}>
       <a className="stay-skip-link" href="#stay-main">Skip to content</a>

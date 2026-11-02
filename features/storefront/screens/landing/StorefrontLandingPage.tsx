@@ -2,6 +2,8 @@ import { CalendarCheck, KeyRound, ReceiptText } from 'lucide-react';
 import Link from 'next/link';
 
 import { SearchForm } from '../../components/SearchForm';
+import { HomeAvailability } from '../../components/HomeAvailability';
+import { addDaysIso, globalEarliestCheckInIso } from '../../lib/dates';
 import { StayCard } from '../../components/StayCard';
 import { StayImage as Image } from '../../components/StayImage';
 import { StorefrontShell } from '../../components/StorefrontShell';
@@ -55,6 +57,8 @@ export async function StorefrontLandingPage() {
       <div className="stay-hero-search"><SearchForm variant="hero" /></div>
     </section>
 
+    {results.length ? <HomeAvailability stays={results} initialDay={addDaysIso(globalEarliestCheckInIso(), 7)} /> : null}
+
     <section className="stay-shell stay-section" aria-labelledby="featured-stays">
       <header className="stay-section-head">
         <div>
@@ -78,7 +82,7 @@ export async function StorefrontLandingPage() {
         <header className="stay-section-head">
           <div>
             <p className="stay-overline">Collections</p>
-            <h2 id="home-collections">Start with a <em>feeling</em></h2>
+            <h2 id="home-collections">Explore by <em>collection</em></h2>
           </div>
           <Link className="stay-text-link" href="/collections">All collections</Link>
         </header>
