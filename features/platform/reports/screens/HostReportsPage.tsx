@@ -1,3 +1,4 @@
+import { ViewerTime } from '@/features/dashboard/components/ViewerTime';
 import { ArrowRight, BarChart3, Building2, CalendarCheck2, CircleDollarSign, Gauge, ListChecks, PieChart, RadioTower, TrendingUp, WalletCards } from 'lucide-react';
 import Form from 'next/form';
 import Link from 'next/link';
@@ -213,7 +214,7 @@ export async function HostReportsPage({ searchParams }: { searchParams?: Promise
             { href: '/dashboard/platform/pricing', icon: CircleDollarSign, title: 'Pricing', metric: `${supply ? `${(supply.occupancyBasisPoints / 100).toFixed(1)}%` : '—'} occupied${joinByCurrency(money, 'adrCents') ? ` at ${joinByCurrency(money, 'adrCents')}` : ''}` },
             { href: '/dashboard/platform/payments', icon: BarChart3, title: 'Payments', metric: outstanding ? `${outstanding} open` : 'Nothing open' },
             { href: '/dashboard/platform/payouts', icon: WalletCards, title: 'Owner payouts', metric: joinByCurrency(money, 'payoutCents') ? `${joinByCurrency(money, 'payoutCents')} paid out` : 'No payouts in range' },
-            { href: '/dashboard/platform/channels', icon: RadioTower, title: 'Channels', metric: `${plural(report.channelSyncFailureCount, 'failure')} · last success ${report.lastSuccessfulSyncAt ? new Date(report.lastSuccessfulSyncAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'not in range'}` },
+            { href: '/dashboard/platform/channels', icon: RadioTower, title: 'Channels', metric: <>{plural(report.channelSyncFailureCount, 'failure')} · last success {report.lastSuccessfulSyncAt ? <ViewerTime value={report.lastSuccessfulSyncAt} style="date" /> : 'not in range'}</> },
           ].map((card) => <Link key={card.href} href={card.href} className="group flex min-w-0 flex-col rounded-xl border bg-card p-4 shadow-xs transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <span className="flex items-center justify-between gap-2 text-sm font-semibold"><span className="inline-flex items-center gap-2"><card.icon aria-hidden="true" className="size-4 text-muted-foreground" />{card.title}</span><ArrowRight aria-hidden="true" className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></span>
             <span className="mt-2 text-sm font-medium tabular-nums">{card.metric}</span>
