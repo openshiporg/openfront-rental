@@ -5,7 +5,7 @@
  */
 export function stayPaymentSummary({ testBookings }: { testBookings: boolean; instantBook?: boolean }) {
   if (!testBookings) return 'Payment is arranged directly with the host.';
-  return 'Payment is arranged directly with the host. Want to try card checkout? Choose a test booking at checkout instead: it holds no dates and takes only a Stripe test card, so no real money is charged.';
+  return 'Once your stay is confirmed, pay by card from your trip page, or arrange payment directly with the host.';
 }
 
 export function stayPaymentShort(_options: { testBookings: boolean; instantBook?: boolean }) {
@@ -14,12 +14,12 @@ export function stayPaymentShort(_options: { testBookings: boolean; instantBook?
 
 export function paymentPolicyCopy(testBookings: boolean) {
   return testBookings
-    ? 'Payment for a stay is arranged directly with the host after you reserve; this website doesn’t take real card payments. To try card checkout, you can choose a test booking at checkout: it holds no dates, isn’t a real stay, and is paid only with a Stripe test card, so no real money is charged. Your card details are never stored by this website.'
+    ? 'Once the host confirms your stay, you can pay the balance by card from your trip page, or arrange payment directly with the host. Card payments are processed by Stripe; your card details are never stored by this website.'
     : 'Payment is arranged directly with the host after you reserve; this website doesn’t take card payments.';
 }
 
 export const depositPolicyCopy = 'A security deposit is never charged with the stay. The host arranges its collection and return separately.';
 
 export function refundPolicyCopy(testBookings: boolean) {
-  return `If you cancel from your trip page, it shows what the policy refunds before you confirm. The host returns payments you arranged with them${testBookings ? '; a test booking’s test-card payment is refunded to that test card' : ''}. Your trip page shows each refund’s status until it’s complete.`;
+  return `If you cancel from your trip page, it shows what the policy refunds before you confirm. The host returns payments you arranged with them${testBookings ? '; card payments are refunded to the card you paid with' : ''}. Your trip page shows each refund’s status until it’s complete.`;
 }

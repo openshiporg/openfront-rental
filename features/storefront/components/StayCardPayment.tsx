@@ -45,7 +45,7 @@ function CardForm({ amountCents, currencyCode, tripPath, paymentId, onVerify }: 
     <PaymentElement options={{ layout: 'tabs' }} onReady={() => setReady(true)} onLoadError={() => setError('Card entry could not load. Refresh this page to try again.')} />
     {error ? <p className="stay-alert stay-alert-danger" role="alert">{error}</p> : null}
     <button className="stay-button stay-button-block" disabled={!stripe || !elements || !ready || busy} type="submit">{busy ? 'Paying…' : `Pay ${formatMoney(locale, amountCents, currencyCode)} (test)`}</button>
-    <p className="stay-form-note" role="status">{busy ? 'Keep this page open while we confirm your payment.' : 'Test mode: use a Stripe test card. No real money is charged. Any security deposit is arranged separately with your host.'}</p>
+    <p className="stay-form-note" role="status">{busy ? 'Keep this page open while we confirm your payment.' : 'Card payments are processed securely by Stripe. Any security deposit is arranged separately with your host.'}</p>
   </form>;
 }
 
@@ -101,13 +101,13 @@ export function StayCardPayment({ token, tripPath, amountCents, currencyCode, au
 
   const tenderChanged = session && (session.amountCents !== amountCents || session.currencyCode !== currencyCode);
   return <div className="stay-card-payment" ref={container}>
-    <h3>Pay by card (test mode)</h3>
-    {phase === 'paid' ? <p className="stay-alert stay-alert-ok" role="status">Test payment recorded. No real money was charged.</p> : null}
+    <h3>Pay by card</h3>
+    {phase === 'paid' ? <p className="stay-alert stay-alert-ok" role="status">Payment received. A receipt is on your trip page.</p> : null}
     {phase === 'loading' || phase === 'verifying' ? <p role="status" className="stay-form-note">{phase === 'loading' ? 'Preparing secure card entry…' : 'Confirming your payment…'}</p> : null}
     {error ? <p className="stay-alert stay-alert-danger" role="alert">{error}</p> : null}
     {phase === 'ready' && session && tenderChanged ? <p className="stay-alert" role="status">The amount due changed to {formatMoney(locale, session.amountCents, session.currencyCode)} since this page loaded. Check it before you pay.</p> : null}
     {phase === 'ready' && session && stripe ? <Elements stripe={stripe} options={{ clientSecret: session.clientSecret, appearance: brandAppearance(container.current) }}><CardForm amountCents={session.amountCents} currencyCode={session.currencyCode} tripPath={tripPath} paymentId={session.paymentId} onVerify={verify} /></Elements> : null}
-    {phase === 'idle' ? <button type="button" className="stay-button" onClick={prepare}>Continue to test card payment</button> : null}
+    {phase === 'idle' ? <button type="button" className="stay-button" onClick={prepare}>Continue to card payment</button> : null}
     {phase === 'attention' ? <div className="stay-form-grid">
       {lastPayment.current ? <button type="button" className="stay-button" onClick={() => verify(lastPayment.current)}>Check payment again</button> : null}
       <button type="button" className="stay-button stay-button-quiet" onClick={prepare}>{lastPayment.current ? 'Return to card entry' : 'Try card payment again'}</button>

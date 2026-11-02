@@ -22,6 +22,9 @@ export type PaymentEvidence = {
 /** Stripe tender in this store is always TEST money (the adapter refuses live mode). */
 export function isTestTender(payment: { provider?: string | null; data?: unknown }) {
   const data = payment.data && typeof payment.data === 'object' ? payment.data as Record<string, unknown> : {};
+  // Card payments taken for a confirmed stay carry mode 'card' and settle that stay; older
+  // Stripe rows recorded before modes existed were test-booking tender.
+  if (data.mode === 'card') return false;
   return payment.provider === 'pp_stripe_stripe' || data.mode === 'test';
 }
 

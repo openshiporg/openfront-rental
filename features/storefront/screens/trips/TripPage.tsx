@@ -91,8 +91,8 @@ export async function TripPage({ params, searchParams }: { params: Promise<{ tok
   const stopped = cancelled || trip.status === 'no_show';
   const canCancel = ['pending', 'confirmed'].includes(trip.status);
   const canChange = ['pending', 'confirmed', 'in_stay'].includes(trip.status);
-  // Card tender is Stripe TEST money and only offered for test bookings.
-  const cardEnabled = stripeCheckoutEnabled() && trip.testMode === true;
+  // Card payment is offered on every confirmed stay once the host's Stripe provider is set up.
+  const cardEnabled = stripeCheckoutEnabled();
   const statusCopy: Record<string, string> = {
     pending: 'Your request is awaiting host approval. Nothing is charged until they confirm.',
     confirmed: 'Your reservation is confirmed. Payment and arrival details are below.',
@@ -115,7 +115,7 @@ export async function TripPage({ params, searchParams }: { params: Promise<{ tok
   const topic = single(query.topic);
 
   const paymentBody = trip.paymentStatus === 'paid'
-    ? trip.testMode ? 'Paid in test mode; no real money was charged. Any security deposit is separate.' : 'Your stay payment is received. Any security deposit is separate.'
+    ? 'Your stay payment is received. Any security deposit is separate.'
     : cancelled
       ? refundDue > 0 ? `This stay is cancelled. ${formatMoney(locale, refundDue, trip.currencyCode)} is owed back to you.` : 'This stay is cancelled. Nothing more is due.'
       : trip.status === 'pending'
@@ -123,7 +123,7 @@ export async function TripPage({ params, searchParams }: { params: Promise<{ tok
         : trip.status === 'no_show'
           ? 'Message your host about any remaining balance.'
           : cardEnabled && balance > 0 && trip.status === 'confirmed'
-            ? 'Pay with a Stripe test card below (test mode, no real money), or arrange payment directly with your host. Any security deposit is separate.'
+            ? 'Pay by card below, or arrange payment directly with your host. Any security deposit is separate.'
             : 'Payment is arranged directly with the host. Any security deposit is separate.';
 
   const steps: Step[] = [
@@ -175,7 +175,7 @@ export async function TripPage({ params, searchParams }: { params: Promise<{ tok
       {query.receipt ? <div className="stay-alert stay-alert-ok" role="status"><Check size={16} aria-hidden="true" /><p>This is the booking you already made from that quote. No second booking was made.</p></div> : null}
       {query.recovered ? <div className="stay-alert stay-alert-ok" role="status"><Check size={16} aria-hidden="true" /><p>Here’s your trip with a fresh private link. Save this page’s link; older links no longer work.</p></div> : null}
       {query.saved ? <div className="stay-alert stay-alert-ok" role="status"><Check size={16} aria-hidden="true" /><p>This trip is saved to your account.</p></div> : null}
-      {query.paid && trip.paymentStatus === 'paid' ? <div className="stay-alert stay-alert-ok" role="status"><Check size={16} aria-hidden="true" /><p>{trip.testMode ? 'Test payment recorded; no real money was charged.' : 'Payment received.'} Your reservation is paid and {formatType(trip.status).toLowerCase()}.</p></div> : null}
+      {query.paid && trip.paymentStatus === 'paid' ? <div className="stay-alert stay-alert-ok" role="status"><Check size={16} aria-hidden="true" /><p>Payment received. Your reservation is paid and {formatType(trip.status).toLowerCase()}.</p></div> : null}
       {query.signed && signed ? <div className="stay-alert stay-alert-ok" role="status"><FileSignature size={16} aria-hidden="true" /><p>Your agreement signature is on record.</p></div> : null}
       {query.cancelled && cancelled ? <div className="stay-alert stay-alert-warn" role="status"><X size={16} aria-hidden="true" /><p>Your reservation is cancelled.{refundDue > 0 ? ` ${formatMoney(locale, refundDue, trip.currencyCode)} is recorded as owed back to you; the host issues the refund.` : ''}</p></div> : null}
       {query.sent ? <div className="stay-alert stay-alert-ok" role="status"><MessageSquare size={16} aria-hidden="true" /><p>Message delivered to your host’s inbox. Replies appear in Messages below.</p></div> : null}

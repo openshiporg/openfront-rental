@@ -1,3 +1,4 @@
+import { stripeCheckoutEnabled } from '@/features/integrations/payment/stripe';
 import { Bath, Bed, BedDouble, CircleCheck, CircleSlash, Clock, Columns3, DoorOpen, MapPin, MessageSquare, Moon, Ruler, ShieldCheck, Star, Undo2, Users, Wallet, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -57,7 +58,7 @@ export async function StayDetailPage({ params, searchParams }: { params: Promise
     noticeHours: arrivalRules.advanceNoticeHours,
     windowDays: arrivalRules.bookingWindowDays,
   };
-  const paymentSummary = stayPaymentSummary({ testBookings: settings.status === 'published' && settings.testBookingsAvailable === true, instantBook: Boolean(stay.instantBook) });
+  const paymentSummary = stayPaymentSummary({ testBookings: stripeCheckoutEnabled(), instantBook: Boolean(stay.instantBook) });
   const messageHostHref = `/help?stay=${encodeURIComponent(stay.slug)}#message-host`;
   const amenityGroups = Object.entries((stay.amenities || []).reduce<Record<string, any[]>>((groups, amenity) => {
     const key = amenity.category || 'other';

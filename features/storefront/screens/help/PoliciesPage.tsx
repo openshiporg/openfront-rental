@@ -1,3 +1,4 @@
+import { stripeCheckoutEnabled } from '@/features/integrations/payment/stripe';
 import Link from 'next/link';
 
 import { SectionNav } from '../../components/Journey';
@@ -13,7 +14,7 @@ export async function PoliciesPage() {
   const settings = await getPublicMarketplaceSettings();
   const legal = settings.status === 'published' ? settings : null;
   const documents = legalDocuments(legal);
-  const cardEnabled = legal?.testBookingsAvailable === true;
+  const cardEnabled = stripeCheckoutEnabled();
   const brand = resolveStorefrontBrand(settings);
   return <StorefrontShell activeNav="help"><main id="stay-main" className="stay-shell">
     <header className="stay-page-head">

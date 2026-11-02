@@ -1,3 +1,4 @@
+import { stripeCheckoutEnabled } from '@/features/integrations/payment/stripe';
 import { FileSignature, HandCoins, ScrollText, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -32,7 +33,7 @@ export async function StayCheckoutPage({ params }: { params: Promise<{ quoteToke
   const settings = await getPublicMarketplaceSettings();
   const legal = settings.status === 'published' ? settings : null;
   const documents = legalDocuments(legal);
-  const testBookings = legal?.testBookingsAvailable === true;
+  const cardPayments = stripeCheckoutEnabled();
   const listing = quote.listing || {};
   const property = listing.property || {};
   const query = searchQuery({ checkIn: quote.checkInDate, checkOut: quote.checkOutDate, adults: String(quote.adults), children: String(quote.children || 0), infants: String(quote.infants || 0), pets: String(quote.pets || 0) });
@@ -44,9 +45,8 @@ export async function StayCheckoutPage({ params }: { params: Promise<{ quoteToke
   const signInHref = `/account/sign-in?next=${encodeURIComponent(`/checkout/${quoteToken}`)}`;
   const paymentTitle = instant ? 'Payment arranged with the host' : 'No charge until the host confirms';
   const paymentBody = (instant
-    ? 'Your reservation starts unpaid. Agree the payment method and timing with your host after confirmation. Any security deposit is separate.'
-    : 'Nothing is charged while the host reviews your request. Once they confirm, agree the payment method and timing with them. Any security deposit is separate.')
-    + (testBookings ? ' Want to try card checkout instead? Choose a test booking below: it holds no dates and takes no real money.' : '');
+    ? (cardPayments ? 'Your reservation is confirmed right away. Pay the balance by card from your trip page, or agree payment with your host. Any security deposit is separate.' : 'Your reservation starts unpaid. Agree the payment method and timing with your host after confirmation. Any security deposit is separate.')
+    : (cardPayments ? 'Nothing is charged while the host reviews your request. Once they confirm, pay by card from your trip page or agree payment with them. Any security deposit is separate.' : 'Nothing is charged while the host reviews your request. Once they confirm, agree the payment method and timing with them. Any security deposit is separate.'));
   // This browser's saved key for the quote, or a new one: resubmitting or reloading after a
   // lost response returns the same booking.
   const receiptKey = await checkoutReceiptKeyFor(quoteToken);
@@ -88,7 +88,7 @@ export async function StayCheckoutPage({ params }: { params: Promise<{ quoteToke
 
         <section className="stay-panel" aria-labelledby="guest-details">
           <h2 id="guest-details"><span className="stay-panel-num">3</span>Who’s coming?</h2>
-          <GuestBookingForm token={quoteToken} termsVersion={quote.termsVersion || ''} receiptKey={receiptKey} expiresAt={quote.expiresAt} instantBook={instant} editHref={editHref} testBookings={testBookings} termsOfUse={documents.termsOfUse} privacyPolicy={documents.privacyPolicy} account={account ? { name: account.name, email: account.email } : null} signInHref={signInHref} />
+          <GuestBookingForm token={quoteToken} termsVersion={quote.termsVersion || ''} receiptKey={receiptKey} expiresAt={quote.expiresAt} instantBook={instant} editHref={editHref} testBookings={false} termsOfUse={documents.termsOfUse} privacyPolicy={documents.privacyPolicy} account={account ? { name: account.name, email: account.email } : null} signInHref={signInHref} />
         </section>
       </div>
 

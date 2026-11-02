@@ -62,7 +62,6 @@ async function reserveAttempt(context: any, tripToken: string, reservationId: st
   return context.prisma.$transaction(async (tx: any) => {
     const locked = await lockedReservation(tx, tripToken, reservationId);
     if (!locked.hostOrganizationId || locked.status !== 'confirmed') throw new Error('Your stay must be confirmed before paying by card.');
-    if (locked.testMode !== true) throw new Error('Card payment is only available for test bookings. Arrange payment with your host.');
     const [payments, refunds] = await Promise.all([
       tx.payment.findMany({ where: { reservationId: locked.id } }),
       tx.refund.findMany({ where: { reservationId: locked.id } }),
@@ -94,7 +93,7 @@ async function reserveAttempt(context: any, tripToken: string, reservationId: st
       status: 'pending', paymentMethod: 'card', provider: STRIPE_PROVIDER_CODE,
       providerPaymentId: `reserved:${idempotencyKey}`, idempotencyKey,
       // The provider configuration this attempt is made under, frozen (nonsecret).
-      data: { source: 'openfront-rental', mode: 'test', lineage: providerLineage(provider) },
+      data: { source: 'openfront-rental', mode: locked.testMode === true ? 'test' : 'card', lineage: providerLineage(provider) },
     } });
     return { payment, stale: false, claim: await claimAttempt(tx, payment.id, 'guest_checkout') };
   }, transactionOptions);

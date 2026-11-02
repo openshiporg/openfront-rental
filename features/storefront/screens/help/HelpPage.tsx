@@ -1,3 +1,4 @@
+import { stripeCheckoutEnabled } from '@/features/integrations/payment/stripe';
 import { Building2, Clock, Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,7 +27,7 @@ export async function HelpPage({ searchParams }: { searchParams?: Promise<Search
   const lookup = staySlug && /^[a-z0-9-]+$/.test(staySlug) ? await getPublicStay(staySlug) : null;
   const stay = lookup?.stay || null;
   const stayState: 'none' | 'found' | 'unavailable' | 'error' = !staySlug ? 'none' : stay ? 'found' : lookup?.error ? 'error' : 'unavailable';
-  const cardEnabled = published?.testBookingsAvailable === true;
+  const cardEnabled = stripeCheckoutEnabled();
 
   return <StorefrontShell servicing activeNav="help"><main id="stay-main" className="stay-shell">
     <header className="stay-page-head">
