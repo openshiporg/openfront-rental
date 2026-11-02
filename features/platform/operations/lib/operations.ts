@@ -1,3 +1,5 @@
+import { createElement, type ReactNode } from 'react';
+import { ViewerTime } from '@/features/dashboard/components/ViewerTime';
 import { safeMinorUnitDigits } from './currency-units';
 
 export type OperationalTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
@@ -62,15 +64,9 @@ const timestampOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'num
  * An instant shown in an explicit zone with its label ("Oct 20, 3:15 PM PDT"): the property's
  * zone for stay records, UTC when no zone applies. Never the server's own zone.
  */
-export function formatTimestamp(value?: string | null, timeZone?: string | null) {
+export function formatTimestamp(value?: string | null, timeZone?: string | null): ReactNode {
   if (!value) return 'Not recorded';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Not recorded';
-  try {
-    return new Intl.DateTimeFormat(PLATFORM_LOCALE, { ...timestampOptions, timeZone: timeZone || 'UTC' }).format(date);
-  } catch {
-    return new Intl.DateTimeFormat(PLATFORM_LOCALE, { ...timestampOptions, timeZone: 'UTC' }).format(date);
-  }
+  return createElement(ViewerTime, { value, style: 'datetime', timeZone: timeZone || undefined, fallback: 'Not recorded' });
 }
 
 /** Date-only values (YYYY-MM-DD) are rendered at UTC noon so they never shift a day. */

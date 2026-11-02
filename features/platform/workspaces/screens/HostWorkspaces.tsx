@@ -310,7 +310,7 @@ function signingLink(agreement: any, now: number) {
   if (agreement.signingTokenRevokedAt) return { label: 'Revoked', tone: 'neutral' as const };
   if (!agreement.signingTokenExpiresAt) return { label: 'Not issued', tone: 'neutral' as const };
   if (new Date(agreement.signingTokenExpiresAt).getTime() < now) return { label: 'Expired', tone: 'danger' as const };
-  return { label: `Expires ${formatTimestamp(agreement.signingTokenExpiresAt)}`, tone: 'info' as const };
+  return { label: <>Expires {formatTimestamp(agreement.signingTokenExpiresAt)}</>, tone: 'info' as const };
 }
 
 export async function AgreementLifecycleWorkspace({ searchParams }: ListProps = {}) {
@@ -567,7 +567,7 @@ export async function PaymentLifecycleWorkspace({ searchParams }: ListProps = {}
         ? <SubLine className={isRealTender(payment.tenderKind) ? undefined : toneText.warning}>{tenderLabel(payment.tenderKind, payment.reservation)}</SubLine> : null}
       {payment.errorMessage ? <SubLine className={toneText.danger}>{payment.errorMessage}</SubLine> : null}
       {refundCell(payment) ? <SubLine mobileOnly="md">{refundCell(payment)}</SubLine> : null}
-      <SubLine mobileOnly="lg">{sentence(payment.paymentMethod)} · {payment.paymentProvider?.name || payment.provider || 'Manual'}{payment.processedAt ? ` · ${formatTimestamp(payment.processedAt)}` : ''}</SubLine>
+      <SubLine mobileOnly="lg">{sentence(payment.paymentMethod)} · {payment.paymentProvider?.name || payment.provider || 'Manual'}{payment.processedAt ? <> · {formatTimestamp(payment.processedAt)}</> : ''}</SubLine>
     </div> },
     { id: 'amount', header: 'Amount', align: 'right', cell: (payment) => <span className="font-medium">{formatMoney(payment.amountCents, payment.currencyCode)}</span> },
     { id: 'refunded', header: 'Refunds', align: 'right', hideBelow: 'md', cell: (payment) => {

@@ -92,7 +92,7 @@ function TaskCard({ task, members, now, returnTo, canManage }: { task: any; memb
     <p className="mt-0.5 truncate text-xs text-muted-foreground">{task.property?.name || 'Property'}{task.listing?.title ? ` · ${task.listing.title}` : ''}</p>
     <div className="mt-2.5 flex flex-wrap gap-1.5">
       <Pill>{taskTypeLabels[task.taskType] || sentence(task.taskType)}</Pill>
-      <Pill tone={overdue ? 'danger' : undefined}><Clock3 aria-hidden="true" className="size-3" />{task.dueAt ? `${overdue ? 'Overdue · ' : ''}${formatTimestamp(task.dueAt, task.property?.timezone)}` : 'No due time'}</Pill>
+      <Pill tone={overdue ? 'danger' : undefined}><Clock3 aria-hidden="true" className="size-3" />{task.dueAt ? <>{overdue ? 'Overdue · ' : ''}{formatTimestamp(task.dueAt, task.property?.timezone)}</> : 'No due time'}</Pill>
       {task.reservation ? <Pill title={task.reservation.guest?.name || undefined}>{task.reservation.confirmationCode}</Pill> : null}
       {stayClosed ? <Pill tone="warning">Stay {sentence(task.reservation.status).toLowerCase()}</Pill> : null}
     </div>

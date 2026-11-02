@@ -67,7 +67,7 @@ export function TodayOverview({ overview }: { overview: Awaited<ReturnType<typeo
       id: `task-${task.id}`,
       href: DUE_TASKS,
       title: `${task.title} · ${task.property?.name || 'Property'}`,
-      meta: `${sentence(task.status)} · due ${task.dueAt ? formatTimestamp(task.dueAt, task.property?.timezone) : 'soon'}${task.assignee?.name ? ` · ${task.assignee.name}` : ' · unassigned'}`,
+      meta: <>{sentence(task.status)} · due {task.dueAt ? formatTimestamp(task.dueAt, task.property?.timezone) : 'soon'}{task.assignee?.name ? ` · ${task.assignee.name}` : ' · unassigned'}</>,
     })),
     ...awaitingReply.map((conversation: any) => ({
       id: `conversation-${conversation.id}`,

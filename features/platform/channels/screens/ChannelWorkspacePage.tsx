@@ -243,7 +243,7 @@ export async function ChannelWorkspacePage({ searchParams }: { searchParams?: Pl
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold">{connection.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{providerLabels[connection.provider] || sentence(connection.provider)} · {sentence(connection.connectionType)} · {connection.lastSyncedAt ? `synced ${formatTimestamp(connection.lastSyncedAt)}` : 'not synced yet'}{hostCount > 1 && connection.hostOrganization?.name ? ` · ${connection.hostOrganization.name}` : ''}</p>
+                  <p className="truncate text-xs text-muted-foreground">{providerLabels[connection.provider] || sentence(connection.provider)} · {sentence(connection.connectionType)} · {connection.lastSyncedAt ? <>synced {formatTimestamp(connection.lastSyncedAt)}</> : 'not synced yet'}{hostCount > 1 && connection.hostOrganization?.name ? ` · ${connection.hostOrganization.name}` : ''}</p>
                 </div>
                 <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
                   {adapter ? null : <Pill tone="warning">Adapter not installed</Pill>}

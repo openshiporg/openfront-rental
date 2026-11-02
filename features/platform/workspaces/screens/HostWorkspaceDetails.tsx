@@ -203,7 +203,7 @@ export async function PropertyDetailPage({ params, searchParams }: DetailProps) 
   };
 
   const attention: AttentionItem[] = [
-    ...(property.maintenanceTasks || []).map((task: any) => ({ id: `task-${task.id}`, title: task.title, detail: `${sentence(task.status)} · due ${formatTimestamp(task.dueAt)}`, href: '/dashboard/platform/tasks', actionLabel: 'Tasks', tone: task.priority === 'urgent' ? 'danger' as const : 'warning' as const })),
+    ...(property.maintenanceTasks || []).map((task: any) => ({ id: `task-${task.id}`, title: task.title, detail: <>{sentence(task.status)} · due {formatTimestamp(task.dueAt)}</>, href: '/dashboard/platform/tasks', actionLabel: 'Tasks', tone: task.priority === 'urgent' ? 'danger' as const : 'warning' as const })),
     { id: 'safety', title: 'Safety evidence', detail: 'There’s no safety-attestation record here. Tasks can schedule inspections, but completing one isn’t regulatory proof.', external: true },
     ...(property.ownerAssignmentsCount ? [] : [{ id: 'owner', title: 'No owner assigned', detail: 'No owner assignment is recorded for this property.', href: `/dashboard/platform/payouts?assignProperty=${encodeURIComponent(property.id)}#add-assignment`, actionLabel: 'Add assignment', tone: 'warning' as const }]),
   ];
@@ -486,7 +486,7 @@ export async function ListingDetailPage({ params, searchParams }: DetailProps) {
                 items={listing.channelListings.map((mapping: any) => ({
                   id: mapping.id,
                   title: mapping.channelConnection?.name || 'Channel',
-                  meta: mapping.channelConnection?.lastError ? <span className={toneText.danger}>{mapping.channelConnection.lastError}</span> : `${mapping.channelConnection?.provider || 'provider'} · ${mapping.externalListingId || 'no external id'} · connection ${sentence(mapping.channelConnection?.status).toLowerCase()} · synced ${formatTimestamp(mapping.channelConnection?.lastSyncedAt)}`,
+                  meta: mapping.channelConnection?.lastError ? <span className={toneText.danger}>{mapping.channelConnection.lastError}</span> : <>{mapping.channelConnection?.provider || 'provider'} · {mapping.externalListingId || 'no external id'} · connection {sentence(mapping.channelConnection?.status).toLowerCase()} · synced {formatTimestamp(mapping.channelConnection?.lastSyncedAt)}</>,
                   trailing: <StatusBadge status={mapping.status} tone={mapping.channelConnection?.lastError ? 'danger' : mappingOperational(mapping) ? 'success' : mappingHealth(mapping.status) === 'pending' ? 'warning' : 'danger'} />,
                 }))}
               />
@@ -513,7 +513,7 @@ export async function ListingDetailPage({ params, searchParams }: DetailProps) {
               empty="Channels are healthy and no work is open."
               items={[
                 ...channelExceptions.map((mapping: any) => ({ id: mapping.id, title: mapping.channelConnection?.name || 'Channel mapping', detail: mapping.channelConnection?.lastError || (mappingHealth(mapping.status) === 'healthy' ? `Connection ${sentence(mapping.channelConnection?.status).toLowerCase()}` : `${sentence(mapping.status)} mapping`), href: '/dashboard/platform/channels', actionLabel: 'Channels', tone: !mapping.channelConnection?.lastError && mappingHealth(mapping.status) === 'pending' ? 'warning' as const : 'danger' as const })),
-                ...openTasks.map((task: any) => ({ id: task.id, title: task.title, detail: `${sentence(task.taskType)} · due ${formatTimestamp(task.dueAt)}`, href: '/dashboard/platform/tasks', actionLabel: 'Tasks', tone: isPast(task.dueAt) ? 'danger' as const : 'warning' as const })),
+                ...openTasks.map((task: any) => ({ id: task.id, title: task.title, detail: <>{sentence(task.taskType)} · due {formatTimestamp(task.dueAt)}</>, href: '/dashboard/platform/tasks', actionLabel: 'Tasks', tone: isPast(task.dueAt) ? 'danger' as const : 'warning' as const })),
               ]}
             />
           </Section>
@@ -592,7 +592,7 @@ export async function GuestDetailPage({ params }: DetailProps) {
             <Section title="Payments" icon={Banknote} count={guest.paymentsCount || 0} description={previewLabel(guest.payments.length, guest.paymentsCount || 0)} action={(guest.paymentsCount || 0) > guest.payments.length ? <Button asChild size="sm" variant="ghost"><Link href={searchPath('/dashboard/platform/payments', guest.name)}>Search payments</Link></Button> : undefined} flush>
               <LinkRows
                 empty="No payments recorded."
-                items={guest.payments.map((payment: any) => ({ id: payment.id, href: platformDetailPath('payment', payment.id), title: formatMoney(payment.amountCents, payment.currencyCode), meta: `${payment.reservation?.confirmationCode || 'Unlinked'} · ${payment.provider || 'manual'} · ${formatTimestamp(payment.processedAt)}`, trailing: <StatusBadge status={payment.status} /> }))}
+                items={guest.payments.map((payment: any) => ({ id: payment.id, href: platformDetailPath('payment', payment.id), title: formatMoney(payment.amountCents, payment.currencyCode), meta: <>{payment.reservation?.confirmationCode || 'Unlinked'} · {payment.provider || 'manual'} · {formatTimestamp(payment.processedAt)}</>, trailing: <StatusBadge status={payment.status} /> }))}
               />
             </Section>
           </TwoColumn>
@@ -681,8 +681,8 @@ export async function AgreementDetailPage({ params, searchParams }: DetailProps)
       {agreement.status === 'signed' && stayClosed ? <Callout tone="warning" icon={AlertTriangle} title="Signed for a stay that didn’t go ahead">The stay is {sentence(reservation.status).toLowerCase()}. Review whether this agreement should stay in force; the signature stays on record either way.</Callout> : null}
       {signature.kind !== 'guest' && agreement.status === 'signed' ? <Callout tone={signature.kind === 'unknown' ? 'warning' : 'info'} icon={AlertTriangle} title={signature.title}>{signature.detail}</Callout> : null}
       <StatTiles items={[
-        { label: 'Agreement', value: sentence(agreement.status), hint: agreement.signedAt ? `signed ${formatTimestamp(agreement.signedAt)}` : 'not signed yet', tone: operationalTone(agreement.status), icon: FileCheck2 },
-        { label: 'Signing link', value: linkState, hint: agreement.signingTokenExpiresAt ? `expiry ${formatTimestamp(agreement.signingTokenExpiresAt)}` : 'no link issued', tone: linkTone, icon: KeyRound },
+        { label: 'Agreement', value: sentence(agreement.status), hint: agreement.signedAt ? <>signed {formatTimestamp(agreement.signedAt)}</> : 'not signed yet', tone: operationalTone(agreement.status), icon: FileCheck2 },
+        { label: 'Signing link', value: linkState, hint: agreement.signingTokenExpiresAt ? <>expiry {formatTimestamp(agreement.signingTokenExpiresAt)}</> : 'no link issued', tone: linkTone, icon: KeyRound },
         { label: 'Stay', value: reservation ? sentence(reservation.status) : 'Not linked', hint: reservation ? formatDayRange(reservation.checkInDate, reservation.checkOutDate) : undefined, icon: CalendarDays },
         { label: 'Guest verification', value: sentence(agreement.guest?.verificationStatus), hint: agreement.guest?.name || agreement.signerEmail, tone: operationalTone(agreement.guest?.verificationStatus), icon: ShieldCheck },
       ]} />
@@ -1064,7 +1064,7 @@ export async function PaymentDetailPage({ params, searchParams }: DetailProps) {
               <LinkRows empty="No deposit on this payment." items={payment.securityDeposits.map((deposit: any) => ({ id: deposit.id, title: deposit.depositNumber, meta: `${formatMoney(deposit.capturedAmountCents, deposit.currencyCode)} captured of ${formatMoney(deposit.amountCents, deposit.currencyCode)}`, trailing: <StatusBadge status={deposit.status} /> }))} />
             </Section>
             <Section title="Webhook events" icon={Webhook} count={payment.webhookEventsCount || 0} description={previewLabel(payment.webhookEvents.length, payment.webhookEventsCount || 0)} flush>
-              <LinkRows empty="No provider events received." items={payment.webhookEvents.map((event: any) => ({ id: event.id, title: <span className="font-mono text-xs">{event.eventType}</span>, meta: event.errorMessage ? <span className={toneText.danger}>{event.errorMessage}</span> : `${formatTimestamp(event.receivedAt)} · ${event.providerEventId}`, trailing: <StatusBadge status={event.status} /> }))} />
+              <LinkRows empty="No provider events received." items={payment.webhookEvents.map((event: any) => ({ id: event.id, title: <span className="font-mono text-xs">{event.eventType}</span>, meta: event.errorMessage ? <span className={toneText.danger}>{event.errorMessage}</span> : <>{formatTimestamp(event.receivedAt)} · {event.providerEventId}</>, trailing: <StatusBadge status={event.status} /> }))} />
             </Section>
           </TwoColumn>
         </>}
@@ -1132,7 +1132,7 @@ export async function PayoutDetailPage({ params }: DetailProps) {
         { label: 'Gross', value: money(payout.grossAmountCents), hint: 'stay revenue allocated', icon: CircleDollarSign },
         { label: 'Fees', value: money(payout.platformFeeCents + payout.managerFeeCents), hint: 'platform + manager', icon: ReceiptText },
         { label: 'Refunds', value: money(payout.refundAmountCents), hint: 'allocated to this payout', icon: ReceiptText },
-        { label: 'Net payout', value: money(payout.netAmountCents), hint: payout.paidAt ? `paid ${formatTimestamp(payout.paidAt)}` : 'not paid yet', tone: operationalTone(payout.status), icon: WalletCards },
+        { label: 'Net payout', value: money(payout.netAmountCents), hint: payout.paidAt ? <>paid {formatTimestamp(payout.paidAt)}</> : 'not paid yet', tone: operationalTone(payout.status), icon: WalletCards },
       ]} />
       <DetailGrid
         main={<>

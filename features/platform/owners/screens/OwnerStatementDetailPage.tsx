@@ -142,7 +142,7 @@ export async function OwnerStatementDetailPage({ params, searchParams }: { param
         { label: 'Gross revenue', value: money(statement.grossRevenueCents), hint: 'owner share, before commission', icon: ReceiptText },
         { label: 'Commission', value: signed(-(statement.managerCommissionCents ?? 0)), icon: Scale },
         { label: 'Owner earnings', value: money(statement.ownerEarningsCents), icon: FileText },
-        { label: 'Balance due', value: money(statement.balanceDueCents), hint: statement.paidAt ? `paid ${formatTimestamp(statement.paidAt)}` : 'not proof of transfer', tone: statement.balanceDueCents > 0 ? 'warning' : 'success', icon: WalletCards },
+        { label: 'Balance due', value: money(statement.balanceDueCents), hint: statement.paidAt ? <>paid {formatTimestamp(statement.paidAt)}</> : 'not proof of transfer', tone: statement.balanceDueCents > 0 ? 'warning' : 'success', icon: WalletCards },
       ]} />
       <DetailGrid
         main={<Section title="Lines" icon={ListTree} count={statement.linesCount ?? lines.length} flush
@@ -178,7 +178,7 @@ export async function OwnerStatementDetailPage({ params, searchParams }: { param
               id: payout.id,
               href: platformDetailPath('payout', payout.id),
               title: `${payout.payoutNumber} · ${formatMoney(payout.netAmountCents, payout.currencyCode)}`,
-              meta: [payout.paidAt ? `Paid ${formatTimestamp(payout.paidAt)}` : sentence(payout.status), payout.providerPayoutId ? payout.providerPayoutId : record(payout.data).kind === 'operator_attestation' ? `Recorded by operator${record(payout.data).reference ? ` · ${record(payout.data).reference}` : ''}` : null].filter(Boolean).join(' · '),
+              meta: [payout.paidAt ? <>Paid {formatTimestamp(payout.paidAt)}</> : sentence(payout.status), payout.providerPayoutId ? payout.providerPayoutId : record(payout.data).kind === 'operator_attestation' ? `Recorded by operator${record(payout.data).reference ? ` · ${record(payout.data).reference}` : ''}` : null].filter(Boolean).join(' · '),
             }))} />
           </Section>
           {detail.revisionsCount > 1 || supersedes.id ? <Section title="Revisions" icon={History} count={detail.revisionsCount} description={detail.revisionsCount > detail.revisions.length ? `Newest ${detail.revisions.length} of ${detail.revisionsCount}.` : undefined} flush>
@@ -186,7 +186,7 @@ export async function OwnerStatementDetailPage({ params, searchParams }: { param
               id: item.id,
               href: item.id === statement.id ? undefined : statementPath(item.id),
               title: item.statementNumber,
-              meta: `Generated ${formatTimestamp(item.generatedAt)}`,
+              meta: <>Generated {formatTimestamp(item.generatedAt)}</>,
               trailing: <StatusBadge status={item.status} />,
             }))} />
           </Section> : null}

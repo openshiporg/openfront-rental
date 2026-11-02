@@ -100,7 +100,7 @@ const claimSteps: Record<string, Array<{ transition: string; label: string; need
 
 function RefundSummary({ refund, timeZone }: { refund: any; timeZone: string | null }) {
   return <div className="flex flex-wrap items-start justify-between gap-2">
-    <div className="min-w-0"><p className="text-sm font-medium">{formatMoney(refund.amountCents, refund.currencyCode)} · {sentence(refund.reason)}</p><SubLine>{refund.refundNumber}{refund.processedAt ? ` · ${formatTimestamp(refund.processedAt, timeZone)}` : ''}{refund.providerRefundId ? ` · ${refund.providerRefundId}` : ''}</SubLine></div>
+    <div className="min-w-0"><p className="text-sm font-medium">{formatMoney(refund.amountCents, refund.currencyCode)} · {sentence(refund.reason)}</p><SubLine>{refund.refundNumber}{refund.processedAt ? <> · {formatTimestamp(refund.processedAt, timeZone)}</> : ''}{refund.providerRefundId ? ` · ${refund.providerRefundId}` : ''}</SubLine></div>
     <StatusBadge status={refund.status} tone={refund.status === 'review' ? 'warning' : undefined} label={refund.status === 'succeeded' ? (refund.payment?.provider === CARD_PROVIDER ? 'Refunded' : 'Recorded') : refund.status === 'cancelled' ? 'Declined' : refund.status === 'review' ? 'To assess · up to this amount' : undefined} />
   </div>;
 }
@@ -229,7 +229,7 @@ export async function ReservationDetailPage({
       {!capabilities.known
         ? <Callout tone="warning" title="Actions are unavailable right now">Your permissions couldn’t be checked. Refresh to try again.</Callout>
         : !canManage && !canPay ? <Callout tone="neutral" icon={Lock} title="Read-only access">Reservation or payment management permission is required to change this stay.</Callout> : null}
-      {reservation.status === 'cancelled' ? <Callout tone="danger" title={`Cancelled${reservation.cancelledAt ? ` ${formatTimestamp(reservation.cancelledAt, timeZone)}` : ''}`}>{reservation.cancellationReason || 'No cancellation reason recorded.'}{reservation.cancelledBy ? ` · by ${sentence(reservation.cancelledBy).toLowerCase()}` : ''}</Callout> : null}
+      {reservation.status === 'cancelled' ? <Callout tone="danger" title={<>Cancelled{reservation.cancelledAt ? <> {formatTimestamp(reservation.cancelledAt, timeZone)}</> : ''}</>}>{reservation.cancellationReason || 'No cancellation reason recorded.'}{reservation.cancelledBy ? ` · by ${sentence(reservation.cancelledBy).toLowerCase()}` : ''}</Callout> : null}
       {reviewRefunds.length ? <Callout tone="warning" icon={RotateCcw} title={`${plural(reviewRefunds.length, 'refund')} to assess`}>The cancellation policy didn’t set these amounts. Nothing is owed until you assess an amount{canPay ? ' or decline under Refunds below' : ''}.</Callout> : null}
       {owedRefunds.length || openRefundCount > openRefunds.length ? <Callout tone="warning" icon={RotateCcw} title={openRefundTotals?.length ? `${formatCurrencyTotals(openRefundTotals)} refund still open` : `${plural(openRefundCount - reviewRefunds.length, 'refund')} still open`}>{canPay ? 'Process, record or decline it under Refunds below so the guest’s balance is settled.' : null}</Callout> : null}
       <StatTiles items={[
@@ -247,8 +247,8 @@ export async function ReservationDetailPage({
         main={<>
           <Section title="Stay" icon={CalendarDays}>
             <FactGrid items={[
-              { label: 'Check-in', value: formatDay(reservation.checkInDate, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }), hint: reservation.checkedInAt ? `Checked in ${formatTimestamp(reservation.checkedInAt, timeZone)}` : reservation.scheduledCheckInTime ? `From ${reservation.scheduledCheckInTime}` : undefined },
-              { label: 'Checkout', value: formatDay(reservation.checkOutDate, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }), hint: reservation.checkedOutAt ? `Checked out ${formatTimestamp(reservation.checkedOutAt, timeZone)}` : reservation.scheduledCheckOutTime ? `By ${reservation.scheduledCheckOutTime}` : undefined },
+              { label: 'Check-in', value: formatDay(reservation.checkInDate, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }), hint: reservation.checkedInAt ? <>Checked in {formatTimestamp(reservation.checkedInAt, timeZone)}</> : reservation.scheduledCheckInTime ? `From ${reservation.scheduledCheckInTime}` : undefined },
+              { label: 'Checkout', value: formatDay(reservation.checkOutDate, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }), hint: reservation.checkedOutAt ? <>Checked out {formatTimestamp(reservation.checkedOutAt, timeZone)}</> : reservation.scheduledCheckOutTime ? `By ${reservation.scheduledCheckOutTime}` : undefined },
               { label: 'Guests', value: party || '—' },
               { label: 'Property', value: stayProperty?.name || '—', hint: moved ? `Moved here · booked at ${purchasedProperty.name}` : stayProperty?.address?.publicLocationLabel },
               { label: 'Source', value: sentence(reservation.source) },
@@ -332,7 +332,7 @@ export async function ReservationDetailPage({
               </Disclosure>
             </div>) : null}
             {canPay ? <OverflowNote shown={pendingPayments.length} total={Number(reservation.pendingPaymentsCount ?? pendingPayments.length)} noun="pending payment attempts" /> : null}
-            <LinkRows empty="No payments recorded." items={payments.map((payment: any) => ({ id: payment.id, href: platformDetailPath('payment', payment.id), title: formatMoney(payment.amountCents, payment.currencyCode), meta: `${sentence(payment.paymentMethod)} · ${payment.provider === CARD_PROVIDER ? 'Stripe (test)' : payment.provider === MANUAL_PROVIDER ? 'Manual' : payment.provider || 'Manual'}${payment.refundedAmountCents ? ` · ${formatMoney(payment.refundedAmountCents, payment.currencyCode)} refunded` : ''}${payment.processedAt ? ` · ${formatTimestamp(payment.processedAt, timeZone)}` : ''}`, trailing: <StatusBadge status={payment.status} /> }))} />
+            <LinkRows empty="No payments recorded." items={payments.map((payment: any) => ({ id: payment.id, href: platformDetailPath('payment', payment.id), title: formatMoney(payment.amountCents, payment.currencyCode), meta: <>{sentence(payment.paymentMethod)} · {payment.provider === CARD_PROVIDER ? 'Stripe (test)' : payment.provider === MANUAL_PROVIDER ? 'Manual' : payment.provider || 'Manual'}{payment.refundedAmountCents ? ` · ${formatMoney(payment.refundedAmountCents, payment.currencyCode)} refunded` : ''}{payment.processedAt ? <> · {formatTimestamp(payment.processedAt, timeZone)}</> : ''}</>, trailing: <StatusBadge status={payment.status} /> }))} />
             <HistoryPager id={reservation.id} pages={pages} history="payments" total={Number(reservation.paymentsCount ?? 0)} />
             {openRefunds.length ? <ul className="divide-y border-t" aria-label="Open refunds">
               {openRefunds.map((refund: any) => <li key={refund.id} className="space-y-3 px-4 py-3.5">
@@ -552,7 +552,7 @@ export async function ReservationDetailPage({
 
           <Section title="Agreement" icon={FileSignature} flush>
             <DescriptionList items={[
-              { label: 'Agreement', value: reservation.agreement ? <StatusBadge status={reservation.agreement.status} /> : <span className={toneText.warning}>Not issued</span>, hint: reservation.agreement ? `${reservation.agreement.agreementNumber}${reservation.agreement.signedAt ? ` · signed ${formatTimestamp(reservation.agreement.signedAt, timeZone)}` : ''}` : undefined },
+              { label: 'Agreement', value: reservation.agreement ? <StatusBadge status={reservation.agreement.status} /> : <span className={toneText.warning}>Not issued</span>, hint: reservation.agreement ? <>{reservation.agreement.agreementNumber}{reservation.agreement.signedAt ? <> · signed {formatTimestamp(reservation.agreement.signedAt, timeZone)}</> : ''}</> : undefined },
             ]} />
             {reservation.agreement ? <div className="border-t px-4 py-2.5"><Link href={platformDetailPath('agreement', reservation.agreement.id)} className="text-xs font-medium underline-offset-4 hover:underline">{canManage ? 'Open agreement · void or send a new link' : 'Open agreement'}</Link></div> : null}
           </Section>
