@@ -132,3 +132,10 @@ test('guest-profile writes past the list hooks refuse a demo session', () => {
 test('a demo user can still change other User fields on its own record', async () => {
   await run('User', 'update', DEMO, { item: { id: 'demo' }, inputData: { phone: '1', onboardingStatus: 'completed' } });
 });
+
+test('day-to-day lists are outside the policy: listing photos, payments and refunds are never guarded', async () => {
+  assert.deepEqual(Object.keys(DEMO_GUARD_POLICY).sort(), ['HostOrganization', 'MarketplaceSettings', 'Role', 'User']);
+  const mutations = fs.readFileSync(path.join(root, 'features/keystone/mutations/stayFinancialOperations.ts'), 'utf8')
+    + fs.readFileSync(path.join(root, 'features/keystone/mutations/stayRefundOperations.ts'), 'utf8');
+  assert.doesNotMatch(mutations, /assertNotDemo|demo-guard/);
+});
