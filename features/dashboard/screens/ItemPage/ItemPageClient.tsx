@@ -466,8 +466,8 @@ export function ItemPageClient({ list, item, itemId }: ItemPageClientProps) {
       <div className="w-full max-w-5xl p-4 md:p-6">
         <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(240px,2fr)_3fr] gap-6 gap-y-8">
           {/* Sidebar */}
-          <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7.5rem)] flex flex-col h-full">
-            <div className="space-y-6 flex-grow overflow-y-auto pb-2">
+          <aside className="lg:sticky lg:top-24 lg:self-start lg:max-h-[calc(100vh-7.5rem)] flex flex-col h-full min-w-0">
+            <div className="space-y-6 flex-grow overflow-y-auto overflow-x-hidden pb-2 min-w-0">
               <div>
                 <h1
                   className="text-lg font-semibold md:text-2xl break-words [overflow-wrap:anywhere]"
