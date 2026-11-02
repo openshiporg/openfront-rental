@@ -11,6 +11,7 @@ import {
   submitInquiryAction,
   submitStayReviewAction,
 } from '../lib/data/guest-actions';
+import { StayDateField, StaySelect } from './StayFormControls';
 import { SubmitButton } from './SubmitButton';
 
 const initial = { error: '' };
@@ -63,7 +64,7 @@ export function TripMessageForm({ token, agreementToken, defaultTopic = 'general
   return <form action={action} className="stay-form" aria-busy={pending}>
     <input type="hidden" name="tripToken" value={token} /><input type="hidden" name="agreementToken" value={agreementToken} />
     <FormError message={state.error} />
-    <label className="stay-input">Topic<select name="topic" value={topic} onChange={event => setTopic(event.target.value)}>{topics.map(entry => <option key={entry.value} value={entry.value}>{entry.label}</option>)}</select></label>
+    <div className="stay-input"><span>Topic</span><StaySelect name="topic" label="Topic" value={topic} onChange={setTopic} options={topics} /></div>
     <label className="stay-input">Message<textarea required name="message" rows={4} maxLength={3800} value={message} onChange={event => setMessage(event.target.value)} /><span className="stay-input-hint">Don’t include card numbers or identity documents.</span></label>
     <SubmitButton pendingLabel="Sending…">Send to your host<Send size={16} aria-hidden="true" /></SubmitButton>
   </form>;
@@ -78,8 +79,8 @@ export function ChangeRequestForm({ token, agreementToken, current, partyVersion
       {partyVersion ? <input type="hidden" name="partyVersion" value={partyVersion} /> : null}
       <FormError message={state.error} />
       <div className="stay-form-grid">
-        <label className="stay-input">New check-in <span className="stay-optional">optional</span><input type="date" name="checkIn" defaultValue={current.checkIn} /></label>
-        <label className="stay-input">New checkout <span className="stay-optional">optional</span><input type="date" name="checkOut" defaultValue={current.checkOut} /></label>
+        <div className="stay-input"><span>New check-in <span className="stay-optional">optional</span></span><StayDateField name="checkIn" label="New check-in" defaultValue={current.checkIn} /></div>
+        <div className="stay-input"><span>New checkout <span className="stay-optional">optional</span></span><StayDateField name="checkOut" label="New checkout" defaultValue={current.checkOut} /></div>
       </div>
       <div className="stay-form-grid">
         <label className="stay-input">Adults<input type="number" name="adults" min={1} max={50} defaultValue={current.adults} /></label>
@@ -104,12 +105,10 @@ const categoryRatings = [
 ];
 
 function RatingSelect({ name, label, required = false }: { name: string; label: string; required?: boolean }) {
-  return <label className="stay-input">{label}{required ? null : <span className="stay-optional"> optional</span>}
-    <select name={name} required={required} defaultValue="">
-      <option value="" disabled={required}>{required ? 'Choose a rating' : 'No rating'}</option>
-      {[5, 4, 3, 2, 1].map(score => <option key={score} value={score}>{score} {score === 1 ? 'star' : 'stars'}</option>)}
-    </select>
-  </label>;
+  const options = [...(required ? [] : [{ value: '', label: 'No rating' }]), ...[5, 4, 3, 2, 1].map(score => ({ value: String(score), label: `${score} ${score === 1 ? 'star' : 'stars'}` }))];
+  return <div className="stay-input"><span>{label}{required ? null : <span className="stay-optional"> optional</span>}</span>
+    <StaySelect name={name} label={label} required={required} options={options} placeholder={required ? 'Choose a rating' : 'No rating'} />
+  </div>;
 }
 
 export function ReviewForm({ token, agreementToken }: { token: string; agreementToken: string }) {

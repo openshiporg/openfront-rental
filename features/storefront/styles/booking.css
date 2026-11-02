@@ -233,3 +233,16 @@
   .stay-book-rate strong { font-size: 1.85rem; }
   .stay-search-filters-text { display: none; }
 }
+
+/* Popover select and date triggers that replace native form controls. */
+.stay-root .stay-picker-trigger { display: flex; align-items: center; justify-content: space-between; gap: .6rem; width: 100%; min-height: 3rem; padding: .7rem .9rem; border: 1px solid var(--stay-line-strong); border-radius: var(--stay-r); background: var(--stay-surface); color: var(--stay-ink); font: inherit; font-size: 1rem; font-weight: 400; text-align: left; cursor: pointer; }
+.stay-root .stay-picker-trigger:hover { border-color: var(--stay-ink-2); }
+.stay-root .stay-picker-trigger:focus-visible { outline: none; border-color: var(--stay-accent); box-shadow: 0 0 0 3px var(--stay-accent-soft); }
+.stay-root .stay-picker-trigger > span { flex: 1; min-width: 0; }
+.stay-root .stay-picker-empty { color: var(--stay-faint); }
+.stay-root .stay-select-popover { width: var(--radix-popover-trigger-width); min-width: 14rem; padding: .35rem; }
+.stay-root .stay-select-list { display: grid; }
+.stay-root .stay-select-list button { display: flex; align-items: center; gap: .5rem; min-height: 2.75rem; padding: 0 .6rem; border: 0; border-radius: var(--stay-r-sm); background: transparent; color: var(--stay-ink); font: inherit; font-size: .95rem; text-align: left; cursor: pointer; }
+.stay-root .stay-select-list button:hover, .stay-root .stay-select-list button:focus-visible { background: var(--stay-paper-2); outline: none; }
+.stay-root .stay-date-popover { width: fit-content; padding: .5rem; }
+.stay-root .stay-picker-clear { display: block; margin: .25rem 0 0 auto; min-height: 2.5rem; padding: 0 .6rem; border: 0; background: transparent; color: var(--stay-muted); font: inherit; font-size: .85rem; cursor: pointer; }
