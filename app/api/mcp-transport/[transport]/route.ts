@@ -13,6 +13,7 @@ import {
   isInputObjectType,
 } from 'graphql';
 import { resolveInternalBaseUrl } from '@/features/keystone/lib/internal-origin';
+import { requireMcpSession } from '@/features/keystone/mcpGate';
 
 /**
  * GraphQL failures normalized for the model: only messages of known user-facing kinds
@@ -115,12 +116,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ tra
     
     // Extract cookie from request
     const cookie = request.headers.get('cookie') || ''
+
+    // Parse the JSON-RPC request, then refuse anonymous callers before any schema work.
+    const body = await request.json();
+    const refused = await requireMcpSession(request, body);
+    if (refused) return refused;
   
     // Get the GraphQL schema
     const schema = await getGraphQLSchema(graphqlEndpoint, cookie);
-    
-    // Parse the JSON-RPC request
-    const body = await request.json();
     
     // Handle the request based on method
     if (body.method === 'initialize') {
