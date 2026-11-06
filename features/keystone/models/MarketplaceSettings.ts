@@ -3,7 +3,7 @@ import { checkbox, float, integer, text } from '@keystone-6/core/fields';
 
 import {
   DEFAULT_STORE_LOGO_COLOR,
-  LEGACY_DEFAULT_STORE_LOGO_ICON as DEFAULT_STORE_LOGO_ICON,
+  DEFAULT_STORE_LOGO_ICON,
   normalizeStoreLogoColor,
 } from '../../platform/store-settings/lib/store-logo';
 import { normalizeStorefrontAccentHue } from '../../platform/store-settings/lib/theme';
