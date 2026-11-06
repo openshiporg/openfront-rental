@@ -672,8 +672,8 @@
 .stay-home-row-info h3 { font-size: 1rem; margin: 0; }
 .stay-home-row-info p, .stay-home-row-price p { font-size: .75rem; color: var(--stay-muted); margin: .15rem 0 0; }
 .stay-home-row-price strong { font-size: .92rem; }
-.stay-home-strip { display: grid; grid-template-columns: repeat(14, minmax(24px, 1fr)); gap: 3px; overflow-x: auto; padding-bottom: .5rem; }
-.stay-home-day { display: grid; gap: 4px; text-align: center; font-size: .75rem; color: var(--stay-muted); }
+.stay-home-strip { position: relative; min-width: 0; display: grid; grid-template-columns: repeat(14, minmax(24px, 1fr)); gap: 3px; overflow-x: auto; padding-bottom: .5rem; }
+.stay-home-day { position: relative; display: grid; gap: 4px; text-align: center; font-size: .75rem; color: var(--stay-muted); }
 .stay-home-day i { display: block; height: 24px; background: var(--stay-paper-2); border-radius: 3px; }
 .stay-home-day.is-selected.is-free i { background: var(--stay-accent); }
 .stay-home-day.is-booked i { background: #999d9a; }
