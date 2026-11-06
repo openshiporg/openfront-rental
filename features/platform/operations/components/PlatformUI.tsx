@@ -201,7 +201,7 @@ export function FactGrid({ items, columns = 3 }: { items: Array<{ label: ReactNo
 
 export function StatusBadge({ status, label, tone, className }: { status?: string | null; label?: ReactNode; tone?: OperationalTone; className?: string }) {
   const resolved = tone || operationalTone(status);
-  return <span className={cn('inline-flex h-6 max-w-full shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border bg-background px-2.5 text-xs font-medium text-foreground/80 shadow-xs', className)}>
+  return <span className={cn('inline-flex h-6 max-w-full shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-medium text-foreground/80', className)}>
     <span aria-hidden="true" className={cn('size-1.5 shrink-0 rounded-full ring-[3px]', toneDot[resolved])} />
     <span className="truncate">{label ?? sentence(status)}</span>
   </span>;
@@ -210,7 +210,7 @@ export function StatusBadge({ status, label, tone, className }: { status?: strin
 export function Pill({ children, tone, className, title }: { children: ReactNode; tone?: OperationalTone; className?: string; title?: string }) {
   return <span title={title} className={cn(
     'inline-flex h-6 max-w-full items-center gap-1 whitespace-nowrap rounded-md border px-2 text-xs',
-    tone && tone !== 'neutral' ? toneSurface[tone] : 'bg-muted/40 text-muted-foreground',
+    tone && tone !== 'neutral' ? toneSurface[tone] : 'border-transparent bg-transparent px-0 font-medium text-muted-foreground',
     className,
   )}>{children}</span>;
 }
