@@ -48,7 +48,23 @@ export type StayQuoteCalculationInput = {
   seasonalRates?: SeasonalRateInput[];
   fees?: FeeInput[];
   taxes?: TaxInput[];
+  /** Length-of-stay discounts in basis points (1000 = 10%): weekly from 7 nights, monthly from 28. */
+  weeklyDiscountBasisPoints?: number | null;
+  monthlyDiscountBasisPoints?: number | null;
 };
+
+export const WEEKLY_DISCOUNT_NIGHTS = 7;
+export const MONTHLY_DISCOUNT_NIGHTS = 28;
+export const MAX_LENGTH_OF_STAY_DISCOUNT_BASIS_POINTS = 9000;
+
+/** Airbnb-style: the monthly discount from 28 nights, otherwise the weekly one from 7. Never both. */
+export function lengthOfStayDiscountFor(nights: number, weeklyBasisPoints?: number | null, monthlyBasisPoints?: number | null) {
+  const valid = (value?: number | null) => Number.isSafeInteger(value) && (value as number) > 0 && (value as number) <= MAX_LENGTH_OF_STAY_DISCOUNT_BASIS_POINTS ? value as number : 0;
+  const monthly = valid(monthlyBasisPoints), weekly = valid(weeklyBasisPoints);
+  if (nights >= MONTHLY_DISCOUNT_NIGHTS && monthly) return { name: 'Monthly stay discount', basisPoints: monthly };
+  if (nights >= WEEKLY_DISCOUNT_NIGHTS && weekly) return { name: 'Weekly stay discount', basisPoints: weekly };
+  return null;
+}
 
 function parseDateOnly(value: string, label: string) {
   if (!DATE_ONLY.test(value)) {
@@ -210,7 +226,22 @@ export function calculateStayQuote(input: StayQuoteCalculationInput) {
   const nightDates = stayNightDates(stayRange.startTimestamp, stayRange.nightCount);
 
   const seasonalRates = input.seasonalRates ?? [];
-  const nights = nightDates.map((date) => ({ date, ...rateForNight(date, input.baseNightlyRateCents, seasonalRates) }));
+  const listNights = nightDates.map((date) => ({ date, ...rateForNight(date, input.baseNightlyRateCents, seasonalRates) }));
+  const listLodgingCents = listNights.reduce((sum, night) => sum + night.amountCents, 0);
+  // A length-of-stay discount lowers the nightly rates themselves (spread in proportion,
+  // remainder on the last night), so night lines, the lodging subtotal, percentage fees
+  // and taxes all see the discounted price, and per-night revenue reporting stays exact.
+  const discountRule = lengthOfStayDiscountFor(nightDates.length, input.weeklyDiscountBasisPoints, input.monthlyDiscountBasisPoints);
+  const discountCents = discountRule ? basisPointAmount(listLodgingCents, discountRule.basisPoints) : 0;
+  let discountLeft = discountCents;
+  const nights = listNights.map((night, index) => {
+    if (!discountCents) return night;
+    const share = index === listNights.length - 1
+      ? discountLeft
+      : Math.min(discountLeft, listLodgingCents ? Math.floor((night.amountCents * discountCents) / listLodgingCents) : 0);
+    discountLeft -= share;
+    return { ...night, listAmountCents: night.amountCents, amountCents: night.amountCents - share };
+  });
   const minimumStay = Math.max(
     input.baseMinimumStay ?? 1,
     ...nights.map((night) => night.minimumStay),
@@ -269,6 +300,8 @@ export function calculateStayQuote(input: StayQuoteCalculationInput) {
     guestCount: input.guestCount,
     nights,
     lodgingSubtotalCents,
+    // Present only when a discount applied, so undiscounted quotes keep their exact shape.
+    ...(discountRule && discountCents > 0 ? { lengthOfStayDiscount: { ...discountRule, listLodgingCents, amountCents: discountCents } } : {}),
     fees,
     feeTotalCents,
     taxableSubtotalCents,

@@ -14,7 +14,7 @@ import { createRatePlanAction, updateRatePlanAction, type CatalogFormState } fro
 const initialState: CatalogFormState = { ok: false, message: '' };
 
 type ListingRules = { id: string; title: string; currencyCode: string; minimumStay?: number | null; advanceNoticeHours?: number | null; bookingWindowDays?: number | null };
-type Plan = { id: string; name: string; description?: string | null; status: string; currencyCode: string; baseNightlyRateCents: number; minimumStay: number; maximumStay?: number | null; advanceNoticeHours?: number | null; bookingWindowDays?: number | null; isDefault: boolean; cancellationPolicy?: { id: string } | null };
+type Plan = { id: string; name: string; description?: string | null; status: string; currencyCode: string; baseNightlyRateCents: number; minimumStay: number; maximumStay?: number | null; advanceNoticeHours?: number | null; bookingWindowDays?: number | null; isDefault: boolean; weeklyDiscountBasisPoints?: number | null; monthlyDiscountBasisPoints?: number | null; cancellationPolicy?: { id: string } | null };
 
 const asText = (value?: number | null) => value == null ? '' : String(value);
 
@@ -46,6 +46,8 @@ export function RatePlanForm({ listing, plan, policies, cancelHref }: { listing:
     <Field label="Maximum stay" optional hint="Nights. Blank for no maximum." className="sm:col-span-3"><TextInput name="maximumStay" type="number" min={1} max={365} step={1} defaultValue={value('maximumStay', asText(plan?.maximumStay))} /></Field>
     <Field label="Advance notice" optional hint={`Hours. Blank uses the listing’s: ${listingNotice}.`} className="sm:col-span-3"><TextInput name="advanceNoticeHours" type="number" min={0} max={8760} step={1} defaultValue={value('advanceNoticeHours', asText(plan?.advanceNoticeHours))} /></Field>
     <Field label="Booking window" optional hint={`Days. Blank uses the listing’s: ${listingWindow}.`} className="sm:col-span-3"><TextInput name="bookingWindowDays" type="number" min={1} max={1095} step={1} defaultValue={value('bookingWindowDays', asText(plan?.bookingWindowDays))} /></Field>
+    <Field label="Weekly discount" optional hint="Percent off the nightly rates for 7+ nights. Blank for none." className="sm:col-span-3"><TextInput name="weeklyDiscountPercent" type="number" min={0} max={90} step={0.01} defaultValue={value('weeklyDiscountPercent', plan?.weeklyDiscountBasisPoints ? String(plan.weeklyDiscountBasisPoints / 100) : '')} placeholder="10" /></Field>
+    <Field label="Monthly discount" optional hint="Percent off for 28+ nights; replaces the weekly discount. Blank for none." className="sm:col-span-3"><TextInput name="monthlyDiscountPercent" type="number" min={0} max={90} step={0.01} defaultValue={value('monthlyDiscountPercent', plan?.monthlyDiscountBasisPoints ? String(plan.monthlyDiscountBasisPoints / 100) : '')} placeholder="20" /></Field>
     <Field label="Cancellation policy" hint={policies.length ? 'Required for an active plan.' : 'This host has no cancellation policy yet.'} className="sm:col-span-6">
       <Select name="cancellationPolicyId" defaultValue={value('cancellationPolicyId', plan?.cancellationPolicy?.id || '')}>
         <option value="">None</option>

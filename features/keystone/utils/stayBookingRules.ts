@@ -18,6 +18,8 @@ export type StayRatePlanLike = {
   maximumStay?: number | null;
   advanceNoticeHours?: number | null;
   bookingWindowDays?: number | null;
+  weeklyDiscountBasisPoints?: number | null;
+  monthlyDiscountBasisPoints?: number | null;
   seasonalRates?: any[] | null;
   cancellationPolicy?: any;
   [key: string]: unknown;
@@ -196,6 +198,8 @@ export function stayCalculationInput(listing: any, plan: StayRatePlanLike, stay:
     maxGuests: listing.accommodationUnit?.maxGuests ?? listing.accommodation?.maxGuests,
     securityDepositCents: listing.securityDepositCents ?? 0,
     seasonalRates: plan.seasonalRates || [],
+    weeklyDiscountBasisPoints: plan.weeklyDiscountBasisPoints ?? 0,
+    monthlyDiscountBasisPoints: plan.monthlyDiscountBasisPoints ?? 0,
     fees: (listing.feeDefinitions || []).map((fee: any) => ({
       name: fee.name,
       feeType: fee.feeType,

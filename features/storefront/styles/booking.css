@@ -101,6 +101,7 @@
 .stay-ledger-row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-top: .3rem; color: var(--stay-ink-2); }
 .stay-ledger-row > span:first-child { min-width: 0; }
 .stay-ledger-row > span:last-child { flex: none; }
+.stay-ledger-discount > span:last-child { color: var(--stay-accent-ink); font-weight: 600; }
 .stay-night-strip { display: grid; grid-template-columns: repeat(var(--stay-strip-cols, 5), minmax(0, 1fr)); gap: .3rem; margin: 0 0 .65rem; padding: 0; list-style: none; }
 .stay-night-chip { display: grid; gap: .05rem; padding: .4rem .2rem; text-align: center; border-radius: var(--stay-r-sm); background: var(--stay-accent-soft); color: var(--stay-accent-ink); animation: stay-rise .2s var(--stay-ease) both; }
 .stay-night-chip > span:first-child { font-size: .75rem; letter-spacing: .01em; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

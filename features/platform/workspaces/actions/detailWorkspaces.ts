@@ -124,7 +124,7 @@ export async function getAgreementDetailWorkspace(id: string) {
 
 export async function getRatePlanDetailWorkspace(id: string) {
   return detailQuery<any>(`query RatePlanDetailWorkspace($id: ID!) { ratePlan(where: { id: $id }) {
-    id name description status currencyCode baseNightlyRateCents minimumStay maximumStay advanceNoticeHours bookingWindowDays isDefault createdAt updatedAt
+    id name description status currencyCode baseNightlyRateCents minimumStay maximumStay advanceNoticeHours bookingWindowDays weeklyDiscountBasisPoints monthlyDiscountBasisPoints isDefault createdAt updatedAt
     listing { id title status baseNightlyRateCents currencyCode advanceNoticeHours bookingWindowDays property { id name } ${EFFECTIVE_RATE_PLAN_SELECTION} }
     cancellationPolicy { id name summary }
     seasonalRatesCount

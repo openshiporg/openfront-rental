@@ -797,6 +797,8 @@ export async function RatePlanDetailPage({ params, searchParams }: DetailProps) 
               { label: 'Maximum stay', value: plan.maximumStay ? plural(plan.maximumStay, 'night') : 'No maximum' },
               { label: 'Advance notice', value: rules.notice, hint: ruleHint(rules.noticeFromListing) },
               { label: 'Booking window', value: rules.window, hint: ruleHint(rules.windowFromListing) },
+              { label: 'Weekly discount', value: plan.weeklyDiscountBasisPoints ? `${plan.weeklyDiscountBasisPoints / 100}% off` : 'None', hint: 'Stays of 7+ nights' },
+              { label: 'Monthly discount', value: plan.monthlyDiscountBasisPoints ? `${plan.monthlyDiscountBasisPoints / 100}% off` : 'None', hint: 'Stays of 28+ nights' },
               { label: 'Updated', value: formatTimestamp(plan.updatedAt) },
             ]} />
           </Section>

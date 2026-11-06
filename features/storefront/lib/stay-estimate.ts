@@ -19,6 +19,8 @@ export type StayPricing = {
   maxGuests: number;
   securityDepositCents: number;
   seasonalRates: any[];
+  weeklyDiscountBasisPoints?: number | null;
+  monthlyDiscountBasisPoints?: number | null;
   fees: any[];
   taxes: any[];
   petsAllowed: boolean;
@@ -46,6 +48,8 @@ export function stayPricing(stay: PublicStay): StayPricing | null {
     maxGuests,
     securityDepositCents: stay.securityDepositCents ?? 0,
     seasonalRates: ratePlan.seasonalRates || [],
+    weeklyDiscountBasisPoints: ratePlan.weeklyDiscountBasisPoints ?? 0,
+    monthlyDiscountBasisPoints: ratePlan.monthlyDiscountBasisPoints ?? 0,
     fees: (stay.feeDefinitions || []).map((fee: any) => ({
       name: fee.name,
       feeType: fee.feeType,
@@ -86,6 +90,8 @@ export function estimateStay(pricing: StayPricing, checkIn: string, checkOut: st
         maxGuests: pricing.maxGuests,
         securityDepositCents: pricing.securityDepositCents,
         seasonalRates: pricing.seasonalRates,
+        weeklyDiscountBasisPoints: pricing.weeklyDiscountBasisPoints,
+        monthlyDiscountBasisPoints: pricing.monthlyDiscountBasisPoints,
         fees: pricing.fees,
         taxes: pricing.taxes,
       }),

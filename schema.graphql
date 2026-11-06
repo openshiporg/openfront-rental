@@ -2973,6 +2973,8 @@ type RatePlan {
   maximumStay: Int
   advanceNoticeHours: Int
   bookingWindowDays: Int
+  weeklyDiscountBasisPoints: Int
+  monthlyDiscountBasisPoints: Int
   isDefault: Boolean
   seasonalRates(where: SeasonalRateWhereInput! = {}, orderBy: [SeasonalRateOrderByInput!]! = [], take: Int! = 100, skip: Int! = 0, cursor: SeasonalRateWhereUniqueInput): [SeasonalRate!]
   seasonalRatesCount(where: SeasonalRateWhereInput! = {}): Int
@@ -3003,6 +3005,8 @@ input RatePlanWhereInput {
   maximumStay: IntNullableFilter
   advanceNoticeHours: IntNullableFilter
   bookingWindowDays: IntNullableFilter
+  weeklyDiscountBasisPoints: IntNullableFilter
+  monthlyDiscountBasisPoints: IntNullableFilter
   isDefault: BooleanFilter
   seasonalRates: SeasonalRateManyRelationFilter
   quotes: StayQuoteManyRelationFilter
@@ -3027,6 +3031,8 @@ input RatePlanOrderByInput {
   maximumStay: OrderDirection
   advanceNoticeHours: OrderDirection
   bookingWindowDays: OrderDirection
+  weeklyDiscountBasisPoints: OrderDirection
+  monthlyDiscountBasisPoints: OrderDirection
   isDefault: OrderDirection
   createdAt: OrderDirection
   updatedAt: OrderDirection
@@ -3045,6 +3051,8 @@ input RatePlanUpdateInput {
   maximumStay: Int
   advanceNoticeHours: Int
   bookingWindowDays: Int
+  weeklyDiscountBasisPoints: Int
+  monthlyDiscountBasisPoints: Int
   isDefault: Boolean
   seasonalRates: SeasonalRateRelateToManyForUpdateInput
   quotes: StayQuoteRelateToManyForUpdateInput
@@ -3083,6 +3091,8 @@ input RatePlanCreateInput {
   maximumStay: Int
   advanceNoticeHours: Int
   bookingWindowDays: Int
+  weeklyDiscountBasisPoints: Int
+  monthlyDiscountBasisPoints: Int
   isDefault: Boolean
   seasonalRates: SeasonalRateRelateToManyForCreateInput
   quotes: StayQuoteRelateToManyForCreateInput

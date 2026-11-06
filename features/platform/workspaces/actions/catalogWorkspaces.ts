@@ -69,7 +69,7 @@ export async function getRatePlanCreateContext(listingId?: string | null) {
 export async function getRatePlanEditWorkspace(id: string) {
   return catalogQuery(`query RatePlanEditWorkspace($id: ID!, $policyWhere: CancellationPolicyWhereInput!) {
     ratePlan(where: { id: $id }) {
-      id name description status currencyCode baseNightlyRateCents minimumStay maximumStay advanceNoticeHours bookingWindowDays isDefault
+      id name description status currencyCode baseNightlyRateCents minimumStay maximumStay advanceNoticeHours bookingWindowDays weeklyDiscountBasisPoints monthlyDiscountBasisPoints isDefault
       cancellationPolicy { id name }
       listing { id title status currencyCode minimumStay maximumStay advanceNoticeHours bookingWindowDays property { id name } }
     }
@@ -289,7 +289,16 @@ export async function removeListingMediaAction(formData: FormData) {
 
 /* ───────────────────────── rate plans ───────────────────────── */
 
-type PlanInput = BookingRules & { name: string; description: string; status: string; isDefault: boolean; cancellationPolicyId: string | null };
+type PlanInput = BookingRules & { name: string; description: string; status: string; isDefault: boolean; cancellationPolicyId: string | null; weeklyDiscountBasisPoints: number; monthlyDiscountBasisPoints: number };
+
+/** A whole-number percent field (blank = none) as basis points, capped at 90%. */
+function discountBasisPoints(formData: FormData, key: string): number | null {
+  const raw = text(formData, key);
+  if (!raw) return 0;
+  const percent = Number(raw);
+  if (!Number.isFinite(percent) || percent < 0 || percent > 90 || Math.round(percent * 100) !== percent * 100) return null;
+  return Math.round(percent * 100);
+}
 
 function planInput(formData: FormData, statuses: string[]): PlanInput | string {
   const name = text(formData, 'name'); const description = text(formData, 'description'); const status = text(formData, 'status');
@@ -303,7 +312,10 @@ function planInput(formData: FormData, statuses: string[]): PlanInput | string {
   // An active plan can become the one quotes sell under, so it needs a price and published terms.
   if (status === 'active' && rules.baseNightlyRateCents <= 0) return 'An active plan needs a nightly rate above zero.';
   if (status === 'active' && !cancellationPolicyId) return 'An active plan needs a cancellation policy.';
-  return { name, description, status, isDefault: formData.get('isDefault') === 'on', cancellationPolicyId, ...rules };
+  const weeklyDiscountBasisPoints = discountBasisPoints(formData, 'weeklyDiscountPercent');
+  const monthlyDiscountBasisPoints = discountBasisPoints(formData, 'monthlyDiscountPercent');
+  if (weeklyDiscountBasisPoints === null || monthlyDiscountBasisPoints === null) return 'Discounts are a percent from 0 to 90.';
+  return { name, description, status, isDefault: formData.get('isDefault') === 'on', cancellationPolicyId, ...rules, weeklyDiscountBasisPoints, monthlyDiscountBasisPoints };
 }
 
 async function policyBelongsToListingHost(policyId: string | null, listingId: string) {

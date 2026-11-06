@@ -23,6 +23,7 @@ export function QuoteSummary({ quote, locale }: { quote: any; locale: string }) 
           numberOfNights: breakdown.numberOfNights,
           nights: breakdown.nights || [],
           lodgingSubtotalCents: quote.lodgingSubtotalCents,
+          lengthOfStayDiscount: breakdown.lengthOfStayDiscount || null,
           fees: breakdown.fees || [],
           taxes: breakdown.taxes || [],
           totalAmountCents: quote.totalAmountCents,

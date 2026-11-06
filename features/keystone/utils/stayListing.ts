@@ -83,6 +83,8 @@ export const STAY_LISTING_SELECTION = `
     maximumStay
     advanceNoticeHours
     bookingWindowDays
+    weeklyDiscountBasisPoints
+    monthlyDiscountBasisPoints
     isDefault
     cancellationPolicy { id name version policyType summary fullTerms freeCancellationHours rules }
     seasonalRates(where: { isActive: { equals: true } }, orderBy: [{ priority: desc }]) {

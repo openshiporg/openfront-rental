@@ -30,6 +30,8 @@ export const RatePlan = list({
     maximumStay: integer({ validation: { min: 1 } }),
     advanceNoticeHours: integer({ defaultValue: 24, validation: { min: 0 }, ui: { description: 'Minimum hours between booking and check-in (at the property’s check-in time). Enforced in search, quotes and booking.' } }),
     bookingWindowDays: integer({ defaultValue: 365, validation: { min: 1 }, ui: { description: 'How many days ahead a check-in can be booked. Enforced in search, quotes and booking.' } }),
+    weeklyDiscountBasisPoints: integer({ defaultValue: 0, validation: { min: 0, max: 9000 }, ui: { description: 'Discount on the nightly rates for stays of 7 nights or more, in basis points (1000 = 10%).' } }),
+    monthlyDiscountBasisPoints: integer({ defaultValue: 0, validation: { min: 0, max: 9000 }, ui: { description: 'Discount on the nightly rates for stays of 28 nights or more, in basis points (2000 = 20%). Replaces the weekly discount.' } }),
     isDefault: checkbox({ defaultValue: false }),
     seasonalRates: relationship({ ref: 'SeasonalRate.ratePlan', many: true }),
     quotes: relationship({ ref: 'StayQuote.ratePlan', many: true, access: { create: () => false, update: () => false }, ui: { displayMode: 'count' } }),

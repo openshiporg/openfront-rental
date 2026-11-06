@@ -120,6 +120,8 @@ function buildAmendedQuote({
     maxGuests: unit.maxGuests,
     securityDepositCents,
     seasonalRates: ratePlan.seasonalRates || [],
+    weeklyDiscountBasisPoints: ratePlan.weeklyDiscountBasisPoints ?? 0,
+    monthlyDiscountBasisPoints: ratePlan.monthlyDiscountBasisPoints ?? 0,
     fees: (listing.feeDefinitions || []).map((fee: any) => ({
       name: fee.name,
       feeType: fee.feeType,

@@ -11,6 +11,7 @@ export type LedgerQuote = {
   numberOfNights?: number;
   nights?: { date: string; amountCents: number; source?: string }[];
   lodgingSubtotalCents: number;
+  lengthOfStayDiscount?: { name: string; basisPoints: number; listLodgingCents: number; amountCents: number } | null;
   fees?: { name: string; amountCents: number }[];
   taxes?: { name: string; amountCents: number }[];
   totalAmountCents: number;
@@ -80,13 +81,15 @@ export function StayLedger({ quote, provisional = false, totalLabel = 'Total', t
     );
   }
   const nights = quote.numberOfNights ?? quote.nights?.length ?? 0;
+  const discount = quote.lengthOfStayDiscount && quote.lengthOfStayDiscount.amountCents > 0 ? quote.lengthOfStayDiscount : null;
   return (
     <div className="stay-ledger">
       <div className="stay-ledger-head">
         <span>{provisional ? 'Est. · ' : ''}{nights} {nights === 1 ? 'night' : 'nights'}</span>
-        <b>{formatMoney(locale, quote.lodgingSubtotalCents, quote.currencyCode)}</b>
+        <b>{formatMoney(locale, discount ? discount.listLodgingCents : quote.lodgingSubtotalCents, quote.currencyCode)}</b>
       </div>
-      {strip && quote.nights?.length ? <NightStrip nights={quote.nights} currencyCode={quote.currencyCode} /> : null}
+      {strip && quote.nights?.length ? <NightStrip nights={discount ? quote.nights.map((night: any) => ({ ...night, amountCents: night.listAmountCents ?? night.amountCents })) : quote.nights} currencyCode={quote.currencyCode} /> : null}
+      {discount ? <div className="stay-ledger-row stay-ledger-discount"><span>{discount.name} · {discount.basisPoints / 100}% off</span><span>−{formatMoney(locale, discount.amountCents, quote.currencyCode)}</span></div> : null}
       {(quote.fees || []).map((fee, index) => (
         <div className="stay-ledger-row" key={`fee-${index}`}><span>{fee.name}</span><span>{formatMoney(locale, fee.amountCents, quote.currencyCode)}</span></div>
       ))}
