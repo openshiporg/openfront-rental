@@ -30,6 +30,9 @@ import { cn } from '@/lib/utils';
 import { RefundActions } from '@/features/platform/reservations/screens/ReservationDetailPage';
 import { createRefundAction } from '@/features/platform/reservations/actions/reservations';
 import { AgreementLinkReissue } from '../components/AgreementLinkReissue';
+import { CalendarFeedLink } from '../components/CalendarFeedLink';
+import { calendarFeedPath } from '@/features/keystone/lib/calendarFeed';
+import { storefrontOrigin } from '@/features/storefront/lib/site-url';
 import { ScoreMeter } from '../components/ScoreMeter';
 import { effectiveArrivalRules } from '../lib/arrivalRules';
 import { unavailableWorkspaceRecordMessage } from '../lib/detailFeedback';
@@ -382,6 +385,8 @@ export async function ListingDetailPage({ params, searchParams }: DetailProps) {
   const online = listing.onlineReadiness as OnlineReadiness;
   const pricing = { priced: Boolean(online?.priced), plan: effectivePlan, problem: online ? online.quoteProblem : 'Readiness is unavailable right now.' };
   const readiness = listingSetup({ title: listing.title, description: listing.description, mediaCount: listing.mediaCount || 0, amenityCount: listing.amenitiesCount || 0, propertyReady: listing.property?.status === 'active' && Boolean(listing.property?.registrationNumber), unitReady: listing.accommodationUnit?.status === 'available', bookable: Boolean(online?.bookable) });
+  // The listing's subscribable iCal export, shown to roles that manage channels: the URL is a secret (busy nights only).
+  const feedUrl = capabilities.canManageChannels && !archived ? `${await storefrontOrigin()}${calendarFeedPath(listing.id)}` : null;
   const channelExceptions = listing.channelListings.filter((mapping: any) => !mappingOperational(mapping) || mapping.channelConnection?.lastError);
   const openTasks = listing.openTasks || [];
   const recordHref = rawRecordPath('listings', id);
@@ -490,6 +495,7 @@ export async function ListingDetailPage({ params, searchParams }: DetailProps) {
                   trailing: <StatusBadge status={mapping.status} tone={mapping.channelConnection?.lastError ? 'danger' : mappingOperational(mapping) ? 'success' : mappingHealth(mapping.status) === 'pending' ? 'warning' : 'danger'} />,
                 }))}
               />
+              {feedUrl ? <div className="border-t"><CalendarFeedLink url={feedUrl} /></div> : null}
             </Section>
           </TwoColumn>
 

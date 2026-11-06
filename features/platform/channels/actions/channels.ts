@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 
 import { keystoneClient } from '@/features/dashboard/lib/keystoneClient';
 import { PAGE_SIZE, pageWindow, requestedPage } from '@/features/platform/operations/lib/listParams';
+import { calendarUrlProblem } from '@/features/keystone/lib/calendarSubscription';
 import { calendarImportOperatorMessage, installedChannelConnection, supportedChannelConnections } from '@/features/integrations/channels/support';
 
 const CHANNELS_PATH = '/dashboard/platform/channels';
@@ -54,7 +55,7 @@ export async function getChannelWorkspace(input: { view: 'all' | 'jobs' | 'event
         id name provider connectionType status syncAvailability syncRates syncReservations syncMessages lastSyncedAt lastError
         hostOrganization { id name }
         channelListingsCount
-        channelListings(orderBy: [{ createdAt: asc }, { id: asc }], take: 50) { id externalListingId status lastSyncedAt lastImportIssue listing { id title } }
+        channelListings(orderBy: [{ createdAt: asc }, { id: asc }], take: 50) { id externalListingId externalUrl status lastSyncedAt lastImportIssue listing { id title } }
       }
       dataExchangeJobsCount
       jobsMatching: dataExchangeJobsCount(where: $jobWhere)
@@ -191,6 +192,9 @@ export async function createChannelMappingAction(formData: FormData): Promise<vo
   const status = field(formData, 'status') === 'paused' ? 'paused' : 'mapped';
   if (!connectionId || !listingId || !externalListingId) fail('mapping', 'Choose a connection and listing, and enter the channel listing ID.');
   if (externalListingId.length > 200) fail('mapping', 'Channel listing ID is too long.');
+  const externalUrl = field(formData, 'externalUrl');
+  const urlProblem = externalUrl ? calendarUrlProblem(externalUrl) : null;
+  if (urlProblem) fail('mapping', urlProblem);
   const lookup = await keystoneClient<any>(`
     query ChannelMappingSetup($connectionId: ID!, $listingId: ID!) {
       channelConnection(where: { id: $connectionId }) { id provider connectionType hostOrganization { id } channelListingsCount(where: { listing: { id: { equals: $listingId } } }) }
@@ -210,6 +214,7 @@ export async function createChannelMappingAction(formData: FormData): Promise<vo
     channelConnection: { connect: { id: connectionId } },
     listing: { connect: { id: listingId } },
     externalListingId,
+    externalUrl,
     status,
     mapping: { availability: true, rates: false, reservations: false, messages: false },
   } });
@@ -225,9 +230,12 @@ export async function updateChannelMappingAction(formData: FormData): Promise<vo
   const status = field(formData, 'status');
   if (!id || !externalListingId || !MAPPING_STATUSES.includes(status)) fail('mapping', 'Enter the channel listing ID and choose a status.');
   if (externalListingId.length > 200) fail('mapping', 'Channel listing ID is too long.');
+  const externalUrl = field(formData, 'externalUrl');
+  const urlProblem = externalUrl ? calendarUrlProblem(externalUrl) : null;
+  if (urlProblem) fail('mapping', urlProblem);
   const response = await keystoneClient<any>(`
     mutation UpdateChannelMapping($id: ID!, $data: ChannelListingUpdateInput!) { updateChannelListing(where: { id: $id }, data: $data) { id } }
-  `, { id, data: { externalListingId, status } });
+  `, { id, data: { externalListingId, externalUrl, status } });
   if (!response.success) fail('mapping', 'The mapping wasn’t updated. Refresh and try again.');
   refreshChannels();
   redirect(channelPath({ notice: 'mapping-saved' }, connectionId ? `#connection-${connectionId}` : ''));

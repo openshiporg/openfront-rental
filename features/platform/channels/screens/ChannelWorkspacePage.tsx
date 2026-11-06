@@ -87,7 +87,7 @@ export async function ChannelWorkspacePage({ searchParams }: { searchParams?: Pl
       id: `mapping-${mapping.id}`,
       title: `${mapping.listing?.title || 'Listing unavailable'} · ${mapping.connection.name}`,
       // This mapping's own import issue, by mapping id (not a title shared with another listing).
-      detail: mapping.lastImportIssue?.open === true ? `Last availability import ${sentence(String(mapping.lastImportIssue.status || 'failed')).toLowerCase()} · ${Number(mapping.lastImportIssue.conflictCount || 0)} conflicting event(s)` : `${sentence(mapping.status)} mapping`,
+      detail: mapping.lastImportIssue?.open === true && mapping.lastImportIssue?.subscription ? `Calendar link: ${String(mapping.lastImportIssue.error || 'could not be read')}` : mapping.lastImportIssue?.open === true ? `Last availability import ${sentence(String(mapping.lastImportIssue.status || 'failed')).toLowerCase()} · ${Number(mapping.lastImportIssue.conflictCount || 0)} conflicting event(s)` : `${sentence(mapping.status)} mapping`,
       href: editHref(mapping.connection.id),
       actionLabel: 'Edit',
       tone: mappingHealthTone[mappingHealth(mapping.status)],
@@ -186,7 +186,7 @@ export async function ChannelWorkspacePage({ searchParams }: { searchParams?: Pl
             {importOptions.map((option) => <option key={option.key} value={option.key} disabled={Boolean(option.blocker)}>{option.label}{option.blocker ? ` — ${option.blocker}` : ''}</option>)}
           </Select></Field>
           <Field label="Source label" optional hint="Not a private calendar URL."><TextInput name="sourceLabel" maxLength={240} placeholder="Airbnb export, March" /></Field>
-          <Field label="Calendar text" className="lg:col-span-2" hint="Paste .ics contents, not a URL. Recurring events aren’t supported."><TextArea required name="calendarText" rows={8} className="font-mono text-xs" placeholder={'BEGIN:VCALENDAR\nVERSION:2.0\n…'} /></Field>
+          <Field label="Calendar text" className="lg:col-span-2" hint="Paste .ics contents for a one-off import. To keep a channel in sync, add its calendar link to the listing mapping instead. Recurring events aren’t supported."><TextArea required name="calendarText" rows={8} className="font-mono text-xs" placeholder={'BEGIN:VCALENDAR\nVERSION:2.0\n…'} /></Field>
           <div className="lg:col-span-2"><SubmitButton size="sm" pendingLabel="Importing…"><CalendarSync aria-hidden="true" />Import availability</SubmitButton></div>
         </GuardedForm> : <div className="space-y-3 text-sm">
           <p className="font-medium">No mapping can import availability</p>
@@ -224,6 +224,7 @@ export async function ChannelWorkspacePage({ searchParams }: { searchParams?: Pl
               {setupListings.map((listing: any) => <option key={listing.id} value={listing.id}>{listing.title}{hosts.length > 1 ? ` · ${hostNames.get(listing.hostOrganization?.id) || 'Host unavailable'}` : ''}</option>)}
             </Select></Field>
             <Field label="Channel listing ID" hint="The listing’s ID or name on the channel."><TextInput required name="externalListingId" maxLength={200} /></Field>
+            <Field label="Calendar link" optional hint="The channel’s “Export calendar” https link. Checked about hourly; its bookings block nights here."><TextInput name="externalUrl" type="url" inputMode="url" maxLength={2000} placeholder="https://www.airbnb.com/calendar/ical/….ics" /></Field>
             <Field label="Status"><Select name="status" defaultValue="mapped"><option value="mapped">Mapped</option><option value="paused">Paused</option></Select></Field>
             <div><SubmitButton size="sm" pendingLabel="Mapping…" disabled={!installedConnections.length || !setupListings.length}><Link2 aria-hidden="true" />Map listing</SubmitButton></div>
           </GuardedForm>
@@ -263,9 +264,10 @@ export async function ChannelWorkspacePage({ searchParams }: { searchParams?: Pl
               {connection.lastError ? <p className={cn('mt-3 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs dark:border-rose-900/60 dark:bg-rose-950/30', toneText.danger)}>{connection.lastError}</p> : null}
               <div className="mt-3 border-t pt-3">
                 <p className="text-xs font-medium text-muted-foreground">{listingTotal ? plural(listingTotal, 'mapped listing') : 'No listings mapped'}{listingTotal > listings.length ? ` · first ${listings.length} shown` : ''}</p>
-                {listings.length ? <ul className="mt-2 space-y-1.5">{listings.map((mapping: any) => <li key={mapping.id} className="flex min-w-0 items-center justify-between gap-3 text-xs">
+                {listings.length ? <ul className="mt-2 space-y-1.5">{listings.map((mapping: any) => <li key={mapping.id} className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-xs">
                   <span className="min-w-0 truncate">{mapping.listing?.title || 'Listing unavailable'}</span>
                   <span className="flex shrink-0 items-center gap-2"><span className="font-mono text-muted-foreground">{mapping.externalListingId || 'no external id'}</span><StatusBadge status={mapping.status} tone={mappingHealthTone[mappingHealth(mapping.status)]} className="h-5" /></span>
+                  {mapping.externalUrl ? <span className={cn('basis-full break-words text-xs', mapping.lastImportIssue?.subscription && mapping.lastImportIssue?.open ? toneText.danger : 'text-muted-foreground')}>{mapping.lastImportIssue?.subscription && mapping.lastImportIssue?.open ? `Calendar link: ${mapping.lastImportIssue.error}` : mapping.lastSyncedAt ? `Calendar link checked ${new Date(mapping.lastSyncedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Calendar link saved; first check within the hour.'}</span> : null}
                 </li>)}</ul> : null}
               </div>
               {editable ? <div className="mt-3 space-y-2 border-t pt-3">
@@ -294,6 +296,7 @@ export async function ChannelWorkspacePage({ searchParams }: { searchParams?: Pl
                           {mappingStatuses.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                         </Select></Field>
                       </div>
+                      <Field label="Calendar link" optional hint="Leave empty to stop checking a channel calendar."><TextInput name="externalUrl" type="url" inputMode="url" maxLength={2000} defaultValue={mapping.externalUrl || ''} placeholder="https://…" /></Field>
                       <div><SubmitButton size="sm" variant="outline" pendingLabel="Saving…">Save mapping</SubmitButton></div>
                     </GuardedForm>)}
                   </div>

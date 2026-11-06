@@ -99,12 +99,25 @@ export async function importListingCalendar(
   eligibleMapping(await readPairMappings(context.prisma, { channelConnectionId: connection.id, listingId: listing.id, hostOrganizationId }));
   const sourceLabel = args.sourceLabel?.trim() || 'Operator-provided iCalendar text';
   if (sourceLabel.length > 240) throw new Error('Calendar source label is too long.');
+  return applyListingCalendarImport(context.prisma, { hostOrganizationId, connectionId: connection.id, listingId: listing.id, calendarText: args.calendarText, sourceLabel });
+}
+
+/**
+ * Applies one iCalendar to a mapped listing. Callers authorize first (host mutation or the
+ * subscription poller). `fullSnapshot` is for a subscribed URL: the feed is the channel's
+ * whole calendar, so a booking that disappeared from it (cancelled on Airbnb) is released here.
+ */
+export async function applyListingCalendarImport(prisma: any, input: { hostOrganizationId: string; connectionId: string; listingId: string; calendarText: string; sourceLabel: string; fullSnapshot?: boolean }) {
+  const { hostOrganizationId } = input;
+  const connection = { id: input.connectionId };
+  const listing = { id: input.listingId };
+  const sourceLabel = input.sourceLabel;
   // Parsed before any write: malformed or recurring calendars are rejected whole.
-  const events = parseICalendar(args.calendarText);
-  const checksum = iCalendarChecksum(args.calendarText);
+  const events = parseICalendar(input.calendarText);
+  const checksum = iCalendarChecksum(input.calendarText);
   const baseKey = importKey(hostOrganizationId, connection.id, listing.id, checksum);
 
-  return context.prisma.$transaction(async (tx: any) => {
+  return prisma.$transaction(async (tx: any) => {
     await lockListingCapacity(tx, [listing.id]);
     const inventoryListing = await tx.listing.findUnique({
       where: { id: listing.id },
@@ -118,7 +131,14 @@ export async function importListingCalendar(
     const priorWhere = { channelConnectionId: connection.id, listingId: listing.id, direction: 'import', payloadSha256: checksum, idempotencyKey: { startsWith: baseKey } };
     const latest = await tx.dataExchangeJob.findFirst({ where: priorWhere, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] });
     // A completed import replays its recorded result; partial or conflicted input is re-evaluated as a new attributable attempt.
-    if (latest?.status === 'succeeded') return latest;
+    if (latest?.status === 'succeeded') {
+      // A subscribed feed is a whole snapshot: an older identical snapshot only replays if
+      // nothing was imported for this pair since (feed A -> B -> A must re-apply A).
+      const newest = input.fullSnapshot
+        ? await tx.dataExchangeJob.findFirst({ where: { channelConnectionId: connection.id, listingId: listing.id, direction: 'import' }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: { id: true } })
+        : null;
+      if (!newest || newest.id === latest.id) return latest;
+    }
     const attempt = (await tx.dataExchangeJob.count({ where: priorWhere })) + 1;
     const idempotencyKey = attemptKey(baseKey, attempt);
     const retryOf = latest?.id || null;
@@ -184,6 +204,22 @@ export async function importListingCalendar(
       } else {
         await tx.calendarBlock.create({ data: { id, ...data } });
         createdCount += 1;
+      }
+    }
+    if (input.fullSnapshot) {
+      // Blocks this subscription created whose events are gone from the feed are released.
+      const present = new Set(events.map((event) => blockId(connection.id, listing.id, event.uid)));
+      const imported = await tx.calendarBlock.findMany({
+        where: { listingId: listing.id, hostOrganizationId, status: 'active', reason: 'channel_import', source: 'ical', reservationId: null },
+        select: { id: true, notes: true, externalUid: true },
+        take: MAX_CALENDAR_EVIDENCE,
+      });
+      for (const block of imported) {
+        // Only this connection's own blocks (ids derive from connection, listing and UID).
+        const ownBlock = Boolean(block.externalUid) && block.id === blockId(connection.id, listing.id, block.externalUid);
+        if (!ownBlock || present.has(block.id)) continue;
+        await tx.calendarBlock.update({ where: { id: block.id }, data: { status: 'released', notes: `${block.notes || 'Unavailable'} (removed from source calendar)` } });
+        updatedCount += 1;
       }
     }
     const applied = createdCount + updatedCount + unchangedCount;
@@ -259,8 +295,17 @@ export async function exportListingCalendar(
   if (!listing?.hostOrganization?.id) throw new Error('Listing not found.');
   const hostOrganizationId = listing.hostOrganization.id;
   await assertHostOrganizationAccess({ context, hostOrganizationId, permission: 'canReadChannels' });
+  return listingAvailabilityCalendar(context.prisma, { id: listing.id, title: listing.title, hostOrganizationId });
+}
+
+/**
+ * The unit's unavailable nights as iCalendar text. Callers authorize first: the host mutation
+ * by channel permission, the subscription feed by its signed listing key. Carries no guest data.
+ */
+export async function listingAvailabilityCalendar(prisma: any, listing: { id: string; title: string; hostOrganizationId: string }) {
+  const hostOrganizationId = listing.hostOrganizationId;
   // The physical unit's whole unavailable set: every listing selling it shares the same nights.
-  const { reservations, blocks } = await context.prisma.$transaction(async (tx: any) => {
+  const { reservations, blocks } = await prisma.$transaction(async (tx: any) => {
     const inventory = await tx.listing.findUnique({ where: { id: listing.id }, select: { hostOrganizationId: true, accommodationUnitId: true } });
     if (!inventory || inventory.hostOrganizationId !== hostOrganizationId) throw new Error('Listing not found.');
     let listingIds = [listing.id];

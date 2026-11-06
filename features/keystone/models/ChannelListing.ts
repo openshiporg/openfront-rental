@@ -4,6 +4,9 @@ import { json, relationship, select, text, timestamp } from '@keystone-6/core/fi
 import { hostScopedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
+import { calendarUrlProblem } from '../lib/calendarSubscription';
+
+const urlProblem = (value: unknown) => (typeof value === 'string' && value.trim() ? calendarUrlProblem(value.trim()) : null);
 
 export const ChannelListing = list({
   access: hostScopedListAccess('canReadChannels', 'canManageChannels'),
@@ -14,7 +17,15 @@ export const ChannelListing = list({
     listing: relationship({ ref: 'Listing.channelListings' }),
     channelConnection: relationship({ ref: 'ChannelConnection.channelListings' }),
     externalListingId: text({ validation: { isRequired: true }, isIndexed: true }),
-    externalUrl: text(),
+    // The channel's "Export calendar" link, polled about hourly when set (https, public host).
+    externalUrl: text({
+      hooks: {
+        validate: {
+          create: ({ resolvedData, addValidationError }) => { const problem = urlProblem(resolvedData.externalUrl); if (problem) addValidationError(problem); },
+          update: ({ resolvedData, addValidationError }) => { const problem = urlProblem(resolvedData.externalUrl); if (problem) addValidationError(problem); },
+        },
+      },
+    }),
     status: select({
       type: 'string',
       options: [
