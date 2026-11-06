@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight, Menu, X } from 'lucide-react';
+import { ArrowUpRight, Luggage, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
@@ -36,7 +36,7 @@ export function StorefrontNavigation({ active, brandName, brandMark, tagline }: 
           <Link key={item.key} href={item.href} aria-current={active === item.key ? 'page' : undefined}>{item.label}</Link>
         ))}
       </nav>
-      <Link href="/trips" className="stay-nav-trip" aria-current={active === 'trips' ? 'page' : undefined}>Your trip</Link>
+      <Link href="/trips" className="stay-nav-trip" aria-current={active === 'trips' ? 'page' : undefined} aria-label="Your trip"><Luggage size={16} aria-hidden="true" /><span className="stay-nav-trip-full">Your trip</span><span className="stay-nav-trip-short" aria-hidden="true">Trip</span></Link>
       <button ref={trigger} type="button" className="stay-menu-toggle" aria-expanded={open} aria-controls="stay-mobile-navigation" onClick={() => setOpen(true)}>
         <Menu size={20} aria-hidden="true" /><span className="stay-visually-hidden">Open menu</span>
       </button>
