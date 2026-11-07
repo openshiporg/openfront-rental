@@ -57,8 +57,43 @@ export async function closeStayObligations(tx: any, {
       });
     }
   }
+  const tasksCancelled = await cancelUnstartedStayTasks(tx, reservation, now, operationKey);
   const paymentAttemptsClosing = await requestAttemptClosure(tx, reservation.id, 'stay_closed');
-  return { agreementVoided, depositReleased, paymentAttemptsClosing };
+  return { agreementVoided, depositReleased, paymentAttemptsClosing, tasksCancelled };
+}
+
+/**
+ * Work the rules queued for a stay that will not happen (turnover, inspection, check-in support)
+ * is cancelled while nobody has started it. Started or finished work, manual tasks, and the
+ * cancellation rules' own follow-up tasks are left alone.
+ */
+export async function cancelUnstartedStayTasks(tx: any, reservation: { id: string; hostOrganizationId: string }, now: Date, operationKey: string) {
+  const open = await tx.propertyTask.findMany({
+    where: {
+      reservationId: reservation.id,
+      source: 'task_rule',
+      status: { in: ['queued', 'assigned', 'blocked'] },
+      NOT: { taskRule: { is: { trigger: 'reservation_cancelled' } } },
+    },
+    select: { id: true },
+  });
+  if (!open.length) return 0;
+  const ids = open.map((task: any) => task.id);
+  await tx.propertyTask.updateMany({
+    where: { id: { in: ids }, status: { in: ['queued', 'assigned', 'blocked'] } },
+    data: { status: 'cancelled', cancelledAt: now, completionNotes: 'Cancelled automatically: the stay was cancelled or marked no-show.' },
+  });
+  for (const id of ids) {
+    await enqueueOutboxEvent(tx, {
+      hostOrganizationId: reservation.hostOrganizationId,
+      eventType: 'property_task.cancelled',
+      aggregateType: 'PropertyTask',
+      aggregateId: id,
+      operationKey: `${operationKey}:task:${id}`,
+      payload: { taskId: id, reservationId: reservation.id, reason: 'stay_closed' },
+    });
+  }
+  return ids.length;
 }
 
 /** YYYY-MM-DD in the property's timezone; falls back to UTC for an invalid zone. */
