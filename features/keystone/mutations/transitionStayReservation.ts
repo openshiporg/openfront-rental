@@ -1,3 +1,5 @@
+import { GraphQLError } from 'graphql';
+import { safeHostCommandMessage } from '../utils/hostCommandError';
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
 import { enqueueOutboxEvent } from '../utils/outbox';
 import { createReservationTasksForTransition } from '../utils/reservationTaskAutomation';
@@ -207,5 +209,11 @@ export async function transitionStayReservation(
   context: any,
 ) {
   if (corrections.includes(args.transition)) throw new Error(`Unsupported stay transition: ${args.transition}`);
-  return operateStayReservation(context, { ...args, override: false });
+  try {
+    return await operateStayReservation(context, { ...args, override: false });
+  } catch (error) {
+    // Yoga masks plain Errors as "Unexpected error."; a GraphQLError carries the guard's reason to the operator.
+    if (error instanceof GraphQLError) throw error;
+    throw new GraphQLError(safeHostCommandMessage(error), { extensions: { code: 'STAY_TRANSITION_REFUSED' } });
+  }
 }
