@@ -11,6 +11,7 @@ import { createKeystoneSessionConfig } from "./sessionPolicy";
 import { withGraphqlListMaxTake } from "./security/graphql-limits";
 import { parseStorageEndpoint } from "./lib/storage-endpoint";
 import { pooledDatabaseUrl } from './database-url';
+import { throwKeystonePrismaErrors } from './lib/keystonePrismaErrors';
 
 const databaseURL = resolvePostgresDatabaseUrl();
 
@@ -134,6 +135,8 @@ export default withAuth(
     db: {
       provider: "postgresql",
       url: pooledDatabaseUrl(databaseURL),
+      // Keystone returns failed queries as values; this makes them throw so transactions roll back.
+      extendPrismaClient: throwKeystonePrismaErrors,
     },
     lists: boundedModels,
     storage: {
