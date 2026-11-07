@@ -5,10 +5,11 @@ import { integer, json, relationship, select, text, timestamp } from '@keystone-
 import { hostScopedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard, withChecks } from '../utils/deleteHistoryGuard';
 
 export const ChannelReservation = list({
   access: hostScopedListAccess('canReadChannels', 'canManageChannels'),
-  hooks: hostScopedHooks('canManageChannels'),
+  hooks: withChecks(hostScopedHooks('canManageChannels'), { delete: historyDeleteGuard('ChannelReservation') }),
   ui: { listView: { initialColumns: ['externalReservationId', 'channelConnection', 'channelListing', 'reservation', 'status', 'checkInDate', 'checkOutDate'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),

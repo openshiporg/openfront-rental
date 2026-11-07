@@ -4,8 +4,10 @@ import { checkbox, relationship, select, text } from '@keystone-6/core/fields';
 
 import { isSignedIn, permissions, rules } from '../access';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard } from '../utils/deleteHistoryGuard';
 
 export const HostOrganization = list({
+  hooks: { validateDelete: historyDeleteGuard('HostOrganization') },
   access: {
     operation: {
       query: isSignedIn,

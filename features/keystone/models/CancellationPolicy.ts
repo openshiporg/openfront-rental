@@ -4,10 +4,11 @@ import { integer, json, relationship, select, text } from '@keystone-6/core/fiel
 import { hostScopedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard, withChecks } from '../utils/deleteHistoryGuard';
 
 export const CancellationPolicy = list({
   access: hostScopedListAccess('canReadPricing', 'canManagePricing'),
-  hooks: hostScopedHooks('canManagePricing'),
+  hooks: withChecks(hostScopedHooks('canManagePricing'), { delete: historyDeleteGuard('CancellationPolicy') }),
   ui: { listView: { initialColumns: ['name', 'hostOrganization', 'policyType', 'version'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization.cancellationPolicies' }),

@@ -7,6 +7,7 @@ import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { archivedRecordGuard } from '../mutations/catalogLifecycle';
 import { propertyListingSummary } from '../utils/listingReadiness';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard } from '../utils/deleteHistoryGuard';
 
 const propertyHostHooks = hostScopedHooks('canManageProperties');
 const archivedPropertyGuard = archivedRecordGuard('property');
@@ -16,6 +17,7 @@ export const Property = list({
   hooks: {
     resolveInput: propertyHostHooks.resolveInput,
     validate: async (args: any) => {
+      if (args.operation === 'delete') await historyDeleteGuard('Property')(args);
       await propertyHostHooks.validate(args);
       archivedPropertyGuard(args);
     },

@@ -4,10 +4,11 @@ import { checkbox, json, relationship, select, text, timestamp } from '@keystone
 import { hostScopedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard, withChecks } from '../utils/deleteHistoryGuard';
 
 export const ChannelConnection = list({
   access: hostScopedListAccess('canReadChannels', 'canManageChannels'),
-  hooks: hostScopedHooks('canManageChannels'),
+  hooks: withChecks(hostScopedHooks('canManageChannels'), { delete: historyDeleteGuard('ChannelConnection') }),
   ui: { listView: { initialColumns: ['name', 'provider', 'connectionType', 'status', 'lastSyncedAt'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization.channelConnections' }),

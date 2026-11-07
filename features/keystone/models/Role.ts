@@ -4,8 +4,10 @@ import { checkbox, relationship, text } from '@keystone-6/core/fields';
 
 import { isSignedIn, permissions } from '../access';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard } from '../utils/deleteHistoryGuard';
 
 export const Role = list({
+  hooks: { validateDelete: historyDeleteGuard('Role') },
   access: {
     operation: {
       ...allOperations(permissions.canManageRoles),

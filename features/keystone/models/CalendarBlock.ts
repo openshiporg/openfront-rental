@@ -4,6 +4,7 @@ import { relationship, select, text } from '@keystone-6/core/fields';
 import { hostScopedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
+import { dateRangeProblem } from '../utils/deleteHistoryGuard';
 
 const scopedHooks = hostScopedHooks('canManageCalendar');
 const reservationBlockMutationError = 'Reservation-backed capacity blocks can only be changed by reservation lifecycle operations.';
@@ -16,6 +17,10 @@ export const CalendarBlock = list({
       await scopedHooks.validate(args);
       if (args.item?.reservationId || args.resolvedData?.reservation) {
         args.addValidationError(reservationBlockMutationError);
+      }
+      if (args.operation !== 'delete') {
+        const problem = dateRangeProblem(args.resolvedData.startDate ?? args.item?.startDate, args.resolvedData.endDate ?? args.item?.endDate, 'A calendar block');
+        if (problem) args.addValidationError(problem);
       }
     },
   },

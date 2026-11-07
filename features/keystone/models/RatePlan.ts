@@ -4,10 +4,11 @@ import { checkbox, integer, relationship, select, text } from '@keystone-6/core/
 import { hostScopedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard, withChecks } from '../utils/deleteHistoryGuard';
 
 export const RatePlan = list({
   access: hostScopedListAccess('canReadPricing', 'canManagePricing'),
-  hooks: hostScopedHooks('canManagePricing', { parent: 'listing' }),
+  hooks: withChecks(hostScopedHooks('canManagePricing', { parent: 'listing' }), { delete: historyDeleteGuard('RatePlan') }),
   ui: { listView: { initialColumns: ['name', 'listing', 'baseNightlyRateCents', 'minimumStay', 'status'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),

@@ -4,8 +4,10 @@ import { checkbox, json, password, relationship, select, text } from '@keystone-
 
 import { isSignedIn, permissions, rules } from '../access';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard } from '../utils/deleteHistoryGuard';
 
 export const User = list({
+  hooks: { validateDelete: historyDeleteGuard('User') },
   access: {
     operation: {
       ...allOperations(isSignedIn),

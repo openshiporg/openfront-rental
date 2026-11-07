@@ -4,10 +4,11 @@ import { json, relationship, select, text, timestamp } from '@keystone-6/core/fi
 import { hostScopedListAccess, permissions } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard, withChecks } from '../utils/deleteHistoryGuard';
 
 export const Conversation = list({
   access: hostScopedListAccess('canReadMessages', 'canManageMessages'),
-  hooks: hostScopedHooks('canManageMessages'),
+  hooks: withChecks(hostScopedHooks('canManageMessages'), { delete: historyDeleteGuard('Conversation') }),
   ui: { listView: { initialColumns: ['subject', 'guest', 'listing', 'reservation', 'status', 'lastMessageAt'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization.conversations' }),

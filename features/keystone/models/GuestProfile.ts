@@ -5,10 +5,11 @@ import { checkbox, relationship, select, text } from '@keystone-6/core/fields';
 import { hostScopedListAccess, permissions } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard, withChecks } from '../utils/deleteHistoryGuard';
 
 export const GuestProfile = list({
   access: hostScopedListAccess('canReadGuests', 'canManageGuests'),
-  hooks: hostScopedHooks('canManageGuests'),
+  hooks: withChecks(hostScopedHooks('canManageGuests'), { delete: historyDeleteGuard('GuestProfile') }),
   ui: { listView: { initialColumns: ['name', 'email', 'phone', 'verificationStatus', 'reservations'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization.guests' }),

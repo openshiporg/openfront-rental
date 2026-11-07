@@ -5,10 +5,11 @@ import { integer, json, relationship, select, text } from '@keystone-6/core/fiel
 import { hostScopedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard, withChecks } from '../utils/deleteHistoryGuard';
 
 export const PropertyOwner = list({
   access: hostScopedListAccess('canReadPayouts', 'canManagePayouts'),
-  hooks: hostScopedHooks('canManagePayouts'),
+  hooks: withChecks(hostScopedHooks('canManagePayouts'), { delete: historyDeleteGuard('PropertyOwner') }),
   ui: { listView: { initialColumns: ['ownerNumber', 'displayName', 'companyName', 'status', 'payoutSchedule'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization.propertyOwners' }),

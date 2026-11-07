@@ -8,6 +8,7 @@ import { assertListingAllocation, coherentBookingMode } from '../utils/listingIn
 import { trackingFields } from './trackingFields';
 import { listingReadinessFor } from '../utils/listingReadiness';
 import { archivedRecordGuard } from '../mutations/catalogLifecycle';
+import { historyDeleteGuard } from '../utils/deleteHistoryGuard';
 
 const listingHostHooks = hostScopedHooks('canManageListings');
 const archivedListingGuard = archivedRecordGuard('listing');
@@ -17,6 +18,7 @@ export const Listing = list({
   hooks: {
     resolveInput: async (args: any) => coherentBookingMode(await listingHostHooks.resolveInput(args), args.item),
     validate: async (args: any) => {
+      if (args.operation === 'delete') await historyDeleteGuard('Listing')(args);
       await listingHostHooks.validate(args);
       archivedListingGuard(args);
       try {

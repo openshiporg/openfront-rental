@@ -5,12 +5,13 @@ import { hostScopedListAccess } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
 import { calendarUrlProblem } from '../lib/calendarSubscription';
+import { historyDeleteGuard, withChecks } from '../utils/deleteHistoryGuard';
 
 const urlProblem = (value: unknown) => (typeof value === 'string' && value.trim() ? calendarUrlProblem(value.trim()) : null);
 
 export const ChannelListing = list({
   access: hostScopedListAccess('canReadChannels', 'canManageChannels'),
-  hooks: hostScopedHooks('canManageChannels'),
+  hooks: withChecks(hostScopedHooks('canManageChannels'), { delete: historyDeleteGuard('ChannelListing') }),
   ui: { listView: { initialColumns: ['listing', 'channelConnection', 'externalListingId', 'status', 'lastSyncedAt'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),

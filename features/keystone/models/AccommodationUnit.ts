@@ -4,10 +4,11 @@ import { integer, relationship, select, text } from '@keystone-6/core/fields';
 import { hostScopedListAccess, permissions } from '../access';
 import { hostScopedHooks } from '../utils/hostOrganizationAccess';
 import { trackingFields } from './trackingFields';
+import { historyDeleteGuard, withChecks } from '../utils/deleteHistoryGuard';
 
 export const AccommodationUnit = list({
   access: hostScopedListAccess('canReadProperties', 'canManageProperties'),
-  hooks: hostScopedHooks('canManageProperties', { parent: 'property' }),
+  hooks: withChecks(hostScopedHooks('canManageProperties', { parent: 'property' }), { delete: historyDeleteGuard('AccommodationUnit') }),
   ui: { listView: { initialColumns: ['name', 'property', 'accommodationType', 'maxGuests', 'bedroomCount', 'bathroomCountHalfUnits'] } },
   fields: {
     hostOrganization: relationship({ ref: 'HostOrganization' }),
