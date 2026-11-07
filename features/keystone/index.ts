@@ -10,6 +10,7 @@ import { resolvePostgresDatabaseUrl, resolveSessionSecret } from "./lib/runtimeS
 import { createKeystoneSessionConfig } from "./sessionPolicy";
 import { withGraphqlListMaxTake } from "./security/graphql-limits";
 import { parseStorageEndpoint } from "./lib/storage-endpoint";
+import { pooledDatabaseUrl } from './database-url';
 
 const databaseURL = resolvePostgresDatabaseUrl();
 
@@ -132,7 +133,7 @@ export default withAuth(
   config({
     db: {
       provider: "postgresql",
-      url: databaseURL,
+      url: pooledDatabaseUrl(databaseURL),
     },
     lists: boundedModels,
     storage: {
