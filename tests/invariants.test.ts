@@ -45,3 +45,20 @@ test('no list mixes validate with validateInput or validateDelete', () => {
     assert.match(source, /historyDeleteGuard|dateRangeProblem/, file);
   }
 });
+
+test('a host organization keeps at least one active owner', async () => {
+  const { lastActiveOwnerProblem } = await import('../features/keystone/utils/hostOrganizationAccess');
+  const owner = { id: 'm1', hostOrganizationId: 'h1', membershipRole: 'owner', status: 'active' };
+  const ctx = (others: number) => ({ prisma: { hostMembership: { count: async () => others } } });
+  assert.match(await lastActiveOwnerProblem({ operation: 'delete', item: owner, context: ctx(0) }) || '', /only active owner/);
+  assert.match(await lastActiveOwnerProblem({ operation: 'update', item: owner, resolvedData: { membershipRole: 'admin' }, context: ctx(0) }) || '', /only active owner/);
+  assert.match(await lastActiveOwnerProblem({ operation: 'update', item: owner, resolvedData: { status: 'suspended' }, context: ctx(0) }) || '', /only active owner/);
+  assert.equal(await lastActiveOwnerProblem({ operation: 'delete', item: owner, context: ctx(1) }), null);
+  assert.equal(await lastActiveOwnerProblem({ operation: 'update', item: owner, resolvedData: { notes: 'x' }, context: ctx(0) }), null);
+  assert.equal(await lastActiveOwnerProblem({ operation: 'delete', item: { ...owner, membershipRole: 'admin' }, context: ctx(0) }), null);
+});
+
+test('counts read naturally', async () => {
+  const prisma = new Proxy({}, { get: (_t, model) => ({ count: async () => (model === 'payout' ? 1 : model === 'property' ? 1 : 0) }) });
+  assert.equal(await deleteHistoryProblem(prisma, 'HostOrganization', 'h'), 'This record has 1 payout, 1 property. Archive the host organization instead of deleting it.');
+});

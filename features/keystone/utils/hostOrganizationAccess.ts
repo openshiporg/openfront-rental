@@ -313,11 +313,26 @@ export const hostMembershipHooks = {
         requestedRole: resolvedData?.membershipRole || item?.membershipRole || null,
         memberships: await membershipsForSession(context),
       });
+      const lastOwnerProblem = await lastActiveOwnerProblem({ operation, resolvedData, item, context });
+      if (lastOwnerProblem) addValidationError(lastOwnerProblem);
     } catch (error) {
       addValidationError(error instanceof Error ? error.message : 'Host membership validation failed.');
     }
   },
 };
+
+/** A host organization always keeps at least one active owner. */
+export async function lastActiveOwnerProblem({ operation, resolvedData, item, context }: any) {
+  if (operation === 'create' || item?.membershipRole !== 'owner' || item?.status !== 'active' || !item?.hostOrganizationId) return null;
+  const staysActiveOwner = operation === 'update'
+    && (resolvedData?.membershipRole ?? item.membershipRole) === 'owner'
+    && (resolvedData?.status ?? item.status) === 'active';
+  if (staysActiveOwner) return null;
+  const otherOwners = await context.prisma.hostMembership.count({
+    where: { hostOrganizationId: item.hostOrganizationId, membershipRole: 'owner', status: 'active', id: { not: item.id } },
+  });
+  return otherOwners ? null : 'This is the only active owner of the host organization. Make another member an owner first.';
+}
 
 export async function assertHostOrganizationAccess({
   context,

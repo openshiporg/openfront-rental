@@ -10,6 +10,12 @@
  */
 export type HistoryReference = { model: string; field: string; label: string };
 
+const SINGULAR: Record<string, string> = { people: 'person', properties: 'property', 'damage claims': 'damage claim', 'channel listings': 'channel listing' };
+function countLabel(count: number, plural: string) {
+  if (count !== 1) return `${count} ${plural}`;
+  return `1 ${SINGULAR[plural] ?? plural.replace(/s$/, '')}`;
+}
+
 export const DELETE_HISTORY: Record<string, { references: HistoryReference[]; instead: string }> = {
   HostOrganization: {
     instead: 'Archive the host organization instead of deleting it.',
@@ -124,7 +130,7 @@ export async function deleteHistoryProblem(prisma: any, listKey: string, id: str
   const rule = DELETE_HISTORY[listKey];
   if (!rule) return null;
   const counts = await Promise.all(rule.references.map(ref => prisma[ref.model].count({ where: { [ref.field]: id } })));
-  const found = rule.references.map((ref, i) => counts[i] ? `${counts[i]} ${ref.label}` : '').filter(Boolean);
+  const found = rule.references.map((ref, i) => counts[i] ? countLabel(counts[i], ref.label) : '').filter(Boolean);
   return found.length ? `This record has ${found.join(', ')}. ${rule.instead}` : null;
 }
 
