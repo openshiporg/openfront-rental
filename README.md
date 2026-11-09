@@ -110,7 +110,7 @@ The [Keystone model registry](features/keystone/models/index.ts) and [Prisma sch
 - Rate plans, seasonal rates, fees, taxes, cancellation policies, and stay quotes.
 - Guests, reservations, amendments, line items, and stay agreements.
 - Payments, refunds, security deposits, damage claims, payouts, and owner statements.
-- Conversations, messages, reviews, property tasks, channel records, and outbox events.
+- Conversations, messages, reviews, property tasks, and channel records.
 
 ## Getting Started
 
@@ -172,7 +172,6 @@ The [Keystone model registry](features/keystone/models/index.ts) and [Prisma sch
 - `npm run migrate` - Apply checked-in Prisma migrations.
 - `npm run release:migrate` - Apply the same checked-in migrations as a release step.
 - `npm run lint` - Run ESLint.
-- `npm run outbox:deliver` - Run the outbox delivery entry point.
 
 Use a development database for `migrate:gen`; it generates and applies schema changes.
 
@@ -238,7 +237,7 @@ npm start
 Back up an existing database before applying migrations. The included [`railway.toml`](railway.toml) builds without migrations and applies them when the application starts.
 
 ### Scaling Considerations
-Keep host membership, reservation allocation, and calendar state in the shared PostgreSQL database. Run continuous outbox delivery with `npm run outbox:deliver -- --watch` under a supervisor when needed, and use shared object storage. iCalendar exchange is not an automatically supervised OTA synchronization service.
+Keep host membership, reservation allocation, and calendar state in the shared PostgreSQL database. Use shared object storage. iCalendar exchange is not an automatically supervised OTA synchronization service.
 
 ## Contributing
 

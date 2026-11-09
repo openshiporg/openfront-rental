@@ -1,7 +1,6 @@
 import crypto from 'node:crypto';
 
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
-import { enqueueOutboxEvent } from '../utils/outbox';
 import {
   applyPropertyTaskTransition,
   isActiveTaskAssignee,
@@ -77,14 +76,6 @@ export async function createPropertyTask(
         notes,
       },
     });
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: property.hostOrganization.id,
-      eventType: 'property_task.created',
-      aggregateType: 'PropertyTask',
-      aggregateId: id,
-      operationKey: `create:${id}`,
-      payload: { taskId: id, propertyId: property.id, status: created.status, taskType: created.taskType, actorId: context.session?.itemId || null },
-    });
     return created;
   }, { maxWait: 5000, timeout: 10000, isolationLevel: 'ReadCommitted' });
 }
@@ -136,21 +127,6 @@ export async function transitionPropertyTask(
       checklist: locked.checklist,
     }, transition, now);
     const updated = await tx.propertyTask.update({ where: { id: locked.id }, data: releaseStaleAssignee ? { ...data, assigneeId: null, claimedAt: null } : data });
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: task.hostOrganization.id,
-      eventType: `property_task.${updated.status}`,
-      aggregateType: 'PropertyTask',
-      aggregateId: locked.id,
-      operationKey: `${args.action}:${now.toISOString()}`,
-      payload: {
-        taskId: locked.id,
-        status: updated.status,
-        propertyId: locked.propertyId,
-        reservationId: locked.reservationId,
-        actorId: context.session?.itemId || null,
-        ...(releaseStaleAssignee ? { releasedAssigneeId: locked.assigneeId } : {}),
-      },
-    });
     return updated;
   }, { maxWait: 5000, timeout: 10000, isolationLevel: 'ReadCommitted' });
 }

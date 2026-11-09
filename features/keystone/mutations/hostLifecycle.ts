@@ -3,7 +3,6 @@ import crypto from 'node:crypto';
 
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
 import { safeHostCommandMessage } from '../utils/hostCommandError';
-import { enqueueOutboxEvent } from '../utils/outbox';
 import { sendGuestLinkEmail } from '../lib/guestMail';
 import { passwordResetEmailConfigured } from '../lib/mailAvailability';
 import { createPublicOwnershipToken, hashPublicOwnershipToken, isPublicOwnershipTokenActive, publicTokenExpiry } from '../utils/publicTokenAccess';
@@ -107,14 +106,6 @@ async function voidAgreement(context: any, input: Input) {
     // Terms, signature name and signing time are kept; only the status and link change.
     await tx.stayAgreement.update({ where: { id: locked.id }, data: { status: 'voided', signingTokenRevokedAt: locked.signingTokenRevokedAt || now } });
     await appendReservationNote(tx, agreement.reservation?.id, `agreement ${locked.agreementNumber} voided: ${reason}`);
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: locked.hostOrganizationId,
-      eventType: 'stay_agreement.voided',
-      aggregateType: 'StayAgreement',
-      aggregateId: locked.id,
-      operationKey: `host-void:${now.toISOString()}`,
-      payload: { agreementId: locked.id, reservationId: agreement.reservation?.id || null, previousStatus: locked.status, reason, actorUserId: context.session?.itemId || null },
-    });
     return { status: 'voided' };
   });
 }
@@ -148,14 +139,6 @@ async function reissueAgreement(context: any, input: Input) {
       const conversation = await stayConversation(tx, { ...reservation, hostOrganizationId: locked.hostOrganizationId });
       await postHostMessage(tx, conversation, `Here is a new link to review and sign your stay agreement ${locked.agreementNumber}: /agreements/${token}`, context.session.itemId);
     }
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: locked.hostOrganizationId,
-      eventType: 'stay_agreement.reissued',
-      aggregateType: 'StayAgreement',
-      aggregateId: locked.id,
-      operationKey: `reissue:${now.toISOString()}`,
-      payload: { agreementId: locked.id, reservationId: reservation.id, postedToThread: postToThread, actorUserId: context.session?.itemId || null },
-    });
   });
   return { link: `/agreements/${token}`, postedToThread: postToThread };
 }
@@ -200,14 +183,6 @@ async function replyToConversation(context: any, input: Input) {
     if (inquiryLink && guestCanRead) {
       await tx.conversation.update({ where: { id: locked.id }, data: { guestAccessTokenExpiresAt: publicTokenExpiry(new Date()) } });
     }
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: locked.hostOrganizationId,
-      eventType: 'message.sent',
-      aggregateType: 'Message',
-      aggregateId: message.id,
-      operationKey: `reply:${message.id}`,
-      payload: { messageId: message.id, conversationId: locked.id, reservationId: locked.reservationId, delivery: 'guest_private_page', guestCanRead },
-    });
     return { id: message.id, status: message.status, guestCanRead };
   });
 }
@@ -339,14 +314,6 @@ async function moderateReview(context: any, input: Input) {
         data: { reviewCount: nextCount, reviewAverageHundredths: nextCount ? Math.min(500, Math.max(0, Math.round(nextTotal / nextCount))) : 0 },
       });
     }
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: locked.hostOrganizationId,
-      eventType: `review.${action.status}`,
-      aggregateType: 'Review',
-      aggregateId: locked.id,
-      operationKey: `${action.status}:${now.toISOString()}`,
-      payload: { reviewId: locked.id, listingId: locked.listingId, reservationId: locked.reservationId, status: action.status },
-    });
     return { status: action.status };
   });
 }
@@ -480,14 +447,6 @@ async function allocateListing(context: any, input: Input) {
     if (liveStay || activeHold) throw new Error('This listing has upcoming stays or calendar holds on its current unit. Re-accommodate or release them before moving the listing.');
     await tx.listing.update({ where: { id: listingId }, data: { accommodationUnitId: unitId, propertyId: unit.propertyId } });
     const now = new Date();
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: current.hostOrganizationId,
-      eventType: 'listing.allocation_changed',
-      aggregateType: 'Listing',
-      aggregateId: listingId,
-      operationKey: `allocation:${now.toISOString()}`,
-      payload: { listingId, previous: { accommodationUnitId: current.accommodationUnitId, propertyId: current.propertyId }, next: { accommodationUnitId: unitId, propertyId: unit.propertyId }, actorUserId: context.session?.itemId || null },
-    });
     return { listingId, accommodationUnitId: unitId, changed: true };
   }, { maxWait: 5000, timeout: 10000, isolationLevel: 'Serializable' });
 }
@@ -518,14 +477,6 @@ async function amendPartyInvitations(context: any, input: Input) {
     await tx.guestParty.update({ where: { id: locked.guestParty.id }, data: { invitedGuests } });
     await appendReservationNote(tx, reservationId, `Invited guests changed from ${previous.length} to ${invitedGuests.length}: ${reason}`);
     const now = new Date();
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: locked.hostOrganizationId,
-      eventType: 'reservation.invitations_changed',
-      aggregateType: 'Reservation',
-      aggregateId: reservationId,
-      operationKey: `invitations:${now.toISOString()}`,
-      payload: { reservationId, previousNames: previous.map((guest: any) => guest?.name || null), nextNames: invitedGuests.map((guest: any) => guest.name), reason, actorUserId: context.session?.itemId || null },
-    });
     return { reservationId, invitedGuests: invitedGuests.length };
   });
 }
@@ -576,14 +527,6 @@ async function amendParty(context: any, input: Input) {
     await tx.guestParty.update({ where: { id: party.id }, data: next });
     await appendReservationNote(tx, reservationId, `Party changed from ${JSON.stringify(previous)} to ${JSON.stringify(next)}: ${reason}`);
     const now = new Date();
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: locked.hostOrganizationId,
-      eventType: 'reservation.party_changed',
-      aggregateType: 'Reservation',
-      aggregateId: reservationId,
-      operationKey: `party:${now.toISOString()}`,
-      payload: { reservationId, previous, next, reason, actorUserId: context.session?.itemId || null },
-    });
     return { reservationId, ...next };
   });
 }

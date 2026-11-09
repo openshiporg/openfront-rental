@@ -3,7 +3,6 @@ import { GraphQLError } from 'graphql';
 
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
 import { isRealMoneyTender, tenderKind } from '../utils/tenderProvenance';
-import { enqueueOutboxEvent } from '../utils/outbox';
 import { REAL_CAPACITY_BLOCK, REAL_STAY, SAMPLE_STATEMENT } from '../utils/fixtureOrigin';
 
 const DAY_MS = 86_400_000;
@@ -669,7 +668,6 @@ export async function exportHostArchive(
         completedAt: new Date(),
       },
     });
-    await enqueueOutboxEvent(tx, { hostOrganizationId, eventType: 'host_archive.exported', aggregateType: 'DataExchangeJob', aggregateId: record.id, operationKey: idempotencyKey, payload: { jobId: record.id, checksum, version: ARCHIVE_VERSION, snapshotCapturedAt: capturedAt } });
     return record;
   });
   return { jobId: job.id, checksum, archive };

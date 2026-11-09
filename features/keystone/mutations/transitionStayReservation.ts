@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { safeHostCommandMessage } from '../utils/hostCommandError';
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
-import { enqueueOutboxEvent } from '../utils/outbox';
 import { createReservationTasksForTransition } from '../utils/reservationTaskAutomation';
 import { isTestTender, reconcileReservationPaymentEvidence, reservationPaymentStatus } from '../utils/paymentReconciliation';
 import { createUncoveredRefundReviewLiabilities } from '../utils/refundReviewLiabilities';
@@ -178,24 +177,6 @@ export async function operateStayReservation(
     if (!corrections.includes(args.transition)) {
       await createReservationTasksForTransition(tx, args.transition === 'complete' && early ? { ...updated, checkOutDate: today } : updated, args.transition);
     }
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: locked.hostOrganizationId,
-      eventType: corrections.includes(args.transition) ? `reservation.corrected` : `reservation.${transition.to}`,
-      aggregateType: 'Reservation',
-      aggregateId: locked.id,
-      operationKey: `${args.transition}:${now.toISOString()}`,
-      payload: {
-        reservationId: locked.id,
-        confirmationCode: locked.confirmationCode,
-        status: transition.to,
-        transition: args.transition,
-        override: Boolean(early),
-        releasedNights,
-        actorUserId: context.session?.itemId || null,
-        balanceDueCents: Math.max((locked.totalAmountCents || 0) - (locked.amountPaidCents || 0), 0),
-        testMode: locked.testMode === true,
-      },
-    });
     return updated;
   }, { maxWait: 5000, timeout: 10000, isolationLevel: 'ReadCommitted' });
   // Open card attempts were marked in the closing transaction; now ask Stripe to cancel them.

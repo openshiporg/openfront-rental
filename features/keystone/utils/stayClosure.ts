@@ -1,4 +1,3 @@
-import { enqueueOutboxEvent } from './outbox';
 import { requestAttemptClosure } from './paymentAttemptClaim';
 
 /**
@@ -30,14 +29,6 @@ export async function closeStayObligations(tx: any, {
     });
     agreementVoided = voided.count > 0;
     if (agreementVoided) {
-      await enqueueOutboxEvent(tx, {
-        hostOrganizationId: reservation.hostOrganizationId,
-        eventType: 'stay_agreement.voided',
-        aggregateType: 'StayAgreement',
-        aggregateId: reservation.agreementId,
-        operationKey,
-        payload: { agreementId: reservation.agreementId, reservationId: reservation.id, reason: 'stay_closed' },
-      });
     }
   }
   if (reservation.securityDepositId) {
@@ -47,14 +38,6 @@ export async function closeStayObligations(tx: any, {
     });
     depositReleased = released.count > 0;
     if (depositReleased) {
-      await enqueueOutboxEvent(tx, {
-        hostOrganizationId: reservation.hostOrganizationId,
-        eventType: 'security_deposit.released',
-        aggregateType: 'SecurityDeposit',
-        aggregateId: reservation.securityDepositId,
-        operationKey,
-        payload: { depositId: reservation.securityDepositId, reservationId: reservation.id, reason: 'stay_closed' },
-      });
     }
   }
   const tasksCancelled = await cancelUnstartedStayTasks(tx, reservation, now, operationKey);
@@ -84,14 +67,6 @@ export async function cancelUnstartedStayTasks(tx: any, reservation: { id: strin
     data: { status: 'cancelled', cancelledAt: now, completionNotes: 'Cancelled automatically: the stay was cancelled or marked no-show.' },
   });
   for (const id of ids) {
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: reservation.hostOrganizationId,
-      eventType: 'property_task.cancelled',
-      aggregateType: 'PropertyTask',
-      aggregateId: id,
-      operationKey: `${operationKey}:task:${id}`,
-      payload: { taskId: id, reservationId: reservation.id, reason: 'stay_closed' },
-    });
   }
   return ids.length;
 }

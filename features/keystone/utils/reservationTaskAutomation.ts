@@ -1,6 +1,5 @@
 import crypto from 'node:crypto';
 
-import { enqueueOutboxEvent } from './outbox';
 import { isActiveTaskAssignee, propertyTaskRuleKey } from './propertyTaskLifecycle';
 import { zonedLocalTimestamp, zonedTodayIso } from './stayBookingRules';
 import { REAL_STAY } from './fixtureOrigin';
@@ -105,14 +104,6 @@ async function upsertRuleTask(tx: any, input: { rule: any; reservation: any; lis
       checklist: rule.checklistTemplate ?? [],
       ...(staleDefault ? { notes: STALE_DEFAULT_ASSIGNEE_NOTE } : {}),
     },
-  });
-  await enqueueOutboxEvent(tx, {
-    hostOrganizationId: reservation.hostOrganizationId,
-    eventType: 'property_task.created',
-    aggregateType: 'PropertyTask',
-    aggregateId: task.id,
-    operationKey: idempotencyKey,
-    payload: { taskId: task.id, reservationId: reservation.id, propertyId: listing.propertyId, trigger, ...(staleDefault ? { defaultAssigneeUnavailable: true } : {}) },
   });
   return task;
 }

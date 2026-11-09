@@ -90,7 +90,6 @@ export const HostOrganization = list({
     taskRules: relationship({ ref: 'TaskRule.hostOrganization', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
     channelConnections: relationship({ ref: 'ChannelConnection.hostOrganization', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
     dataExchangeJobs: relationship({ ref: 'DataExchangeJob.hostOrganization', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
-    outboxEvents: relationship({ ref: 'OutboxEvent.hostOrganization', many: true, access: { create: denyAll, update: denyAll }, ui: { displayMode: 'count' } }),
     ...trackingFields,
   },
 });

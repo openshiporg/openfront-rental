@@ -4,7 +4,6 @@ import { STRIPE_PROVIDER_CODE } from '../../integrations/payment/stripe';
 import { ProviderDefiniteRejection, ProviderOutcomeUnknown } from '../../integrations/payment/errors';
 import { uncoveredExcessCents } from '../utils/refundGuards';
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
-import { enqueueOutboxEvent } from '../utils/outbox';
 import { reconcileReservationPaymentEvidence, reservationPaymentStatus } from '../utils/paymentReconciliation';
 import { createProviderRefund, getProviderRefund } from '../utils/paymentProviderAdapter';
 import { safeHostCommandMessage } from '../utils/hostCommandError';
@@ -205,14 +204,6 @@ async function settleProviderRefund(context: any, { refundId, payment, idempoten
       data: { refundedAmountCents, status: refundedAmountCents === lockedPayment.amountCents ? 'refunded' : 'partially_refunded' },
     });
     await reconcileReservationLedger(tx, locked.reservationId);
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: locked.hostOrganizationId,
-      eventType: 'payment.refunded',
-      aggregateType: 'Refund',
-      aggregateId: locked.id,
-      operationKey: `stripe:${result.providerRefundId}`,
-      payload: { refundId: locked.id, paymentId: lockedPayment.id, reservationId: locked.reservationId, amountCents: locked.amountCents, currencyCode: locked.currencyCode, reconciliationMethod: 'stripe_test_refund', providerRefundId: result.providerRefundId },
-    });
     return { status: 'succeeded', refundId, amountCents: locked.amountCents };
   }, transactionOptions);
 }
@@ -319,14 +310,6 @@ export async function declineStayRefund(context: any, args: { refundId: string; 
       data: { status: 'cancelled', data: { ...data, declined: { note: note.slice(0, 1000), byUserId: context.session?.itemId, at: new Date().toISOString() } } },
     });
     await reconcileReservationLedger(tx, locked.reservationId);
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: locked.hostOrganizationId,
-      eventType: 'refund.declined',
-      aggregateType: 'Refund',
-      aggregateId: locked.id,
-      operationKey: `decline:${locked.id}`,
-      payload: { refundId: locked.id, paymentId: locked.paymentId, reservationId: locked.reservationId, amountCents: locked.amountCents },
-    });
     return { status: 'cancelled', refundId: locked.id };
   }, transactionOptions);
 }

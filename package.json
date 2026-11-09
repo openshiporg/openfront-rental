@@ -12,8 +12,7 @@
     "migrate:gen": "keystone build --no-ui && tsx features/keystone/view-order/generate-view-order.ts && keystone prisma migrate dev",
     "migrate": "prisma migrate deploy",
     "release:migrate": "prisma migrate deploy",
-    "seed:runtime": "tsx features/platform/onboarding/scripts/seed-runtime.ts",
-    "outbox:deliver": "tsx features/keystone/workers/runOutboxDelivery.ts"
+    "seed:runtime": "tsx features/platform/onboarding/scripts/seed-runtime.ts"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.13",

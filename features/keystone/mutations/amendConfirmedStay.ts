@@ -1,7 +1,6 @@
 import crypto from 'node:crypto';
 
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
-import { enqueueOutboxEvent } from '../utils/outbox';
 import { reconcileReservationPaymentEvidence, reservationPaymentStatus } from '../utils/paymentReconciliation';
 import { findAccommodationUnitCapacityConflict, lockAccommodationUnitCapacity, lockListingCapacity } from '../utils/reservationAllocation';
 import { assertStayNotInPast, calculateStayQuote } from '../utils/stayPricing';
@@ -595,28 +594,6 @@ export async function amendConfirmedStayOperation(
       data: { startDate: args.checkInDate, endDate: args.checkOutDate },
     });
     if (movedBlock.count !== 1) throw new Error('Reservation capacity changed while applying the amendment.');
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId,
-      eventType: 'reservation.amended',
-      aggregateType: 'Reservation',
-      aggregateId: current.id,
-      operationKey: args.idempotencyKey,
-      payload: {
-        amendmentId: amendment.id,
-        reservationId: current.id,
-        confirmationCode: current.confirmationCode,
-        previousCheckInDate: current.checkInDate,
-        previousCheckOutDate: current.checkOutDate,
-        checkInDate: args.checkInDate,
-        checkOutDate: args.checkOutDate,
-        currencyCode: current.currencyCode,
-        delta,
-        refundDueCents,
-        actorUserId: context.session.itemId,
-        reason: args.reason,
-        changedAt: now.toISOString(),
-      },
-    });
     await testHooks.afterWrites?.();
     return resultFromRecord(amendment, false);
   }, { maxWait: 5000, timeout: 20000, isolationLevel: 'ReadCommitted' }));

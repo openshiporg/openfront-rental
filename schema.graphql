@@ -785,8 +785,6 @@ type HostOrganization {
   channelConnectionsCount(where: ChannelConnectionWhereInput! = {}): Int
   dataExchangeJobs(where: DataExchangeJobWhereInput! = {}, orderBy: [DataExchangeJobOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: DataExchangeJobWhereUniqueInput): [DataExchangeJob!]
   dataExchangeJobsCount(where: DataExchangeJobWhereInput! = {}): Int
-  outboxEvents(where: OutboxEventWhereInput! = {}, orderBy: [OutboxEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: OutboxEventWhereUniqueInput): [OutboxEvent!]
-  outboxEventsCount(where: OutboxEventWhereInput! = {}): Int
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -837,7 +835,6 @@ input HostOrganizationWhereInput {
   taskRules: TaskRuleManyRelationFilter
   channelConnections: ChannelConnectionManyRelationFilter
   dataExchangeJobs: DataExchangeJobManyRelationFilter
-  outboxEvents: OutboxEventManyRelationFilter
   createdAt: DateTimeFilter
   updatedAt: DateTimeFilter
 }
@@ -944,12 +941,6 @@ input DataExchangeJobManyRelationFilter {
   none: DataExchangeJobWhereInput
 }
 
-input OutboxEventManyRelationFilter {
-  every: OutboxEventWhereInput
-  some: OutboxEventWhereInput
-  none: OutboxEventWhereInput
-}
-
 input HostOrganizationOrderByInput {
   id: OrderDirection
   name: OrderDirection
@@ -1006,7 +997,6 @@ input HostOrganizationUpdateInput {
   taskRules: TaskRuleRelateToManyForUpdateInput
   channelConnections: ChannelConnectionRelateToManyForUpdateInput
   dataExchangeJobs: DataExchangeJobRelateToManyForUpdateInput
-  outboxEvents: OutboxEventRelateToManyForUpdateInput
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -1130,13 +1120,6 @@ input DataExchangeJobRelateToManyForUpdateInput {
   connect: [DataExchangeJobWhereUniqueInput!]
 }
 
-input OutboxEventRelateToManyForUpdateInput {
-  disconnect: [OutboxEventWhereUniqueInput!]
-  set: [OutboxEventWhereUniqueInput!]
-  create: [OutboxEventCreateInput!]
-  connect: [OutboxEventWhereUniqueInput!]
-}
-
 input HostOrganizationUpdateArgs {
   where: HostOrganizationWhereUniqueInput!
   data: HostOrganizationUpdateInput!
@@ -1178,7 +1161,6 @@ input HostOrganizationCreateInput {
   taskRules: TaskRuleRelateToManyForCreateInput
   channelConnections: ChannelConnectionRelateToManyForCreateInput
   dataExchangeJobs: DataExchangeJobRelateToManyForCreateInput
-  outboxEvents: OutboxEventRelateToManyForCreateInput
   createdAt: DateTime
   updatedAt: DateTime
 }
@@ -1266,11 +1248,6 @@ input ChannelConnectionRelateToManyForCreateInput {
 input DataExchangeJobRelateToManyForCreateInput {
   create: [DataExchangeJobCreateInput!]
   connect: [DataExchangeJobWhereUniqueInput!]
-}
-
-input OutboxEventRelateToManyForCreateInput {
-  create: [OutboxEventCreateInput!]
-  connect: [OutboxEventWhereUniqueInput!]
 }
 
 type HostMembership {
@@ -6771,112 +6748,6 @@ input DataExchangeJobCreateInput {
   updatedAt: DateTime
 }
 
-type OutboxEvent {
-  id: ID!
-  hostOrganization: HostOrganization
-  eventType: String
-  aggregateType: String
-  aggregateId: String
-  idempotencyKey: String
-  payload: JSON
-  status: String
-  attempts: Int
-  availableAt: DateTime
-  processedAt: DateTime
-  lastError: String
-  leaseToken: String
-  dispatchStartedAt: DateTime
-  deliveryEvidence: JSON
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
-input OutboxEventWhereUniqueInput {
-  id: ID
-  idempotencyKey: String
-}
-
-input OutboxEventWhereInput {
-  AND: [OutboxEventWhereInput!]
-  OR: [OutboxEventWhereInput!]
-  NOT: [OutboxEventWhereInput!]
-  id: IDFilter
-  hostOrganization: HostOrganizationWhereInput
-  eventType: StringFilter
-  aggregateType: StringFilter
-  aggregateId: StringFilter
-  idempotencyKey: StringFilter
-  status: StringNullableFilter
-  attempts: IntNullableFilter
-  availableAt: DateTimeNullableFilter
-  processedAt: DateTimeNullableFilter
-  lastError: StringFilter
-  leaseToken: StringNullableFilter
-  dispatchStartedAt: DateTimeNullableFilter
-  createdAt: DateTimeFilter
-  updatedAt: DateTimeFilter
-}
-
-input OutboxEventOrderByInput {
-  id: OrderDirection
-  eventType: OrderDirection
-  aggregateType: OrderDirection
-  aggregateId: OrderDirection
-  idempotencyKey: OrderDirection
-  status: OrderDirection
-  attempts: OrderDirection
-  availableAt: OrderDirection
-  processedAt: OrderDirection
-  lastError: OrderDirection
-  leaseToken: OrderDirection
-  dispatchStartedAt: OrderDirection
-  createdAt: OrderDirection
-  updatedAt: OrderDirection
-}
-
-input OutboxEventUpdateInput {
-  hostOrganization: HostOrganizationRelateToOneForUpdateInput
-  eventType: String
-  aggregateType: String
-  aggregateId: String
-  idempotencyKey: String
-  payload: JSON
-  status: String
-  attempts: Int
-  availableAt: DateTime
-  processedAt: DateTime
-  lastError: String
-  leaseToken: String
-  dispatchStartedAt: DateTime
-  deliveryEvidence: JSON
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
-input OutboxEventUpdateArgs {
-  where: OutboxEventWhereUniqueInput!
-  data: OutboxEventUpdateInput!
-}
-
-input OutboxEventCreateInput {
-  hostOrganization: HostOrganizationRelateToOneForCreateInput
-  eventType: String
-  aggregateType: String
-  aggregateId: String
-  idempotencyKey: String
-  payload: JSON
-  status: String
-  attempts: Int
-  availableAt: DateTime
-  processedAt: DateTime
-  lastError: String
-  leaseToken: String
-  dispatchStartedAt: DateTime
-  deliveryEvidence: JSON
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -7177,12 +7048,6 @@ type Mutation {
   updateDataExchangeJobs(data: [DataExchangeJobUpdateArgs!]!): [DataExchangeJob]
   deleteDataExchangeJob(where: DataExchangeJobWhereUniqueInput!): DataExchangeJob
   deleteDataExchangeJobs(where: [DataExchangeJobWhereUniqueInput!]!): [DataExchangeJob]
-  createOutboxEvent(data: OutboxEventCreateInput!): OutboxEvent
-  createOutboxEvents(data: [OutboxEventCreateInput!]!): [OutboxEvent]
-  updateOutboxEvent(where: OutboxEventWhereUniqueInput!, data: OutboxEventUpdateInput!): OutboxEvent
-  updateOutboxEvents(data: [OutboxEventUpdateArgs!]!): [OutboxEvent]
-  deleteOutboxEvent(where: OutboxEventWhereUniqueInput!): OutboxEvent
-  deleteOutboxEvents(where: [OutboxEventWhereUniqueInput!]!): [OutboxEvent]
   endSession: Boolean!
   authenticateUserWithPassword(email: String!, password: String!): UserAuthenticationWithPasswordResult
   createInitialUser(data: CreateInitialUserInput!): UserAuthenticationWithPasswordSuccess!
@@ -7242,7 +7107,6 @@ type Mutation {
   Merchant stay, payment, agreement, message and review actions. Returns { ok, message?, data? }.
   """
   hostStayCommand(command: String!, input: JSON!): JSON!
-  deliverOutboxEvents(limit: Int, hostOrganizationId: ID): JSON!
 
   """
   Creates missing before-arrival tasks a page of rules at a time; pass the returned nextRuleCursor to continue.
@@ -7426,9 +7290,6 @@ type Query {
   dataExchangeJob(where: DataExchangeJobWhereUniqueInput!): DataExchangeJob
   dataExchangeJobs(where: DataExchangeJobWhereInput! = {}, orderBy: [DataExchangeJobOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: DataExchangeJobWhereUniqueInput): [DataExchangeJob!]
   dataExchangeJobsCount(where: DataExchangeJobWhereInput! = {}): Int
-  outboxEvent(where: OutboxEventWhereUniqueInput!): OutboxEvent
-  outboxEvents(where: OutboxEventWhereInput! = {}, orderBy: [OutboxEventOrderByInput!]! = [], take: Int! = 5001, skip: Int! = 0, cursor: OutboxEventWhereUniqueInput): [OutboxEvent!]
-  outboxEventsCount(where: OutboxEventWhereInput! = {}): Int
   keystone: KeystoneMeta!
   authenticatedItem: AuthenticatedItem
   validateUserPasswordResetToken(email: String!, token: String!): ValidateUserPasswordResetTokenResult

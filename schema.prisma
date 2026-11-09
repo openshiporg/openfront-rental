@@ -144,7 +144,6 @@ model HostOrganization {
   taskRules                                 TaskRule[]                @relation("TaskRule_hostOrganization")
   channelConnections                        ChannelConnection[]       @relation("ChannelConnection_hostOrganization")
   dataExchangeJobs                          DataExchangeJob[]         @relation("DataExchangeJob_hostOrganization")
-  outboxEvents                              OutboxEvent[]             @relation("OutboxEvent_hostOrganization")
   createdAt                                 DateTime                  @default(now())
   updatedAt                                 DateTime                  @default(now()) @updatedAt
   from_PropertyAddress_hostOrganization     PropertyAddress[]         @relation("PropertyAddress_hostOrganization")
@@ -1385,27 +1384,4 @@ model DataExchangeJob {
   @@index([hostOrganizationId])
   @@index([channelConnectionId])
   @@index([listingId])
-}
-
-model OutboxEvent {
-  id                 String            @id @default(cuid())
-  hostOrganization   HostOrganization? @relation("OutboxEvent_hostOrganization", fields: [hostOrganizationId], references: [id])
-  hostOrganizationId String?           @map("hostOrganization")
-  eventType          String            @default("")
-  aggregateType      String            @default("")
-  aggregateId        String            @default("")
-  idempotencyKey     String            @unique @default("")
-  payload            Json?
-  status             String?           @default("pending")
-  attempts           Int?              @default(0)
-  availableAt        DateTime?         @default(now())
-  processedAt        DateTime?
-  lastError          String            @default("")
-  leaseToken         String?
-  dispatchStartedAt  DateTime?
-  deliveryEvidence   Json?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @default(now()) @updatedAt
-
-  @@index([hostOrganizationId])
 }

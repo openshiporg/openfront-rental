@@ -145,7 +145,6 @@ async function verifyLifecycleReadiness(db: any, seed: AccommodationSeed, operat
     if (!provider) throw new Error('Card checkout is configured, but this host has no installed card payment provider.');
     return result('pending_owner', 'The card provider is installed; confirmations arrive only once the Stripe account sends webhooks to this app.');
   }
-  if (operationId === 'lifecycle:outbox') return result('unsupported', 'Events are recorded, but no delivery target is installed in this app.');
   if (operationId === 'lifecycle:channel-reservations') return result('unsupported', 'Calendar connections here are availability-only; channel bookings aren’t imported.');
   // Amendments and damage claims are host commands with no setup prerequisite.
   return result('ready', 'Created by host actions on real stays.');

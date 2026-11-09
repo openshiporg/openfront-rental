@@ -1,6 +1,5 @@
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
 import { listingReadinessFor } from '../utils/listingReadiness';
-import { enqueueOutboxEvent } from '../utils/outbox';
 
 type Input = Record<string, any>;
 
@@ -59,14 +58,6 @@ export async function transitionCatalogRecord(context: any, input: Input) {
     }
     await tx[delegate].update({ where: { id }, data: { status: nextStatus } });
     const now = new Date();
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: current.hostOrganizationId,
-      eventType: `${kind}.status_changed`,
-      aggregateType: table,
-      aggregateId: id,
-      operationKey: `status:${current.status}:${nextStatus}:${now.toISOString()}`,
-      payload: { [`${kind}Id`]: id, previousStatus: current.status, status: nextStatus, actorUserId: context.session?.itemId || null },
-    });
     return { id, status: nextStatus };
   }, { maxWait: 5000, timeout: 10000, isolationLevel: 'ReadCommitted' });
 }

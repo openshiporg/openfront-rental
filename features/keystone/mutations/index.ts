@@ -32,7 +32,6 @@ import { updateOnboardingStatus } from './updateOnboardingStatus';
 import { rentalOnboarding } from '../onboarding/rentalOnboarding';
 import { installCalendarBlockGraphqlBoundary } from '../utils/calendarBlockGraphqlBoundary';
 import { installPasswordResetGraphqlBoundary } from '../utils/passwordResetGraphqlBoundary';
-import { outboxDeliveryResolvers, outboxDeliveryTypeDefs } from '../workers/outboxDelivery';
 
 const graphql = String.raw;
 
@@ -288,7 +287,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         updateOnboardingStatus(status: String!): OnboardingStatusResult!
         rentalOnboarding(input: JSON!, operationId: String, mode: String!): JSON!
       }
-    `, guestJourneyTypeDefs, hostLifecycleTypeDefs, bookingRuleTypeDefs, outboxDeliveryTypeDefs, propertyTaskRuleTypeDefs, hostReportingTypeDefs, ownerFinanceTypeDefs, listingReadinessTypeDefs],
+    `, guestJourneyTypeDefs, hostLifecycleTypeDefs, bookingRuleTypeDefs, propertyTaskRuleTypeDefs, hostReportingTypeDefs, ownerFinanceTypeDefs, listingReadinessTypeDefs],
     resolvers: [{
       Query: {
         redirectToInit,
@@ -328,6 +327,6 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         updateOnboardingStatus,
         rentalOnboarding,
       },
-    }, guestJourneyResolvers, hostLifecycleResolvers, bookingRuleResolvers, outboxDeliveryResolvers, propertyTaskRuleResolvers, hostReportingResolvers, ownerFinanceResolvers, listingReadinessResolvers],
+    }, guestJourneyResolvers, hostLifecycleResolvers, bookingRuleResolvers, propertyTaskRuleResolvers, hostReportingResolvers, ownerFinanceResolvers, listingReadinessResolvers],
   });
 }

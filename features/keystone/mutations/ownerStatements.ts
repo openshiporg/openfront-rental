@@ -3,7 +3,6 @@ import { GraphQLError } from 'graphql';
 
 import { buildOwnerStatement, ownerStatementIdempotencyKey, recognizedStayStatuses, type StatementRefundKind } from '../utils/ownerStatementAccounting';
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
-import { enqueueOutboxEvent } from '../utils/outbox';
 import { zonedTodayIso } from '../utils/stayBookingRules';
 import { hostChildScope } from './hostReporting';
 
@@ -428,14 +427,6 @@ export async function generateOwnerStatement(
         })),
       });
     }
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId,
-      eventType: 'owner_statement.generated',
-      aggregateType: 'OwnerStatement',
-      aggregateId: id,
-      operationKey: idempotencyKey,
-      payload: { statementId: id, ownerId: owner.id, periodStart, periodEnd, currencyCode, revision, supersedesStatementId: supersedes?.id || null },
-    });
     return created;
   }, { maxWait: 5000, timeout: 30000, isolationLevel: 'Serializable' }));
 }
@@ -642,14 +633,6 @@ export async function transitionOwnerStatement(
       data.balanceDueCents = 0;
     }
     const updated = await tx.ownerStatement.update({ where: { id: locked.id }, data });
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: statement.hostOrganization.id,
-      eventType: `owner_statement.${transition.to}`,
-      aggregateType: 'OwnerStatement',
-      aggregateId: locked.id,
-      operationKey: `${args.transition}:${operationKey || now.toISOString()}`,
-      payload: { statementId: locked.id, status: transition.to, ...(reference ? { reference } : {}), ...(payout ? { payoutId: payout.id, amountCents: payout.netAmountCents, currencyCode: payout.currencyCode } : {}) },
-    });
     return updated;
   }, { maxWait: 5000, timeout: 10000, isolationLevel: 'ReadCommitted' });
 }

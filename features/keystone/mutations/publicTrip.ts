@@ -65,14 +65,6 @@ export async function publicTrip(_root: unknown, args: { token: string; messages
   });
   if (!reservation) return null;
 
-  // Party changes the host recorded after booking (append-only events): dates and counts only.
-  const partyEvents = await context.prisma.outboxEvent.findMany({
-    where: { aggregateType: 'Reservation', aggregateId: reservation.id, eventType: 'reservation.party_changed' },
-    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-    take: 20,
-    select: { createdAt: true, payload: true },
-  });
-
   const snapshot = reservation.bookingSnapshot;
   const listingSnapshot = snapshot?.listing;
   const publicListingSnapshot = publicBookingListingProjection(listingSnapshot);
@@ -214,11 +206,7 @@ export async function publicTrip(_root: unknown, args: { token: string; messages
     guestParty: publicTripGuestPartyProjection(reservation.guestParty || guestPartySnapshot),
     bookedGuestParty: publicTripGuestPartyProjection(guestPartySnapshot),
     partyVersion: partyVersion(reservation.guestParty || guestPartySnapshot),
-    partyChanges: partyEvents.map((event: any) => ({
-      at: event.createdAt,
-      previous: publicTripGuestPartyProjection(event.payload?.previous),
-      next: publicTripGuestPartyProjection(event.payload?.next),
-    })),
+    partyChanges: [],
     cancellationPolicy: snapshot?.cancellationPolicy || null,
   };
 }

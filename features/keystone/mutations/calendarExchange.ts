@@ -3,7 +3,6 @@ import crypto from 'node:crypto';
 import { exportICalendar, iCalendarChecksum, parseICalendar, type ICalendarEvent } from '../../integrations/channels/ical';
 import { calendarImportConnectionBlocker, calendarImportMappingBlocker } from '../../integrations/channels/support';
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
-import { enqueueOutboxEvent } from '../utils/outbox';
 import { findAccommodationUnitCapacityConflict, findListingCapacityConflict, lockAccommodationUnitCapacity, lockListingCapacity } from '../utils/reservationAllocation';
 import { readBoundedPages } from '../utils/readBoundedPages';
 import { REAL_CAPACITY_BLOCK, REAL_STAY } from '../utils/fixtureOrigin';
@@ -270,14 +269,6 @@ export async function applyListingCalendarImport(prisma: any, input: { hostOrgan
       await tx.channelListing.update({ where: { id: mapping.id }, data: { lastImportIssue: { open: true, jobId: job.id, status, conflictCount, listingId: listing.id, at: completedAt.toISOString() } } });
     }
     await refreshConnectionImportHealth(tx, connection.id, String(lockedConnection.lastError || ''), completedAt, status === 'succeeded');
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId,
-      eventType: 'calendar.imported',
-      aggregateType: 'DataExchangeJob',
-      aggregateId: job.id,
-      operationKey: idempotencyKey,
-      payload: { jobId: job.id, listingId: listing.id, status, attempt, processedCount: events.length, createdCount, updatedCount, conflictCount },
-    });
     return job;
   }, { maxWait: 5000, timeout: 20000, isolationLevel: 'Serializable' });
 }

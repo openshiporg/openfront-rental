@@ -3,13 +3,12 @@ import test from 'node:test';
 import { cancelUnstartedStayTasks } from './stayClosure';
 
 function fakeTx(open: Array<{ id: string }>) {
-  const calls: any = { find: null, update: null, outbox: [] as any[] };
+  const calls: any = { find: null, update: null };
   const tx: any = {
     propertyTask: {
       findMany: async (args: any) => { calls.find = args; return open; },
       updateMany: async (args: any) => { calls.update = args; return { count: open.length }; },
     },
-    outboxEvent: { create: async (args: any) => { calls.outbox.push(args); return args; } },
   };
   return { tx, calls };
 }

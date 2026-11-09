@@ -27,7 +27,6 @@ import { PaymentWebhookEvent } from './PaymentWebhookEvent';
 import { Payout } from './Payout';
 import { OwnerStatement } from './OwnerStatement';
 import { OwnerStatementLine } from './OwnerStatementLine';
-import { OutboxEvent } from './OutboxEvent';
 import { Property } from './Property';
 import { PropertyAddress } from './PropertyAddress';
 import { PropertyOwner } from './PropertyOwner';
@@ -99,7 +98,6 @@ export const models = {
   ChannelReservation,
   ChannelSyncEvent,
   DataExchangeJob,
-  OutboxEvent,
 };
 
 export default models;

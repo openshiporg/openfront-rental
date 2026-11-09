@@ -1,7 +1,6 @@
 import crypto from 'node:crypto';
 
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
-import { enqueueOutboxEvent } from '../utils/outbox';
 import { reconcileReservationPaymentEvidence, reservationPaymentStatus } from '../utils/paymentReconciliation';
 
 function digest(value: string) {
@@ -175,7 +174,6 @@ export async function refundStayPaymentOperation(
         data: { amountPaidCents: reconciliation.netPaidCents, paymentStatus },
       });
     }
-    await enqueueOutboxEvent(tx, { hostOrganizationId: locked.hostOrganizationId, eventType: 'payment.refunded', aggregateType: 'Refund', aggregateId: id, operationKey: idempotencyKey, payload: { refundId: id, paymentId: locked.id, reservationId: locked.reservationId, amountCents: args.amountCents, currencyCode: locked.currencyCode, reconciliationMethod: 'operator_attestation' } });
     await testHooks.afterWrites?.();
     return refund;
   }, { maxWait: 5000, timeout: 15000, isolationLevel: 'Serializable' });
@@ -256,7 +254,6 @@ export async function transitionSecurityDeposit(
     const event = { transition: args.transition, fromStatus: locked.status, toStatus: data.status, amountCents, reference, actorUserId, attestedAt: now.toISOString(), operationKey, fingerprint };
     data.metadata = { ...metadata, events: [...events, event] };
     const updated = await tx.securityDeposit.update({ where: { id: locked.id }, data });
-    await enqueueOutboxEvent(tx, { hostOrganizationId: locked.hostOrganizationId, eventType: `security_deposit.${updated.status}`, aggregateType: 'SecurityDeposit', aggregateId: locked.id, operationKey: `deposit:${digest(`${locked.id}|${operationKey}`)}`, payload: { depositId: locked.id, reservationId: locked.reservationId, status: updated.status, amountCents: updated.amountCents, capturedAmountCents: updated.capturedAmountCents, releasedRemainderCents: updated.status === 'released' ? updated.amountCents - updated.capturedAmountCents : null, reference, actorUserId } });
     return updated;
   }, { maxWait: 5000, timeout: 10000, isolationLevel: 'ReadCommitted' });
 }
@@ -336,7 +333,6 @@ export async function transitionDamageClaim(
       data.resolvedAt = new Date();
     }
     const updated = await tx.damageClaim.update({ where: { id: locked.id }, data });
-    await enqueueOutboxEvent(tx, { hostOrganizationId: locked.hostOrganizationId, eventType: `damage_claim.${updated.status}`, aggregateType: 'DamageClaim', aggregateId: locked.id, operationKey: `${args.transition}:${updated.approvedAmountCents}`, payload: { claimId: locked.id, reservationId: locked.reservationId, status: updated.status, approvedAmountCents: updated.approvedAmountCents } });
     return updated;
   }, { maxWait: 5000, timeout: 10000, isolationLevel: 'ReadCommitted' });
 }
@@ -366,7 +362,6 @@ export async function createDamageClaim(
     const currencyCode = locked.currencyCode?.trim().toUpperCase();
     if (!currencyCode || !/^[A-Z]{3}$/.test(currencyCode)) throw new Error('The reservation currency code is invalid.');
     const claim = await tx.damageClaim.create({ data: { id, hostOrganizationId: locked.hostOrganizationId, reservationId: locked.id, listingId: locked.listingId, guestId: locked.guestId, claimNumber: `CLM-${id.slice(0, 8).toUpperCase()}`, status: 'draft', description, claimedAmountCents: args.claimedAmountCents, approvedAmountCents: 0, currencyCode, evidence: args.evidence || [] } });
-    await enqueueOutboxEvent(tx, { hostOrganizationId: locked.hostOrganizationId, eventType: 'damage_claim.created', aggregateType: 'DamageClaim', aggregateId: id, operationKey: `create:${id}`, payload: { claimId: id, reservationId: locked.id, listingId: locked.listingId, claimedAmountCents: args.claimedAmountCents } });
     return claim;
   });
 }

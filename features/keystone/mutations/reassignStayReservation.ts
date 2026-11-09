@@ -1,5 +1,4 @@
 import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
-import { enqueueOutboxEvent } from '../utils/outbox';
 import { assertAccommodationUnitAvailable, lockAccommodationUnitCapacity, lockListingCapacity } from '../utils/reservationAllocation';
 
 type ReassignStayReservationArgs = {
@@ -164,24 +163,6 @@ export async function reassignStayReservation(_root: unknown, args: ReassignStay
       data: {
         listingId: confirmedTargetListing.id,
         notes: `Re-accommodated reservation ${locked.confirmationCode}: ${reason}`,
-      },
-    });
-    await enqueueOutboxEvent(tx, {
-      hostOrganizationId: locked.hostOrganizationId,
-      eventType: 'reservation.reaccommodated',
-      aggregateType: 'Reservation',
-      aggregateId: locked.id,
-      operationKey: `${locked.accommodationUnitId || 'unassigned'}:${targetAccommodationUnitId}:${now.toISOString()}`,
-      payload: {
-        reservationId: locked.id,
-        confirmationCode: locked.confirmationCode,
-        previousAccommodationUnitId: locked.accommodationUnitId,
-        accommodationUnitId: targetAccommodationUnitId,
-        previousListingId: locked.listingId,
-        capacityListingId: confirmedTargetListing.id,
-        reason,
-        actorUserId: context.session.itemId,
-        changedAt: now.toISOString(),
       },
     });
 

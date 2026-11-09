@@ -21,7 +21,6 @@ export const RENTAL_LIFECYCLE_READINESS = [
   { id: 'lifecycle:refunds', model: 'Refund', label: 'Refunds · need an installed payment method' },
   { id: 'lifecycle:payment-webhooks', model: 'PaymentWebhookEvent', label: 'Payment confirmations · arrive from the card provider' },
   { id: 'lifecycle:channel-reservations', model: 'ChannelReservation', label: 'Channel bookings · not used by availability-only calendars' },
-  { id: 'lifecycle:outbox', model: 'OutboxEvent', label: 'Notification events · recorded; delivery isn’t set up in this app' },
 ] as const;
 
 /** Stable record identities, never display copy, address chips and server commands. */

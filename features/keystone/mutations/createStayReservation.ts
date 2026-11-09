@@ -8,7 +8,6 @@ import {
   publicTokenExpiry,
 } from '../utils/publicTokenAccess';
 import { resolveSessionSecret } from '../lib/runtimeSecrets';
-import { enqueueOutboxEvent } from '../utils/outbox';
 import { createReservationTasksForTransition } from '../utils/reservationTaskAutomation';
 import { createReservationLineItemsFromQuote, createStayBookingSnapshot, stayTermsVersion } from '../utils/stayBookingSnapshot';
 import { assertAccommodationUnitAvailable, lockAccommodationUnitCapacity, lockListingCapacity } from '../utils/reservationAllocation';
@@ -516,14 +515,6 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
       if (instant) {
         // Instant confirmation runs the same task automation and event as a host confirmation.
         await createReservationTasksForTransition(tx, created, 'confirm');
-        await enqueueOutboxEvent(tx, {
-          hostOrganizationId,
-          eventType: 'reservation.confirmed',
-          aggregateType: 'Reservation',
-          aggregateId: reservationId,
-          operationKey: `instant_book:${reservationId}`,
-          payload: { reservationId, confirmationCode: code, status: 'confirmed', transition: 'instant_book', actorUserId: bookedById, balanceDueCents: lockedQuote.totalAmountCents, testMode: false },
-        });
       }
       return created;
     }, { maxWait: 5000, timeout: 15000, isolationLevel: 'Serializable' }));
