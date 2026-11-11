@@ -4,6 +4,7 @@ import type { GraphQLSchema } from 'graphql';
 import { captureStayPayment } from './captureStayPayment';
 import { amendConfirmedStay } from './amendConfirmedStay';
 import { exportListingCalendar, importListingCalendar } from './calendarExchange';
+import { refreshCalendarSubscriptions } from './refreshCalendarSubscriptions';
 import { createStayReservation, recoverStayCheckout } from './createStayReservation';
 import { cancelStayQuote } from './cancelStayQuote';
 import { initiateStayPayment } from './initiateStayPayment';
@@ -278,6 +279,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         ): JSON!
         importListingCalendar(channelConnectionId: ID!, listingId: ID!, calendarText: String!, sourceLabel: String): JSON!
         exportListingCalendar(listingId: ID!): JSON!
+        refreshCalendarSubscriptions(force: Boolean): JSON!
         exportHostArchive(hostOrganizationId: ID!): JSON!
         refundStayPayment(paymentId: ID!, refundId: ID, operationKey: String!, amountCents: Int!, reason: String, confirmFundsReturned: Boolean!, manualEvidenceReference: String!): JSON!
         transitionSecurityDeposit(depositId: ID!, transition: String!, amountCents: Int, reference: String, confirmEvidence: Boolean, operationKey: String): JSON!
@@ -318,6 +320,7 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         createOperationsTask: createPropertyTask,
         transitionPropertyTask,
         importListingCalendar,
+        refreshCalendarSubscriptions,
         exportListingCalendar,
         exportHostArchive,
         refundStayPayment,

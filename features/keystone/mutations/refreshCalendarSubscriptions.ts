@@ -1,32 +1,36 @@
-import { applyListingCalendarImport } from '../mutations/calendarExchange';
+import { applyListingCalendarImport } from './calendarExchange';
 import { CALENDAR_SUBSCRIPTION_INTERVAL_MS, fetchSubscribedCalendar } from '../lib/calendarSubscription';
 import { calendarImportConnectionBlocker, calendarImportMappingBlocker } from '../../integrations/channels/support';
+import { assertHostOrganizationAccess } from '../utils/hostOrganizationAccess';
 
-/** Subscribed calendars a cycle may poll: active iCal connections with a mapped listing and URL. */
-const MAX_SUBSCRIPTIONS_PER_CYCLE = 200;
+/** Subscribed calendars one refresh may poll: active iCal connections with a mapped listing and URL. */
+const MAX_SUBSCRIPTIONS_PER_REFRESH = 25;
+const MAX_SUBSCRIPTIONS_PER_PAGE_LOAD = 3;
 // Overlapping replicas are safe: block ids derive from connection, listing and UID, and each
 // apply runs in one Serializable transaction, so a duplicate poll replays instead of doubling.
 
 type SubscriptionResult = { mappingId: string; status: string; error?: string };
 
 /**
- * Airbnb/Guesty-style "import calendar by URL": every mapped listing whose channel mapping has
- * a calendar link is re-read about hourly and applied as a full snapshot, so channel bookings
- * block nights here and channel cancellations release them.
+ * Airbnb/Guesty-style "import calendar by URL": a mapped listing whose channel mapping has a
+ * calendar link is re-read when its last check is over an hour old (on the Channels page load,
+ * a few at a time) or when staff press Refresh (`force`), and applied as a full snapshot, so
+ * channel bookings block nights here and channel cancellations release them. No timer runs it.
  */
-export async function runCalendarSubscriptionCycle(prisma: any, deps: { fetchCalendar?: (url: string) => Promise<string>; now?: () => Date } = {}) {
+export async function runCalendarSubscriptionCycle(prisma: any, deps: { fetchCalendar?: (url: string) => Promise<string>; now?: () => Date; force?: boolean; limit?: number; canRefreshHost?: (hostOrganizationId: string) => Promise<boolean> } = {}) {
   const fetchCalendar = deps.fetchCalendar ?? ((url: string) => fetchSubscribedCalendar(url));
   const now = deps.now ?? (() => new Date());
+  const force = deps.force === true;
   const dueBefore = new Date(now().getTime() - CALENDAR_SUBSCRIPTION_INTERVAL_MS + 60_000);
   const mappings = await prisma.channelListing.findMany({
     where: {
       externalUrl: { startsWith: 'https://' },
       listingId: { not: null },
       hostOrganizationId: { not: null },
-      OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lt: dueBefore } }],
+      ...(force ? {} : { OR: [{ lastSyncedAt: null }, { lastSyncedAt: { lt: dueBefore } }] }),
     },
     orderBy: [{ lastSyncedAt: { sort: 'asc', nulls: 'first' } }, { id: 'asc' }],
-    take: MAX_SUBSCRIPTIONS_PER_CYCLE,
+    take: Math.min(deps.limit ?? MAX_SUBSCRIPTIONS_PER_REFRESH, MAX_SUBSCRIPTIONS_PER_REFRESH),
     select: {
       id: true, status: true, externalUrl: true, listingId: true, hostOrganizationId: true, lastImportIssue: true,
       channelConnection: { select: { id: true, provider: true, connectionType: true, status: true, syncAvailability: true, hostOrganizationId: true } },
@@ -36,12 +40,13 @@ export async function runCalendarSubscriptionCycle(prisma: any, deps: { fetchCal
   for (const mapping of mappings) {
     const connection = mapping.channelConnection;
     if (!connection || connection.hostOrganizationId !== mapping.hostOrganizationId) continue;
+    if (deps.canRefreshHost && !(await deps.canRefreshHost(mapping.hostOrganizationId))) continue;
     if (calendarImportConnectionBlocker(connection) || calendarImportMappingBlocker(mapping)) continue;
     // A failing link is retried at the normal cadence, not every cycle.
     const lastAttempt = (mapping.lastImportIssue as any)?.subscriptionAttemptAt;
-    if (lastAttempt && new Date(lastAttempt).getTime() > dueBefore.getTime()) continue;
+    if (!force && lastAttempt && new Date(lastAttempt).getTime() > dueBefore.getTime()) continue;
     // A conflicted import doesn't advance lastSyncedAt; its recent job still sets the cadence.
-    const recentJob = await prisma.dataExchangeJob.findFirst({ where: { channelConnectionId: connection.id, listingId: mapping.listingId, direction: 'import', createdAt: { gt: dueBefore } }, select: { id: true } });
+    const recentJob = force ? null : await prisma.dataExchangeJob.findFirst({ where: { channelConnectionId: connection.id, listingId: mapping.listingId, direction: 'import', createdAt: { gt: dueBefore } }, select: { id: true } });
     if (recentJob) continue;
     try {
       const calendarText = await fetchCalendar(mapping.externalUrl);
@@ -68,25 +73,17 @@ export async function runCalendarSubscriptionCycle(prisma: any, deps: { fetchCal
   return results;
 }
 
-let started = false;
-
-export function startCalendarSubscriptionJobs(prisma: any, intervalMs = 5 * 60 * 1000) {
-  if (started) return;
-  started = true;
-  let running = false;
-  const tick = async () => {
-    if (running) return;
-    running = true;
-    try {
-      const results = await runCalendarSubscriptionCycle(prisma);
-      const failed = results.filter((result) => result.status === 'failed');
-      if (results.length) console.log(`Calendar subscriptions: ${results.length} checked, ${failed.length} failed.`);
-    } catch (error) {
-      console.error('Calendar subscription cycle failed', error instanceof Error ? error.message : error);
-    } finally {
-      running = false;
+/** Staff Refresh button and Channels page load: polls the calendar links of hosts the caller manages channels for. */
+export async function refreshCalendarSubscriptions(_root: unknown, args: { force?: boolean | null; limit?: number | null }, context: any) {
+  const verdicts = new Map<string, boolean>();
+  const canRefreshHost = async (hostOrganizationId: string) => {
+    if (!verdicts.has(hostOrganizationId)) {
+      verdicts.set(hostOrganizationId, await assertHostOrganizationAccess({ context, hostOrganizationId, permission: 'canManageChannels' }).then(() => true, () => false));
     }
+    return verdicts.get(hostOrganizationId)!;
   };
-  setTimeout(tick, 30_000).unref?.();
-  setInterval(tick, intervalMs).unref?.();
+  const force = args.force === true;
+  const limit = force ? MAX_SUBSCRIPTIONS_PER_REFRESH : MAX_SUBSCRIPTIONS_PER_PAGE_LOAD;
+  const results = await runCalendarSubscriptionCycle(context.sudo().prisma, { force, limit, canRefreshHost });
+  return { checked: results.length, failed: results.filter((result) => result.status === 'failed').length };
 }

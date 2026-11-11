@@ -94,7 +94,7 @@ openfront-rental/
 │   ├── dashboard/          # Host workspaces and first-admin setup
 │   └── api/                # Health, payment webhooks, and assistant endpoints
 ├── features/
-│   ├── keystone/           # Models, host access, stay commands, and workers
+│   ├── keystone/           # Models, host access, and stay commands
 │   ├── platform/           # Host workspaces and onboarding
 │   ├── storefront/         # Guest components and screens
 │   └── integrations/       # Manual/test-card payments and calendar adapters
@@ -237,7 +237,7 @@ npm start
 Back up an existing database before applying migrations. The included [`railway.toml`](railway.toml) builds without migrations and applies them when the application starts.
 
 ### Scaling Considerations
-Keep host membership, reservation allocation, and calendar state in the shared PostgreSQL database. Use shared object storage. iCalendar exchange is not an automatically supervised OTA synchronization service.
+Keep host membership, reservation allocation, and calendar state in the shared PostgreSQL database. Use shared object storage. iCalendar exchange is not an automatically supervised OTA synchronization service: no timer or worker runs, subscribed calendar links are re-read when the Channels page loads (a few stale ones at a time) and when staff press Refresh calendar links.
 
 ## Contributing
 

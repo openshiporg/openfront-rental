@@ -97,6 +97,24 @@ export async function getChannelWorkspace(input: { view: 'all' | 'jobs' | 'event
   };
 }
 
+/** Channels page load: re-reads a few calendar links that are over an hour stale. Best effort; the page renders either way. */
+export async function refreshStaleCalendarLinks(): Promise<void> {
+  try {
+    await keystoneClient<any>(`mutation RefreshStaleCalendarLinks { refreshCalendarSubscriptions }`, {});
+  } catch {
+    // A failed refresh never blocks the page.
+  }
+}
+
+/** Staff Refresh button: re-reads every calendar link of the hosts the caller manages, now. */
+export async function refreshCalendarLinksAction(): Promise<void> {
+  const response = await keystoneClient<any>(`mutation RefreshCalendarLinks { refreshCalendarSubscriptions(force: true) }`, {});
+  if (!response.success) fail('import', 'Calendar links couldn’t be refreshed. Try again in a moment.');
+  refreshChannels();
+  const result = response.data?.refreshCalendarSubscriptions || {};
+  redirect(channelPath({ notice: result.checked ? (result.failed ? 'links-refreshed-with-errors' : 'links-refreshed') : 'links-none' }));
+}
+
 /** Host and listing choices for setup forms; `search` narrows both, so any record can be chosen. */
 export async function getChannelSetupOptions(search = '') {
   const q = search.trim().slice(0, 120);

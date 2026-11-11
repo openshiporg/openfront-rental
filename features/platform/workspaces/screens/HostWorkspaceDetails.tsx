@@ -5,6 +5,7 @@ import {
   ShieldCheck, Star, UserRound, Users, WalletCards, Webhook,
 } from 'lucide-react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -72,6 +73,8 @@ function RecordLink({ href, children = 'Edit record' }: { href: string; children
 }
 
 function DetailUnavailable({ section, sectionHref, error }: { section: string; sectionHref: string; error?: string | null }) {
+  // A missing or unreadable record is a real 404; only a failed load shows the retry message.
+  if (!error) notFound();
   return <PlatformPage section={section} sectionHref={sectionHref} current="Unavailable">
     <PageBody className="pt-6">
       <Section>

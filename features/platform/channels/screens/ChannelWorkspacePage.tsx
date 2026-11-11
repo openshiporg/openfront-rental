@@ -1,4 +1,4 @@
-import { AlertTriangle, CalendarSync, Check, ChevronDown, CircleAlert, FileClock, Link2, Minus, Plus, RadioTower, ScrollText } from 'lucide-react';
+import { AlertTriangle, CalendarSync, Check, ChevronDown, CircleAlert, FileClock, Link2, Minus, Plus, RadioTower, RefreshCcw, ScrollText } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { SubmitButton } from '@/features/platform/operations/components/SubmitBu
 import { listHref, pickView, readSearchParams, type PlatformSearchParams } from '@/features/platform/operations/lib/listParams';
 import { formatTimestamp, plural, sentence } from '@/features/platform/operations/lib/operations';
 import { cn } from '@/lib/utils';
-import { createChannelConnectionAction, createChannelMappingAction, getChannelSetupOptions, getChannelWorkspace, importCalendarAction, updateChannelConnectionAction, updateChannelMappingAction } from '../actions/channels';
+import { createChannelConnectionAction, createChannelMappingAction, getChannelSetupOptions, getChannelWorkspace, importCalendarAction, refreshCalendarLinksAction, refreshStaleCalendarLinks, updateChannelConnectionAction, updateChannelMappingAction } from '../actions/channels';
 import { calendarImportOptions, mappingHealthTone, unresolvedJobs, unresolvedSyncEvents } from '../lib/channelHealth';
 import { mappingHealth, mappingOperational } from '../lib/mappingStatus';
 
@@ -29,6 +29,9 @@ const notices: Record<string, string> = {
   'connection-saved': 'Connection saved.',
   'mapping-added': 'Listing mapped.',
   'mapping-saved': 'Mapping saved.',
+  'links-refreshed': 'Calendar links refreshed.',
+  'links-refreshed-with-errors': 'Calendar links refreshed; some could not be read. See Needs attention.',
+  'links-none': 'No calendar links to refresh.',
 };
 const failureTitles: Record<string, string> = {
   import: 'The import wasn’t applied',
@@ -46,7 +49,10 @@ function ImportResult({ job }: { job: any }) {
 export async function ChannelWorkspacePage({ searchParams }: { searchParams?: PlatformSearchParams } = {}) {
   const { get, q, view: requested, page, error: actionError } = await readSearchParams(searchParams);
   const view = pickView(requested, ['all', 'jobs', 'events'] as const, 'all');
-  const [workspace, access] = await Promise.all([getChannelWorkspace({ view, q, page, jobId: get('job') || null }), getPlatformCapabilities()]);
+  const access = await getPlatformCapabilities();
+  // Calendar links advance on the request that shows them (no timer): a few stale ones per load.
+  if (access.known && access.canManageChannels) await refreshStaleCalendarLinks();
+  const [workspace] = await Promise.all([getChannelWorkspace({ view, q, page, jobId: get('job') || null })]);
   // Connections are searched on the server; jobs and the sync log are searched and paged there too.
   // `recentJobs`/`recentEvents` are the newest 100 of each, behind the attention list only.
   const { connections, connectionCount, connectionsMatching, rows, pagination, jobCount, jobsMatching, recentJobs, resultJob, eventCount, eventsMatching, recentEvents, error } = workspace;
@@ -152,7 +158,10 @@ export async function ChannelWorkspacePage({ searchParams }: { searchParams?: Pl
       title="Channels"
       description="Booking channel connections, listing mappings, and sync health. iCalendar connections exchange availability only."
       badges={access.known && !access.canManageChannels ? <StatusBadge label="View only" tone="neutral" /> : null}
-      actions={canManage ? <Button asChild size="sm"><Link href={SETUP_HREF}><Plus aria-hidden="true" />Add connection</Link></Button> : null}
+      actions={canManage ? <div className="flex flex-wrap gap-2">
+        <form action={refreshCalendarLinksAction}><SubmitButton size="sm" variant="outline" pendingLabel="Refreshing…"><RefreshCcw aria-hidden="true" />Refresh calendar links</SubmitButton></form>
+        <Button asChild size="sm"><Link href={SETUP_HREF}><Plus aria-hidden="true" />Add connection</Link></Button>
+      </div> : null}
     />
     <PageBody>
       {actionError ? <Callout live tone="warning" title={failureTitles[failedForm] || 'That change wasn’t applied'}>{actionError}</Callout> : null}
@@ -267,7 +276,7 @@ export async function ChannelWorkspacePage({ searchParams }: { searchParams?: Pl
                 {listings.length ? <ul className="mt-2 space-y-1.5">{listings.map((mapping: any) => <li key={mapping.id} className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-xs">
                   <span className="min-w-0 truncate">{mapping.listing?.title || 'Listing unavailable'}</span>
                   <span className="flex shrink-0 items-center gap-2"><span className="font-mono text-muted-foreground">{mapping.externalListingId || 'no external id'}</span><StatusBadge status={mapping.status} tone={mappingHealthTone[mappingHealth(mapping.status)]} className="h-5" /></span>
-                  {mapping.externalUrl ? <span className={cn('basis-full break-words text-xs', mapping.lastImportIssue?.subscription && mapping.lastImportIssue?.open ? toneText.danger : 'text-muted-foreground')}>{mapping.lastImportIssue?.subscription && mapping.lastImportIssue?.open ? `Calendar link: ${mapping.lastImportIssue.error}` : mapping.lastSyncedAt ? `Calendar link checked ${new Date(mapping.lastSyncedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Calendar link saved; first check within the hour.'}</span> : null}
+                  {mapping.externalUrl ? <span className={cn('basis-full break-words text-xs', mapping.lastImportIssue?.subscription && mapping.lastImportIssue?.open ? toneText.danger : 'text-muted-foreground')}>{mapping.lastImportIssue?.subscription && mapping.lastImportIssue?.open ? `Calendar link: ${mapping.lastImportIssue.error}` : mapping.lastSyncedAt ? `Calendar link checked ${new Date(mapping.lastSyncedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Calendar link saved; checked when this page is next opened, or press Refresh calendar links.'}</span> : null}
                 </li>)}</ul> : null}
               </div>
               {editable ? <div className="mt-3 space-y-2 border-t pt-3">

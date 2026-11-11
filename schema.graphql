@@ -7084,6 +7084,7 @@ type Mutation {
   transitionPropertyTask(taskId: ID!, action: String!, assigneeId: ID, completionNotes: String, completionEvidence: JSON): JSON!
   importListingCalendar(channelConnectionId: ID!, listingId: ID!, calendarText: String!, sourceLabel: String): JSON!
   exportListingCalendar(listingId: ID!): JSON!
+  refreshCalendarSubscriptions(force: Boolean): JSON!
   exportHostArchive(hostOrganizationId: ID!): JSON!
   refundStayPayment(paymentId: ID!, refundId: ID, operationKey: String!, amountCents: Int!, reason: String, confirmFundsReturned: Boolean!, manualEvidenceReference: String!): JSON!
   transitionSecurityDeposit(depositId: ID!, transition: String!, amountCents: Int, reference: String, confirmEvidence: Boolean, operationKey: String): JSON!
