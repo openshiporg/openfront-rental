@@ -48,7 +48,7 @@ import { TaskRule } from './TaskRule';
 import { TaxRule } from './TaxRule';
 import { User } from './User';
 
-export const models = {
+const rawModels = {
   User,
   Role,
   MarketplaceSettings,
@@ -99,5 +99,20 @@ export const models = {
   ChannelSyncEvent,
   DataExchangeJob,
 };
+
+// Sidebar visibility follows the role: a list whose query access denies the session is hidden from navigation
+// (Keystone evaluates ui.isHidden per session in admin meta). Explicit isHidden settings are kept.
+export const models = Object.fromEntries(Object.entries(rawModels).map(([key, config]: [string, any]) => {
+  const operationQuery = config?.access?.operation?.query;
+  const filterQuery = config?.access?.filter?.query;
+  if (typeof operationQuery !== 'function' && typeof filterQuery !== 'function') return [key, config];
+  const existing = config?.ui?.isHidden;
+  const isHidden = (args: any) => {
+    if (existing === true || (typeof existing === 'function' && existing(args))) return true;
+    if (typeof operationQuery === 'function' && !operationQuery(args)) return true;
+    return typeof filterQuery === 'function' && filterQuery(args) === false;
+  };
+  return [key, { ...config, ui: { ...(config.ui ?? {}), isHidden } }];
+})) as typeof rawModels;
 
 export default models;
