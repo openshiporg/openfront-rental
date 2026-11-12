@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
 import { StayCard } from '../../components/StayCard';
 import { StayImage as Image } from '../../components/StayImage';
@@ -21,6 +22,7 @@ export async function CollectionsPage({ params, searchParams }: { params?: Promi
   const error = index.error || page?.error || null;
   const collections = index.collections;
   const collection = collections.find(item => item.slug === slug);
+  if (slug && !error && !collection) notFound();
   const homes = page?.results || [];
   const homeCount = page?.totalCount ?? 0;
   const lastPageOffset = homeCount > 0 ? Math.floor((homeCount - 1) / COLLECTION_PAGE_SIZE) * COLLECTION_PAGE_SIZE : 0;

@@ -1,10 +1,10 @@
 import { stripeCheckoutEnabled } from '@/features/integrations/payment/stripe';
 import { FileSignature, HandCoins, ScrollText, Undo2 } from 'lucide-react';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { GuestBookingForm, QuoteCountdown } from '../../components/GuestForms';
-import { BookingSteps, UnavailableStay } from '../../components/Journey';
+import { BookingSteps } from '../../components/Journey';
 import { PolicyDetails, QuoteSummary } from '../../components/QuoteSummary';
 import { StayImage as Image } from '../../components/StayImage';
 import { StorefrontShell } from '../../components/StorefrontShell';
@@ -16,7 +16,6 @@ import { getPublicStayQuote } from '../../lib/data/stays';
 import { longDate } from '../../lib/dates';
 import { formatGuestParty, formatStayDate } from '../../lib/format';
 import { searchQuery } from '../../lib/navigation';
-import { publicTokenUnavailableMessage } from '../../lib/public-token-copy';
 import { getStorefrontLocale } from '../../lib/data/storefront-locale';
 
 export async function StayCheckoutPage({ params }: { params: Promise<{ quoteToken: string }> }) {
@@ -28,7 +27,8 @@ export async function StayCheckoutPage({ params }: { params: Promise<{ quoteToke
     const receipt = await recoverCheckoutReceipt(quoteToken);
     if (receipt) redirect(receipt);
   }
-  if (!quote) return <StorefrontShell><UnavailableStay title="This quote is no longer available.">{publicTokenUnavailableMessage('quote')} If you already submitted a booking, use Find my trip with your confirmation code and email before reserving again.</UnavailableStay></StorefrontShell>;
+  // An unknown, expired or used quote is a real 404.
+  if (!quote) notFound();
   const { account } = await getGuestAccount();
   const settings = await getPublicMarketplaceSettings();
   const legal = settings.status === 'published' ? settings : null;

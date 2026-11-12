@@ -1,5 +1,6 @@
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
 import { AgreementForm } from '../../components/GuestForms';
 import { UnavailableStay } from '../../components/Journey';
@@ -14,9 +15,10 @@ export async function StayAgreementPage({ params, searchParams }: { params: Prom
   const locale = await getStorefrontLocale();
   const { token } = await params;
   const query = (await searchParams) || {};
-  const { agreement, error } = await getPublicStayAgreement(token);
+  const { agreement } = await getPublicStayAgreement(token);
   const tripToken = privateToken(query.trip);
-  if (!agreement) return <StorefrontShell servicing activeNav="trips"><UnavailableStay title="This agreement link is unavailable.">{error || 'The link may have expired.'} Open your trip to see your stay’s status, or ask your host to send a new link.</UnavailableStay></StorefrontShell>;
+  // An unknown or revoked agreement link is a real 404.
+  if (!agreement) notFound();
   if (agreement.unavailableReason) {
     const reason = agreement.unavailableReason === 'stay_closed'
       ? 'This stay was cancelled, so its agreement can no longer be signed.'

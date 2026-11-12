@@ -71,7 +71,7 @@ test('auth routes match exactly, so look-alike list paths are not treated as pub
 function middlewareRun({ pathname, user = null, env = {} }) {
   const { handleDashboardRoutes } = sandbox({ env, mocks: {
     'next/server': {
-      NextResponse: { redirect: url => ({ redirect: new URL(url).pathname }), next: () => ({ next: true }) },
+      NextResponse: { redirect: url => ({ redirect: new URL(url).pathname }), next: () => ({ next: true }), rewrite: (url, init) => ({ rewrite: new URL(url).pathname, status: init?.status }) },
     },
     '@/features/dashboard/lib/getBaseUrl': { getServerGraphQLTarget: async () => ({ endpoint: 'https://test.invalid/api/graphql' }) },
     'graphql-request': { GraphQLClient: class {} },
@@ -93,6 +93,15 @@ test('sign-up is reachable only when public sign-up is open; reset matches only 
   const flow = sandbox({ env: { PUBLIC_SIGNUPS_ALLOWED: 'false' } }).load('features/dashboard/lib/authFlow.ts');
   assert.equal(flow.publicSignUpsAllowed(), false);
   assert.equal(flow.publicSignUpsAllowed({ PUBLIC_SIGNUPS_ALLOWED: 'true' }), true);
+});
+
+test('a role without the page permission gets a 404 on direct platform URLs', async () => {
+  const housekeeping = { id: '3', role: { canAccessDashboard: true, canReadProperties: true, canReadPayments: false, canManageSettings: false } };
+  for (const pathname of ['/dashboard/platform/payments', '/dashboard/platform/payments/abc', '/dashboard/platform/store-settings']) {
+    assert.equal((await middlewareRun({ pathname, user: housekeeping })).status, 404, pathname);
+  }
+  assert.deepEqual(await middlewareRun({ pathname: '/dashboard/platform/properties', user: housekeeping }), { next: true });
+  assert.deepEqual(await middlewareRun({ pathname: '/dashboard/platform/payments', user: { id: '4', role: { canAccessDashboard: true, canReadPayments: true } } }), { next: true });
 });
 
 test('form errors show Keystone validation text, never Prisma, stack or GraphQL internals', () => {

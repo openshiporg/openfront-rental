@@ -5,6 +5,15 @@ import { GraphQLClient } from 'graphql-request';
 import { safeErrorSummary, sanitizeDashboardRedirect } from './lib/security';
 import { isDashboardRoute, publicSignUpsAllowed } from './lib/authFlow';
 
+// Platform page -> the role permission that opens it (same pairs as features/platform/lib/navigation.ts;
+// kept here so the middleware does not bundle the navigation icons).
+const platformPagePermissions: Array<[string, string]> = [
+  ['today', 'canReadReservations'], ['properties', 'canReadProperties'], ['listings', 'canReadListings'], ['calendar', 'canReadCalendar'],
+  ['tasks', 'canReadProperties'], ['reservations', 'canReadReservations'], ['agreements', 'canReadReservations'], ['guests', 'canReadGuests'],
+  ['inbox', 'canReadMessages'], ['pricing', 'canReadPricing'], ['payments', 'canReadPayments'], ['payouts', 'canReadPayouts'],
+  ['reports', 'canReadReports'], ['channels', 'canReadChannels'], ['reviews', 'canReadReviews'], ['store-settings', 'canManageSettings'],
+];
+
 const basePath = "/dashboard";
 
 // Create a GraphQL client for middleware with explicit headers
@@ -52,6 +61,7 @@ export async function getAuthenticatedUser(request: NextRequest) {
           id
           role {
             canAccessDashboard
+            canReadProperties canReadListings canReadCalendar canReadReservations canReadGuests canReadMessages canReadPricing canReadPayments canReadPayouts canReadReports canReadChannels canReadReviews canManageSettings
           }
         }
       }
@@ -134,6 +144,14 @@ export async function handleDashboardRoutes(
   // Check role permissions
   if (user && !isNoAccessRoute && !user.role?.canAccessDashboard) {
     return NextResponse.redirect(new URL(`${basePath}/no-access`, request.url));
+  }
+
+  // A platform page the role cannot read does not exist for it: 404, not an empty page or a notice.
+  if (user && !isNoAccessRoute) {
+    const section = platformPagePermissions.find(([page]) => pathname === `${basePath}/platform/${page}` || pathname.startsWith(`${basePath}/platform/${page}/`));
+    if (section && user.role?.[section[1]] !== true) {
+      return NextResponse.rewrite(new URL('/role-has-no-such-page', request.url), { status: 404 });
+    }
   }
 
   return NextResponse.next();

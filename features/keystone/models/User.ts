@@ -7,7 +7,23 @@ import { trackingFields } from './trackingFields';
 import { historyDeleteGuard } from '../utils/deleteHistoryGuard';
 
 export const User = list({
-  hooks: { validateDelete: historyDeleteGuard('User') },
+  hooks: {
+    validateDelete: historyDeleteGuard('User'),
+    // A staff user (active, with a dashboard role) always has a host membership: it is what scopes every list and
+    // platform page. Joining, or being given a role, creates the active membership in the store; an invited one is accepted.
+    afterOperation: async ({ operation, item, context }: any) => {
+      if (operation === 'delete' || !item?.id || item.isActive === false || !item.roleId) return;
+      const sudo = context.sudo();
+      const role = await sudo.prisma.role.findUnique({ where: { id: item.roleId }, select: { canAccessDashboard: true } });
+      if (!role?.canAccessDashboard) return;
+      const hosts = await sudo.prisma.hostOrganization.findMany({ select: { id: true }, take: 2 });
+      if (hosts.length !== 1) return;
+      const hostOrganizationId = hosts[0].id;
+      const existing = await sudo.prisma.hostMembership.findFirst({ where: { hostOrganizationId, userId: item.id }, select: { id: true, status: true } });
+      if (!existing) await sudo.prisma.hostMembership.create({ data: { hostOrganizationId, userId: item.id, membershipRole: 'manager', status: 'active' } });
+      else if (existing.status === 'invited') await sudo.prisma.hostMembership.update({ where: { id: existing.id }, data: { status: 'active' } });
+    },
+  },
   access: {
     operation: {
       ...allOperations(isSignedIn),

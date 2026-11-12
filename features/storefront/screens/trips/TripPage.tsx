@@ -1,12 +1,13 @@
 import { CalendarDays, Check, DoorOpen, FileSignature, KeyRound, LogOut, MapPin, MessageSquare, Star, UserRound, Wallet, X } from 'lucide-react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
 import { CancellationForm, ClearCheckoutDraft } from '../../components/GuestForms';
 import { ChangeRequestForm, ClaimTripForm, ReviewForm, TripMessageForm } from '../../components/GuestJourneyForms';
 import { GuestMessageList } from '../../components/GuestMessageList';
 import { StayCardPayment } from '../../components/StayCardPayment';
 import { stripeCheckoutEnabled } from '@/features/integrations/payment/stripe';
-import { BookingSteps, SectionNav, UnavailableStay } from '../../components/Journey';
+import { BookingSteps, SectionNav } from '../../components/Journey';
 import { SaveTripLink } from '../../components/PrivateTripTools';
 import { PolicyDetails } from '../../components/QuoteSummary';
 import { StayImage as Image } from '../../components/StayImage';
@@ -15,7 +16,7 @@ import { withQuery } from '../../lib/account-navigation';
 import { getPublicTrip } from '../../lib/data/stays';
 import { formatGuestParty, formatMoney, formatStayDate, formatType } from '../../lib/format';
 import { privateToken, single, tripPath, type SearchParams } from '../../lib/navigation';
-import { publicActionFailureMessage, publicTokenUnavailableMessage } from '../../lib/public-token-copy';
+import { publicActionFailureMessage } from '../../lib/public-token-copy';
 import { getStorefrontLocale } from '../../lib/data/storefront-locale';
 
 type Step = { state: 'done' | 'current' | 'upcoming' | 'stopped'; icon: typeof Check; title: string; body: string; link?: { href: string; label: string } };
@@ -83,7 +84,8 @@ export async function TripPage({ params, searchParams }: { params: Promise<{ tok
   const query = (await searchParams) || {};
   const messagesBefore = typeof query.messagesBefore === 'string' ? query.messagesBefore : null;
   const { trip } = await getPublicTrip(token, messagesBefore);
-  if (!trip) return <StorefrontShell servicing activeNav="trips"><UnavailableStay title="This trip link is unavailable.">{publicTokenUnavailableMessage('trip')} Use the complete saved link, or get a fresh one with Find my trip using your confirmation code and booking email.</UnavailableStay></StorefrontShell>;
+  // An unknown, expired or revoked trip link is a real 404.
+  if (!trip) notFound();
   const agreementToken = privateToken(query.agreement);
   const path = tripPath(token, agreementToken);
   const signed = trip.agreement?.status === 'signed';

@@ -6,10 +6,13 @@ export default defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    // ESLint 9.39 requires the plugins whose rules are tuned below to be declared in this same object.
+    plugins: { ...nextVitals[0].plugins, ...nextTs[0].plugins },
     // NKS carries inherited dynamic dashboard/storefront surfaces and predates
     // the React Compiler lint rules bundled with Next 16. Keep lint executable
     // and visible without treating that inherited debt as a release blocker.
     rules: {
+      "@next/next/no-assign-module-variable": "warn",
       "@next/next/no-img-element": "warn",
       "@typescript-eslint/ban-ts-comment": "warn",
       "@typescript-eslint/no-explicit-any": "warn",

@@ -1,8 +1,8 @@
 import { Check, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
 import { ThreadReplyForm } from '../../components/GuestJourneyForms';
-import { UnavailableStay } from '../../components/Journey';
 import { SaveTripLink } from '../../components/PrivateTripTools';
 import { StorefrontShell } from '../../components/StorefrontShell';
 import { GuestMessageList } from '../../components/GuestMessageList';
@@ -17,7 +17,8 @@ export async function GuestThreadPage({ params, searchParams }: { params: Promis
   const query = (await searchParams) || {};
   const messagesBefore = typeof query.messagesBefore === 'string' ? query.messagesBefore : null;
   const { thread } = token ? await getGuestThread(token, messagesBefore) : { thread: null };
-  if (!thread) return <StorefrontShell servicing activeNav="help"><UnavailableStay title="This conversation link is unavailable.">Check that you used the complete private link. Conversation links stop working 30 days after the latest message from you or the host, or when the host turns them off; ask about the home again from its page.</UnavailableStay></StorefrontShell>;
+  // An unknown, expired or switched-off conversation link is a real 404.
+  if (!thread) notFound();
 
   return <StorefrontShell servicing activeNav="help"><main id="stay-main" className="stay-shell">
     <header className="stay-page-head">
