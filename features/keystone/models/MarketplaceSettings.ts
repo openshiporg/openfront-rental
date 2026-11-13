@@ -91,11 +91,11 @@ export const MarketplaceSettings = list({
       validation: { length: { max: 60 } },
       ui: { description: 'Version label of the published terms of use. Guests accept this exact version at sign-up and checkout.' },
     }),
+    // Legacy column kept for old data only; it is not in the API or the dashboard and gates nothing.
     allowTestBookings: checkbox({
       defaultValue: false,
-      ui: {
-        description: 'Lets guests choose an explicit test booking while card checkout runs in Stripe test mode. Test bookings hold no dates, take only test-card payments, and are kept out of real money, statements and reports.',
-      },
+      graphql: { omit: true },
+      ui: { createView: { fieldMode: 'hidden' }, itemView: { fieldMode: 'hidden' }, listView: { fieldMode: 'hidden' } },
     }),
     currencyCode: text({ defaultValue: 'USD', validation: { isRequired: true } }),
     locale: text({

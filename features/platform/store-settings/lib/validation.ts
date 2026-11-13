@@ -15,7 +15,6 @@ export type MarketplaceSettingsInput = {
   privacyPolicyVersion: string;
   termsUrl: string;
   termsVersion: string;
-  allowTestBookings: boolean;
   currencyCode: string;
   locale: string;
   timezone: string;
@@ -104,7 +103,6 @@ export function parseMarketplaceSettingsForm(formData: FormData): MarketplaceSet
       privacyPolicyVersion: privacyPolicyUrl ? privacyPolicyVersion : '',
       termsUrl,
       termsVersion: termsUrl ? termsVersion : '',
-      allowTestBookings: formData.get('allowTestBookings') === 'on',
       currencyCode,
       locale,
       timezone,

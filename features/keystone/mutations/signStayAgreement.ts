@@ -67,7 +67,7 @@ export async function signStayAgreement(
           statement: 'Read the captured terms and house rules and agreed to sign with the typed name.',
           termsSnapshotSha256: crypto.createHash('sha256').update(JSON.stringify(locked.termsSnapshot ?? null)).digest('hex'),
           via: 'signing_link',
-          // A test booking's agreement is signed as part of a simulation, not a real stay.
+          // A legacy test booking's agreement is not a real stay.
           ...(reservation.testMode ? { simulation: true } : {}),
         },
       },

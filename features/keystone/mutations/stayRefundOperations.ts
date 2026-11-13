@@ -209,7 +209,7 @@ async function settleProviderRefund(context: any, { refundId, payment, idempoten
 }
 
 /**
- * Send an open card refund to Stripe (TEST mode only), or check one Stripe is still
+ * Send an open card refund to Stripe, or check one Stripe is still
  * processing. Pattern from openfront-hotel refundIntentWorker: claim the liability in a
  * transaction, call the provider outside it, then settle against the claimed attempt.
  */

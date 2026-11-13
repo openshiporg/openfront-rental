@@ -19,7 +19,7 @@ export type PaymentEvidence = {
   data?: unknown;
 };
 
-/** Stripe tender in this store is always TEST money (the adapter refuses live mode). */
+/** Older Stripe rows recorded before card payments settled stays are kept apart as test tender. */
 export function isTestTender(payment: { provider?: string | null; data?: unknown }) {
   const data = payment.data && typeof payment.data === 'object' ? payment.data as Record<string, unknown> : {};
   // Card payments taken for a confirmed stay carry mode 'card' and settle that stay; older

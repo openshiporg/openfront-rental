@@ -957,7 +957,7 @@ export async function ConversationDetailPage({ params, searchParams }: DetailPro
 function refundEvidenceCopy(refund: any, card = false) {
   if (refund.status === 'succeeded') {
     return card && refund.providerRefundId
-      ? `Refunded through Stripe (test mode), reference ${refund.providerRefundId}.`
+      ? `Refunded through Stripe, reference ${refund.providerRefundId}.`
       : 'Recorded by an operator as returned outside the store, with a completion reference.';
   }
   if (refund.status === 'cancelled') return 'Declined by the host. No money was returned.';

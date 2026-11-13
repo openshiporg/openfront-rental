@@ -9,13 +9,12 @@ export type LegalDocument = { url: string; version: string };
 
 export type StorefrontSales = {
   open: boolean;
-  allowTestBookings: boolean;
   termsOfUse: LegalDocument | null;
   privacyPolicy: LegalDocument | null;
 };
 
 const settingsSelect = {
-  isPublished: true, allowTestBookings: true, termsUrl: true, termsVersion: true, privacyPolicyUrl: true, privacyPolicyVersion: true,
+  isPublished: true, termsUrl: true, termsVersion: true, privacyPolicyUrl: true, privacyPolicyVersion: true,
 };
 
 function legalDocument(url: unknown, version: unknown): LegalDocument | null {
@@ -29,7 +28,6 @@ export function storefrontSalesFrom(settings: any): StorefrontSales {
   const open = settings?.isPublished === true;
   return {
     open,
-    allowTestBookings: open && settings?.allowTestBookings === true,
     termsOfUse: legalDocument(settings?.termsUrl, settings?.termsVersion),
     privacyPolicy: legalDocument(settings?.privacyPolicyUrl, settings?.privacyPolicyVersion),
   };

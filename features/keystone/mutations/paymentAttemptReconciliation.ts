@@ -76,7 +76,7 @@ export async function reconcileProviderAttempt(prisma: any, paymentId: string, {
       // Paid after all: the money is recorded as received (a closed stay then owes it back or reviews it).
       await settleSucceededPayment(tx, {
         paymentId: current.id, expectedAmountCents: Number(result.data?.amountCents), expectedCurrencyCode: String(result.data?.currencyCode),
-        evidence: { kind: 'host_reconciliation', providerPaymentId: result.providerPaymentId, livemode: false, actorUserId: actorUserId || null }, processedAt: new Date(), ...(actorUserId ? { processedByUserId: actorUserId } : {}),
+        evidence: { kind: 'host_reconciliation', providerPaymentId: result.providerPaymentId, livemode: result.data?.livemode === true, actorUserId: actorUserId || null }, processedAt: new Date(), ...(actorUserId ? { processedByUserId: actorUserId } : {}),
       });
       await releaseClaim(tx, claim);
       return { status: 'succeeded' as const };

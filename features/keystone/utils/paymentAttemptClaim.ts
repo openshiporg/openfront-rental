@@ -24,7 +24,7 @@ function record(value: unknown): Record<string, any> {
 
 /** The nonsecret provider configuration an attempt is created under; frozen on the attempt. */
 export function providerLineage(provider: { id: string; code: string }) {
-  return { providerId: provider.id, code: provider.code, mode: 'test', credentialVersion: provider.code === STRIPE_PROVIDER_CODE ? stripeCredentialVersion() : null };
+  return { providerId: provider.id, code: provider.code, mode: 'card', credentialVersion: provider.code === STRIPE_PROVIDER_CODE ? stripeCredentialVersion() : null };
 }
 
 /** An attempt is only acted on under the credentials it was created with. */

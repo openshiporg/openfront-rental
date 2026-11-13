@@ -64,7 +64,7 @@ export async function processPaymentWebhook(
     }
 
     if (providerCode === 'pp_stripe_stripe') {
-      if (identity?.source !== 'openfront-rental' || identity?.livemode !== false
+      if (identity?.source !== 'openfront-rental' || typeof identity?.livemode !== 'boolean'
         || identity?.paymentId !== payment.id || identity?.reservationId !== payment.reservationId
         || identity?.idempotencyKey !== payment.idempotencyKey) {
         throw new PaymentWebhookError('conflict', 409, 'Webhook payment identity does not match.');

@@ -32,7 +32,7 @@ async function lockedReservation(tx: any, tripToken: string, id: string) {
 
 function assertProviderIdentity(payment: any, result: any) {
   const data = result.data;
-  if (result.providerPaymentId !== payment.providerPaymentId || data?.livemode !== false
+  if (result.providerPaymentId !== payment.providerPaymentId || typeof data?.livemode !== 'boolean'
     || data?.source !== 'openfront-rental' || data?.reservationId !== payment.reservationId
     || data?.paymentId !== payment.id || data?.idempotencyKey !== payment.idempotencyKey) {
     throw new Error('Card payment identity does not match this reservation.');
@@ -93,7 +93,7 @@ async function reserveAttempt(context: any, tripToken: string, reservationId: st
       status: 'pending', paymentMethod: 'card', provider: STRIPE_PROVIDER_CODE,
       providerPaymentId: `reserved:${idempotencyKey}`, idempotencyKey,
       // The provider configuration this attempt is made under, frozen (nonsecret).
-      data: { source: 'openfront-rental', mode: locked.testMode === true ? 'test' : 'card', lineage: providerLineage(provider) },
+      data: { source: 'openfront-rental', mode: 'card', lineage: providerLineage(provider) },
     } });
     return { payment, stale: false, claim: await claimAttempt(tx, payment.id, 'guest_checkout') };
   }, transactionOptions);
@@ -172,7 +172,7 @@ export async function startGuestStayPayment(_root: unknown, args: { tripToken: s
       if (!['pending', 'processing'].includes(current.status)) throw new Error('This card payment was closed. Refresh your trip to see the latest balance.');
       return claimCurrent && locked.status === 'confirmed';
     }, transactionOptions);
-    if (result.status === 'captured') return { status: 'verifying', paymentId: payment.id, mode: 'test' };
+    if (result.status === 'captured') return { status: 'verifying', paymentId: payment.id, mode: 'card' };
     if (!stillPayable) {
       await reconcileProviderAttempt(context.prisma, payment.id, { reason: 'The stay changed before this card payment was made.', closing: true }).catch(() => null);
       throw new Error('This stay can no longer be paid by card. Refresh your trip to see its status.');
@@ -185,7 +185,7 @@ export async function startGuestStayPayment(_root: unknown, args: { tripToken: s
       // The exact tender reserved for this attempt: the Pay button shows this, not a page-load balance.
       amountCents: payment.amountCents,
       currencyCode: payment.currencyCode,
-      mode: 'test',
+      mode: 'card',
     };
   }
   throw new Error('Card payment could not be prepared. Please try again.');
@@ -208,11 +208,11 @@ export async function completeGuestStayPayment(_root: unknown, args: { tripToken
     await lockedReservation(tx, args.tripToken, reservation.id);
     await settleSucceededPayment(tx, {
       paymentId: payment.id, expectedAmountCents: Number(result.data?.amountCents), expectedCurrencyCode: String(result.data?.currencyCode),
-      evidence: { kind: 'stripe_return', providerPaymentId: payment.providerPaymentId, livemode: false }, processedAt: new Date(),
+      evidence: { kind: 'stripe_return', providerPaymentId: payment.providerPaymentId, livemode: result.data?.livemode === true }, processedAt: new Date(),
     });
     const settled = await tx.reservation.findUnique({ where: { id: reservation.id }, select: { paymentStatus: true } });
     return settled?.paymentStatus;
   }, transactionOptions);
   // `received`: this payment is recorded, but the stay still has a balance or a refund under review.
-  return { status: paymentStatus === 'paid' ? 'paid' : 'received', mode: 'test' };
+  return { status: paymentStatus === 'paid' ? 'paid' : 'received', mode: 'card' };
 }

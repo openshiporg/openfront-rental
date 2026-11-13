@@ -284,13 +284,6 @@ export function StoreSettingsForm({ settings }: { settings: OperatorMarketplaceS
                 <span className="mt-1 block text-xs leading-5 text-muted-foreground">{published ? 'Public pages use these settings once saved, and guests can quote and book.' : 'While unpublished, browsing, new quotes and new bookings are paused. Existing guests can still open their trips, agreements, messages and account.'}</span>
               </span>
             </label>
-            <label className="mt-4 flex items-start gap-3 border-t pt-4">
-              <input type="checkbox" name="allowTestBookings" defaultChecked={settings?.allowTestBookings ?? false} className="mt-0.5 size-4 shrink-0 accent-primary" />
-              <span>
-                <span className="block text-sm font-medium">Allow test bookings</span>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">Only while card checkout runs in Stripe test mode. A guest must choose a test booking at checkout: it holds no dates, takes only test-card payments, and stays out of real money, statements and reports. Ordinary bookings stay real.</span>
-              </span>
-            </label>
           </SettingsGroup>
         </div>
 

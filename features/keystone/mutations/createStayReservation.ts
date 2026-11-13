@@ -33,7 +33,6 @@ type CreateStayReservationArgs = {
   acceptedStoreTermsVersion?: string | null;
   /** The store's privacy policy version shown at checkout: a notice, not consent. */
   privacyNoticeVersion?: string | null;
-  /** The guest explicitly chose a test booking (store permission and Stripe test mode required). */
   /** Per-checkout secret: a retry with it returns the booking already made, never a second one. */
   receiptKey?: string | null;
 };

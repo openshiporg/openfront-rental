@@ -20,7 +20,6 @@ export type OperatorMarketplaceSettings = {
   privacyPolicyVersion?: string | null;
   termsUrl?: string | null;
   termsVersion?: string | null;
-  allowTestBookings?: boolean | null;
   currencyCode: string;
   locale: string;
   timezone: string;
@@ -45,7 +44,7 @@ export type StoreSettingsActionState = {
 
 const SETTINGS_FIELDS = `
   id name tagline homepageHeadline publicDescription supportEmail supportPhone supportHours officeAddress
-  privacyPolicyUrl privacyPolicyVersion termsUrl termsVersion allowTestBookings currencyCode locale timezone defaultMapLatitude defaultMapLongitude accentHue logoIcon logoColor isPublished
+  privacyPolicyUrl privacyPolicyVersion termsUrl termsVersion currencyCode locale timezone defaultMapLatitude defaultMapLongitude accentHue logoIcon logoColor isPublished
 `;
 
 async function authorizeSettingsManager() {

@@ -396,7 +396,7 @@ export async function processRefundAction(formData: FormData) {
   });
   const status = (result.data as any)?.status;
   await finish(reservationId, result, status === 'succeeded'
-    ? 'Refund completed in Stripe (test mode).'
+    ? 'Refund completed in Stripe.'
     : status === 'processing' ? 'Stripe is still processing the refund. Check its status again shortly.'
       : status === 'failed' ? 'Stripe couldn’t complete the refund. You can try again.' : 'Refund updated.', value(formData, 'returnTo'));
 }
@@ -443,7 +443,7 @@ export async function createRefundAction(formData: FormData) {
   });
   const status = (result.data as any)?.status;
   await finish(reservationId, result, status === 'succeeded'
-    ? 'Refund completed in Stripe (test mode).'
+    ? 'Refund completed in Stripe.'
     : status === 'processing' ? 'Refund sent to Stripe and still processing.'
       : status === 'failed' ? 'Stripe couldn’t complete the refund. You can try again from Refunds.'
         : 'Refund opened. Record it once you’ve returned the money.', value(formData, 'returnTo'));

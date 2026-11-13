@@ -176,7 +176,7 @@ The [Keystone model registry](features/keystone/models/index.ts) and [Prisma sch
 Use a development database for `migrate:gen`; it generates and applies schema changes.
 
 ### Payment Integration
-[Payment adapters](features/integrations/payment/index.ts) include manual recording and an explicitly test-only Stripe card path. The Stripe adapter requires `STRIPE_ENABLED=true`, `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET` with test-mode keys. It does not accept live card payments. Callback handling lives at `/api/payment-webhooks/[providerCode]`.
+[Payment adapters](features/integrations/payment/index.ts) include manual recording and a Stripe card path. The Stripe adapter requires `STRIPE_ENABLED=true`, `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`; the mode follows the keys (test keys on demo deployments, live keys in production). Callback handling lives at `/api/payment-webhooks/[providerCode]`.
 
 ### Calendar Integration
 The registered [channel adapters](features/integrations/channels/index.ts) are direct and iCalendar. iCalendar exchange handles availability holds; its capability declaration does not provide rate, reservation, message, or remote-transport synchronization.

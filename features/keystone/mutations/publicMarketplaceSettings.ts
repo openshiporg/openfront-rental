@@ -16,7 +16,6 @@ const PUBLIC_SETTINGS_PROJECTION = [
   'privacyPolicyVersion',
   'termsUrl',
   'termsVersion',
-  'allowTestBookings',
   'currencyCode',
   'locale',
   'timezone',

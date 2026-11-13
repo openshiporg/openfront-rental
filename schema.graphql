@@ -569,7 +569,6 @@ type MarketplaceSettings {
   termsUrl: String
   privacyPolicyVersion: String
   termsVersion: String
-  allowTestBookings: Boolean
   currencyCode: String
   locale: String
   timezone: String
@@ -604,7 +603,6 @@ input MarketplaceSettingsWhereInput {
   termsUrl: StringFilter
   privacyPolicyVersion: StringFilter
   termsVersion: StringFilter
-  allowTestBookings: BooleanFilter
   currencyCode: StringFilter
   locale: StringFilter
   timezone: StringFilter
@@ -654,7 +652,6 @@ input MarketplaceSettingsOrderByInput {
   termsUrl: OrderDirection
   privacyPolicyVersion: OrderDirection
   termsVersion: OrderDirection
-  allowTestBookings: OrderDirection
   currencyCode: OrderDirection
   locale: OrderDirection
   timezone: OrderDirection
@@ -681,7 +678,6 @@ input MarketplaceSettingsUpdateInput {
   termsUrl: String
   privacyPolicyVersion: String
   termsVersion: String
-  allowTestBookings: Boolean
   currencyCode: String
   locale: String
   timezone: String
@@ -713,7 +709,6 @@ input MarketplaceSettingsCreateInput {
   termsUrl: String
   privacyPolicyVersion: String
   termsVersion: String
-  allowTestBookings: Boolean
   currencyCode: String
   locale: String
   timezone: String

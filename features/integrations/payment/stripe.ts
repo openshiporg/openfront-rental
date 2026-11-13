@@ -20,25 +20,19 @@ export function stripeCredentialVersion() {
 }
 
 /**
- * This integration deliberately cannot initiate live-mode payments. Enabling it is an
- * explicit sandbox choice: card tender is Stripe TEST money, only accepted for stays
- * booked while test mode was on, and always shown to guests and hosts as a test payment.
+ * Card payment is on when Stripe is configured. The mode follows the keys (test keys on demo
+ * deployments, live keys in production); the code path is the same.
  */
 export function stripeCheckoutEnabled() {
   return process.env.STRIPE_ENABLED === 'true'
-    && Boolean(process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_'))
-    && Boolean(process.env.STRIPE_PUBLISHABLE_KEY?.startsWith('pk_test_'))
+    && /^sk_(test|live)_/.test(process.env.STRIPE_SECRET_KEY || '')
+    && /^pk_(test|live)_/.test(process.env.STRIPE_PUBLISHABLE_KEY || '')
     && Boolean(process.env.STRIPE_WEBHOOK_SECRET?.startsWith('whsec_'));
-}
-
-/** The only card mode this store supports. `null` means card payment is off. */
-export function stripeCardMode(): 'test' | null {
-  return stripeCheckoutEnabled() ? 'test' : null;
 }
 
 function client() {
   const key = process.env.STRIPE_SECRET_KEY;
-  if (!key?.startsWith('sk_test_')) throw new Error('Card payment is not configured.');
+  if (!key || !/^sk_(test|live)_/.test(key)) throw new Error('Card payment is not configured.');
   return new Stripe(key, { timeout: 20_000, maxNetworkRetries: 1 });
 }
 
@@ -63,7 +57,6 @@ export async function createPaymentFunction({ amount, currency, reservation, ide
     amount, currency: currency.toLowerCase(), payment_method_types: ['card'],
     metadata: { ...metadata, source: RENTAL_PAYMENT_SOURCE, reservationId: reservation.id, idempotencyKey },
   }, { idempotencyKey });
-  if (intent.livemode) throw new Error('Live payments are not available.');
   return { status: 'pending' as const, providerPaymentId: intent.id, data: { clientSecret: intent.client_secret } };
 }
 
@@ -81,9 +74,9 @@ export async function getPaymentStatusFunction({ paymentId }: { paymentId: strin
   return intentResult(await client().paymentIntents.retrieve(paymentId));
 }
 
-/** The intent must be this store's test intent for exactly this local attempt. */
+/** The intent must be this store's intent for exactly this local attempt. */
 function assertIntentIdentity(intent: Stripe.PaymentIntent, expected: PaymentAttemptIdentity) {
-  if (intent.livemode || intent.metadata?.source !== RENTAL_PAYMENT_SOURCE
+  if (intent.metadata?.source !== RENTAL_PAYMENT_SOURCE
     || intent.metadata?.rentalPaymentId !== expected.rentalPaymentId
     || (intent.metadata?.reservationId || null) !== (expected.reservationId || null)
     || (expected.idempotencyKey && intent.metadata?.idempotencyKey !== expected.idempotencyKey)
@@ -112,7 +105,7 @@ export async function cancelPaymentFunction({ paymentId, expected }: { paymentId
 export async function findPaymentFunction({ rentalPaymentId }: { rentalPaymentId: string }) {
   if (!/^[a-z0-9]+$/i.test(rentalPaymentId)) throw new Error('Invalid card payment reference.');
   const found = await client().paymentIntents.search({ query: `metadata['rentalPaymentId']:'${rentalPaymentId}'`, limit: 10 });
-  const own = found.data.filter((intent) => !intent.livemode && intent.metadata?.source === RENTAL_PAYMENT_SOURCE && intent.metadata?.rentalPaymentId === rentalPaymentId);
+  const own = found.data.filter((intent) => intent.metadata?.source === RENTAL_PAYMENT_SOURCE && intent.metadata?.rentalPaymentId === rentalPaymentId);
   if (own.length > 1) throw new Error('More than one card payment matches this attempt. Reconcile it in Stripe.');
   return own[0] ? intentResult(own[0]) : null;
 }
@@ -126,15 +119,15 @@ export function verifyWebhook({ rawBody, headers }: { rawBody: string; headers: 
   try { event = client().webhooks.constructEvent(rawBody, signature, secret); }
   catch { throw new Error('Payment webhook signature is invalid.'); }
   const intent = event.data.object as Stripe.PaymentIntent;
-  if (event.livemode || event.type !== 'payment_intent.succeeded' || intent.metadata?.source !== RENTAL_PAYMENT_SOURCE) {
+  if (event.type !== 'payment_intent.succeeded' || intent.metadata?.source !== RENTAL_PAYMENT_SOURCE) {
     return { id: event.id, type: 'ignored' };
   }
-  if (intent.status !== 'succeeded' || intent.livemode) throw new Error('Payment settlement is incomplete.');
+  if (intent.status !== 'succeeded') throw new Error('Payment settlement is incomplete.');
   return { id: event.id, type: 'payment.succeeded', data: { ...settlement(intent), providerPaymentId: intent.id } };
 }
 
 /**
- * Host-initiated refund of a Rental TEST PaymentIntent, ported from Hotel's
+ * Host-initiated refund of a Rental PaymentIntent, ported from Hotel's
  * refundPaymentFunction. The idempotency key is stable per attempt, so a retry after a
  * lost response returns the same Stripe refund instead of creating a second one.
  */
@@ -146,7 +139,7 @@ export async function createRefundFunction({ providerPaymentId, amount, idempote
   const stripe = client();
   const intent = await stripe.paymentIntents.retrieve(providerPaymentId);
   // The payment must be this store's, for exactly this attempt and stay, before any refund is made.
-  if (intent.livemode || intent.metadata?.source !== RENTAL_PAYMENT_SOURCE
+  if (intent.metadata?.source !== RENTAL_PAYMENT_SOURCE
     || intent.metadata?.rentalPaymentId !== expected.rentalPaymentId
     || (intent.metadata?.reservationId || null) !== (expected.reservationId || null)) throw new Error('This card payment doesn’t match this refund. Nothing was changed.');
   // Adopt a refund already created for this liability (a lost response, or an
