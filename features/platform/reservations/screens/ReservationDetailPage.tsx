@@ -476,7 +476,7 @@ export async function ReservationDetailPage({
         aside={<>
           <Section id="stay-lifecycle" title="Lifecycle" icon={CalendarDays}>
             <div className="space-y-3 text-sm leading-6">
-              <p>Currently <span className="font-medium">{reservationLabel(reservation.status).toLowerCase()}</span>.{canManage && onTimeTransitions.length ? <> Next step: <span className="font-medium">{reservationTransitionLabel(onTimeTransitions[0])}</span>, at the top of the page.</> : null}</p>
+              <p>Status: <span className="font-medium">{reservationLabel(reservation.status)}</span>.{canManage && onTimeTransitions.length ? <> Next step: <span className="font-medium">{reservationTransitionLabel(onTimeTransitions[0])}</span>, at the top of the page.</> : null}</p>
               {capabilities.known && !canManage && transitions.length ? <p className="text-xs leading-5 text-muted-foreground">Reservation management permission is required to change this stay.</p> : null}
               {['confirmed', 'in_stay'].includes(reservation.status) && readinessWarnings.length ? <ul className={`list-disc space-y-0.5 pl-5 text-xs leading-5 ${toneText.warning}`}>{readinessWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul> : null}
               {canManage ? earlyTransitions.map((transition) => <form key={transition} action={transitionReservation} className="space-y-3 rounded-lg border border-amber-300/70 bg-amber-50/40 p-3 dark:border-amber-900/60 dark:bg-amber-950/20">

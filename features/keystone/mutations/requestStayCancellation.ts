@@ -112,7 +112,7 @@ export async function requestStayCancellation(
         : `The refund for cancelling now is ${formatCentsForMessage(entitlement.refundCents, locked.currencyCode)}`;
       throw new Error(`${shown}. Review it again before cancelling.`);
     }
-    const consentNote = `[${now.toISOString()}] Guest confirmed cancellation from the trip link. Assessment ${entitlement.assessmentId}: ${entitlement.status === 'unassessed' ? `host review of up to ${entitlement.reviewCents}` : `refund ${entitlement.refundCents}`} ${locked.currencyCode} (policy ${entitlement.policyVersion || 'none'}).`;
+    const consentNote = `${new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' }).format(now)} UTC: guest confirmed the cancellation from the trip link. ${entitlement.status === 'unassessed' ? `Host review of up to ${formatCentsForMessage(entitlement.reviewCents, locked.currencyCode)}` : `Refund ${formatCentsForMessage(entitlement.refundCents, locked.currencyCode)}`} under the ${entitlement.policyVersion ? 'store cancellation policy' : 'store terms (no cancellation policy)'}.`;
     await tx.reservation.update({
       where: { id: locked.id },
       data: {

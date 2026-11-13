@@ -1026,7 +1026,7 @@ export async function PaymentDetailPage({ params, searchParams }: DetailProps) {
         settled
           ? { label: realMoney ? 'Charged' : 'Charged · not real money', value: formatMoney(payment.amountCents, payment.currencyCode), hint: payment.processedAt ? formatTimestamp(payment.processedAt) : 'processing time not recorded', tone: realMoney ? undefined : 'warning' as const, icon: CircleDollarSign }
           : { label: 'Attempted', value: formatMoney(payment.amountCents, payment.currencyCode), hint: `${sentence(payment.status).toLowerCase()} · not collected`, tone: pendingOutcome ? 'warning' : 'danger', icon: CircleDollarSign },
-        { label: 'Refunded', value: formatMoney(payment.refundedAmountCents, payment.currencyCode), hint: plural(payment.refundsCount ?? refundRows.length, 'refund'), tone: payment.refundedAmountCents ? 'warning' : undefined, icon: ReceiptText },
+        { label: 'Refunded', value: formatMoney(payment.refundedAmountCents, payment.currencyCode), hint: (payment.refundsCount ?? refundRows.length) ? `${plural(payment.refundsCount ?? refundRows.length, 'refund')}${payment.refundedAmountCents ? '' : ', none completed'}` : 'No refunds', tone: payment.refundedAmountCents ? 'warning' : undefined, icon: ReceiptText },
         { label: 'Refund pending', value: formatMoney(openRefundCents, payment.currencyCode), hint: openRefundCount ? plural(openRefundCount, 'open refund') : 'nothing open', tone: openRefundCents ? 'warning' : undefined, icon: AlertTriangle },
         settled
           ? { label: realMoney ? 'Recorded net' : 'Recorded net · not real money', value: formatMoney(net, payment.currencyCode), hint: failedEvents ? `${failedEvents} webhook events failed` : 'after completed refunds', tone: failedEvents ? 'danger' : undefined, icon: Banknote }
@@ -1041,8 +1041,7 @@ export async function PaymentDetailPage({ params, searchParams }: DetailProps) {
               { label: 'Method', value: sentence(payment.paymentMethod) },
               { label: 'Provider', value: payment.paymentProvider?.name || payment.provider || 'Manual' },
               { label: 'Provider payment id', value: payment.providerPaymentId ? <span className="font-mono text-xs">{payment.providerPaymentId}</span> : <Muted>Not recorded</Muted> },
-              { label: 'Idempotency key', value: payment.idempotencyKey ? <span className="font-mono text-xs">{payment.idempotencyKey}</span> : <Muted>Not recorded</Muted> },
-              { label: 'Processed by', value: payment.processedBy?.name || <Muted>Not recorded</Muted> },
+                            { label: 'Processed by', value: payment.processedBy?.name || <Muted>Not recorded</Muted> },
               { label: 'Processed', value: formatTimestamp(payment.processedAt) },
               { label: 'Created', value: formatTimestamp(payment.createdAt) },
             ]} />
@@ -1075,7 +1074,7 @@ export async function PaymentDetailPage({ params, searchParams }: DetailProps) {
               <LinkRows empty="No deposit on this payment." items={payment.securityDeposits.map((deposit: any) => ({ id: deposit.id, title: deposit.depositNumber, meta: `${formatMoney(deposit.capturedAmountCents, deposit.currencyCode)} captured of ${formatMoney(deposit.amountCents, deposit.currencyCode)}`, trailing: <StatusBadge status={deposit.status} /> }))} />
             </Section>
             <Section title="Webhook events" icon={Webhook} count={payment.webhookEventsCount || 0} description={previewLabel(payment.webhookEvents.length, payment.webhookEventsCount || 0)} flush>
-              <LinkRows empty="No provider events received." items={payment.webhookEvents.map((event: any) => ({ id: event.id, title: <span className="font-mono text-xs">{event.eventType}</span>, meta: event.errorMessage ? <span className={toneText.danger}>{event.errorMessage}</span> : <>{formatTimestamp(event.receivedAt)} · {event.providerEventId}</>, trailing: <StatusBadge status={event.status} /> }))} />
+              <LinkRows empty="No provider events received." items={payment.webhookEvents.map((event: any) => ({ id: event.id, title: <span className="text-sm">{sentence(String(event.eventType).replaceAll('.', ' '))}</span>, meta: event.errorMessage ? <span className={toneText.danger}>{event.errorMessage}</span> : <>{formatTimestamp(event.receivedAt)} · {event.providerEventId}</>, trailing: <StatusBadge status={event.status} label={event.status === 'ignored' ? 'No action needed' : undefined} /> }))} />
             </Section>
           </TwoColumn>
         </>}

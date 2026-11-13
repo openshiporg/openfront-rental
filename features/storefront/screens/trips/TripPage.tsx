@@ -160,7 +160,7 @@ export async function TripPage({ params, searchParams }: { params: Promise<{ tok
       state: trip.checkedOutAt ? 'done' : stopped ? 'stopped' : 'upcoming',
       icon: LogOut,
       title: trip.checkedOutAt ? 'Departure recorded' : 'Departure & deposit follow-up',
-      body: 'Follow the checkout instructions from your host. Any deposit is settled after departure.',
+      body: stopped ? 'This stay is cancelled, so there is no departure to plan.' : 'Follow the checkout instructions from your host. Any deposit is settled after departure.',
     },
   ];
 

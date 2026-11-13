@@ -71,7 +71,7 @@ export async function StayCheckoutPage({ params }: { params: Promise<{ quoteToke
           </dl>
           <div className="stay-panel-foot">
             <Link className="stay-text-link" href={editHref}>Edit dates & guests</Link>
-            <span className="stay-form-note">Quote valid until <time dateTime={quote.expiresAt}>{expiry} UTC</time>. It saves the price; it doesn’t hold the home.</span>
+            <span className="stay-form-note">Price saved until <time dateTime={quote.expiresAt}>{expiry}</time>. It saves the price; it doesn’t hold the home.</span>
           </div>
         </section>
 

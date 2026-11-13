@@ -44,8 +44,8 @@
 
 /* ── Calendar ───────────────────────────────────────────── */
 .stay-cal { position: relative; }
-.stay-cal-nav { position: absolute; top: -.2rem; right: 0; display: flex; gap: .25rem; z-index: 1; }
-.stay-root .stay-cal-arrow { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--stay-ink); transition: background-color .15s, border-color .15s; }
+.stay-cal-nav { position: absolute; top: -.6rem; right: 0; display: flex; gap: .25rem; z-index: 1; }
+.stay-root .stay-cal-arrow { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--stay-ink); transition: background-color .15s, border-color .15s; }
 .stay-root .stay-cal-arrow:hover:not(:disabled) { background: var(--stay-paper-2); }
 .stay-root .stay-cal-arrow:disabled { opacity: .3; }
 .stay-cal-months { display: grid; gap: 2rem; }
@@ -56,7 +56,7 @@
 .stay-cal-weekdays, .stay-cal-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .stay-cal-weekdays span { padding-bottom: .35rem; text-align: center; font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--stay-faint); }
 .stay-cal-week > span { min-width: 0; }
-.stay-root .stay-cal-day { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; width: 100%; height: 2.9rem; padding: 0; border: 0; border-radius: var(--stay-r-sm); background: transparent; color: var(--stay-ink); font-variant-numeric: tabular-nums; transition: background-color .12s, color .12s; }
+.stay-root .stay-cal-day { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; width: 100%; height: 2.9rem; min-height: 2.75rem; padding: 0; border: 0; border-radius: var(--stay-r-sm); background: transparent; color: var(--stay-ink); font-variant-numeric: tabular-nums; transition: background-color .12s, color .12s; }
 .stay-cal-num { font-size: .9rem; font-weight: 550; line-height: 1.2; }
 .stay-cal-price { min-height: .95rem; font-size: .75rem; line-height: 1.35; color: var(--stay-muted); letter-spacing: -.01em; white-space: nowrap; }
 .stay-cal-cents { font-size: 1em; letter-spacing: -.02em; }
@@ -90,7 +90,7 @@
 .stay-cal-na { white-space: nowrap; color: var(--stay-faint); }
 .stay-cal-legend { display: inline-flex; align-items: center; gap: .4rem; }
 .stay-cal-legend-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--stay-lamp); }
-.stay-root .stay-link-button { display: inline-flex; align-items: center; gap: .3rem; min-height: 2rem; padding: 0; border: 0; background: none; color: var(--stay-ink-2); font-size: .8rem; font-weight: 550; text-decoration: underline; text-underline-offset: .2em; }
+.stay-root .stay-link-button { display: inline-flex; align-items: center; gap: .3rem; min-height: 2.75rem; min-width: 2.75rem; padding: 0; border: 0; background: none; color: var(--stay-ink-2); font-size: .8rem; font-weight: 550; text-decoration: underline; text-underline-offset: .2em; }
 .stay-root .stay-link-button:disabled { opacity: .4; text-decoration: none; }
 
 /* ── Ledger / bill (Oil UI stay `.bill`) ─────────────────── */
@@ -182,7 +182,7 @@
 .stay-mobile-bar-copy { display: grid; justify-items: start; min-width: 0; }
 .stay-mobile-bar-copy strong { font-family: var(--stay-display); font-size: 1.35rem; font-weight: 450; line-height: 1.15; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .stay-mobile-bar-copy strong small { font-family: var(--stay-body); font-size: .78rem; color: var(--stay-muted); }
-.stay-root .stay-mobile-bar-copy .stay-link-button { min-height: 1.5rem; font-size: .75rem; color: var(--stay-muted); }
+.stay-root .stay-mobile-bar-copy .stay-link-button { min-height: 2.75rem; font-size: .75rem; color: var(--stay-muted); }
 .stay-mobile-bar .stay-button { flex: none; }
 
 /* ── Search console ─────────────────────────────────────── */
