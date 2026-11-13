@@ -100,9 +100,44 @@ const rawModels = {
   DataExchangeJob,
 };
 
+// Keystone applies neither a field's read access nor the target list's access to where/orderBy, so a role could
+// count or sort through a relation (or a read-gated field) into data it cannot read. Every field is therefore
+// filterable/orderable only for a session that can read it: a relation needs read access to the target list (the
+// User list only when unrestricted), a read-gated field needs its own read access, and token hashes never.
+// context.sudo() ignores these settings, so server code is unaffected.
+const NEVER_FILTERABLE = /TokenHash$|^tokenHash$/;
+const canQueryList = (listKey: string, args: any): boolean => {
+  const list: any = (rawModels as any)[listKey];
+  const op = list?.access?.operation?.query;
+  if (typeof op === 'function' ? !op(args) : op === false) return false;
+  const filter = list?.access?.filter?.query;
+  if (typeof filter !== 'function') return true;
+  const scope = filter(args);
+  return scope === true || (scope !== false && !!scope && listKey !== 'User');
+};
+function filterGuarded(fields: Record<string, any>) {
+  return Object.fromEntries(Object.entries(fields).map(([key, field]) => {
+    if (key.startsWith('__group') || typeof field !== 'function') return [key, field];
+    return [key, (data: any) => {
+      const f = field(data);
+      if (NEVER_FILTERABLE.test(key)) return { ...f, isFilterable: false, isOrderable: false };
+      const target: string | undefined = f.dbField?.kind === 'relation' ? f.dbField.list : undefined;
+      const read = typeof f.access === 'function' ? f.access : f.access?.read;
+      if (!target && typeof read !== 'function') return f;
+      const allowed = (own: any) => (args: any) => {
+        if (own === false || (typeof own === 'function' && !own(args))) return false;
+        if (typeof read === 'function' && !read({ session: args.session, context: args.context, listKey: args.listKey, fieldKey: args.fieldKey, operation: 'read' })) return false;
+        return target ? canQueryList(target, args) : true;
+      };
+      return { ...f, isFilterable: allowed(f.isFilterable), isOrderable: allowed(f.isOrderable) };
+    }];
+  }));
+}
+const guardedModels = Object.fromEntries(Object.entries(rawModels).map(([key, config]: [string, any]) => [key, { ...config, fields: filterGuarded(config.fields) }])) as typeof rawModels;
+
 // Sidebar visibility follows the role: a list whose query access denies the session is hidden from navigation
 // (Keystone evaluates ui.isHidden per session in admin meta). Explicit isHidden settings are kept.
-export const models = Object.fromEntries(Object.entries(rawModels).map(([key, config]: [string, any]) => {
+export const models = Object.fromEntries(Object.entries(guardedModels).map(([key, config]: [string, any]) => {
   const operationQuery = config?.access?.operation?.query;
   const filterQuery = config?.access?.filter?.query;
   if (typeof operationQuery !== 'function' && typeof filterQuery !== 'function') return [key, config];
