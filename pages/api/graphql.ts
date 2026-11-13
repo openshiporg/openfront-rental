@@ -39,28 +39,6 @@ function invalidMultipartRequest(res: NextApiResponse) {
   return res.status(400).json({ error: 'Invalid multipart GraphQL request' });
 }
 
-export function getGraphiQLOptions(environment = process.env.NODE_ENV) {
-  if (environment === 'production') return { graphiql: false as const };
-  return {
-    renderGraphiQL: () => `
-          <!DOCTYPE html>
-          <html lang="en">
-            <body style="margin: 0; overflow-x: hidden; overflow-y: hidden">
-            <div id="sandbox" style="height:100vh; width:100vw;"></div>
-            <script src="https://embeddable-sandbox.cdn.apollographql.com/_latest/embeddable-sandbox.umd.production.min.js"></script>
-            <script>
-            new window.EmbeddedSandbox({
-              target: "#sandbox",
-              initialEndpoint: window.location.href,
-              hideCookieToggle: false,
-              initialState: { includeCookies: true }
-            });
-            </script>
-            </body>
-          </html>`,
-  };
-}
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Match the reference apps: ordinary GraphQL reads (including the proxy's
   // session check) do not consume a shared ingress-IP request bucket.
@@ -95,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   return createYoga({
-    ...getGraphiQLOptions(),
+    graphiql: false,
     plugins: [graphqlRequestLimitsPlugin, graphqlListPathMultiplierPlugin],
     graphqlEndpoint: '/api/graphql',
     schema: keystoneContext.graphql.schema,
