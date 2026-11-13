@@ -320,7 +320,7 @@ export async function ReservationDetailPage({
             </div> : null}
           </Section>
 
-          <Section id="stay-refunds" title="Payments & refunds" icon={Banknote} count={Number(reservation.paymentsCount ?? payments.length)} description="Card refunds run in Stripe test mode. Manual payments are refunded outside the store, then recorded here." flush>
+          <Section id="stay-refunds" title="Payments & refunds" icon={Banknote} count={Number(reservation.paymentsCount ?? payments.length)} description="Card refunds go back to the guest’s card through Stripe. Manual payments are refunded outside the store, then recorded here." flush>
             {canPay ? pendingPayments.map((payment: any) => <div key={`close-${payment.id}`} className="border-b px-4 py-3">
               <Disclosure icon={Banknote} summary={`Close the pending ${formatMoney(payment.amountCents, payment.currencyCode)} attempt`} description={payment.data?.reconciliation?.state === 'unknown' ? 'Stripe’s outcome for this attempt is unknown. It closes only once Stripe reports it.' : payment.data?.closureRequested ? 'The stay was closed; this attempt is waiting for Stripe to cancel it.' : 'A card attempt closes only when Stripe confirms it was cancelled.'}>
                 <form action={cancelPaymentAttemptAction} className="grid gap-3">
@@ -372,7 +372,7 @@ export async function ReservationDetailPage({
                     <Field label="Reason"><Select required name="reason" defaultValue="goodwill"><option value="goodwill">Goodwill</option><option value="stay_issue">Stay issue</option><option value="overpayment">Overpayment</option></Select></Field>
                     <Field label="Note" hint="Saved with the refund." className="sm:col-span-2"><TextInput required minLength={3} maxLength={1000} name="note" placeholder="Hot tub out of service for one night" /></Field>
                     <p className="text-xs leading-5 text-muted-foreground sm:col-span-2">Goodwill and stay-issue refunds lower the stay total by the same amount. Card refunds go to Stripe straight away; manual ones are recorded once you’ve returned the money.</p>
-                    <div className="sm:col-span-2"><ConfirmSubmitButton destructive={false} title="Issue this refund?" description="For card payments this sends the refund to Stripe in test mode. It can’t be undone from here." confirmLabel="Issue refund" pendingLabel="Refunding…">Issue refund</ConfirmSubmitButton></div>
+                    <div className="sm:col-span-2"><ConfirmSubmitButton destructive={false} title="Issue this refund?" description="For card payments this sends the refund to the guest’s card through Stripe. It can’t be undone from here." confirmLabel="Issue refund" pendingLabel="Refunding…">Issue refund</ConfirmSubmitButton></div>
                   </form>
                 </Disclosure>
               </div>;

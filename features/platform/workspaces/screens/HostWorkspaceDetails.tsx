@@ -1020,7 +1020,7 @@ export async function PaymentDetailPage({ params, searchParams }: DetailProps) {
       {payment.errorMessage ? <Callout tone="danger" title="Provider reported an error">{payment.errorMessage}</Callout> : null}
       {provenance ? <Callout tone={realMoney ? 'info' : 'warning'} icon={AlertTriangle} title={realMoney ? 'Payment evidence' : 'Not real money'}>{provenance}.</Callout> : null}
       {openRefundCount > openRefunds.length ? <Callout tone="warning" icon={AlertTriangle} title="More open refunds than shown">{openRefunds.length} of {openRefundCount} open refunds are listed, oldest first. Totals include all of them.</Callout> : null}
-      {openRefundCount ? <Callout tone="warning" icon={AlertTriangle} title={`${formatMoney(openRefundCents, payment.currencyCode)} refund owed to the guest`}>{mayRefund ? (card ? 'Refund it in Stripe (test mode) or decline it below.' : 'Return the money outside the store, then record it below — or decline it.') : undefined}</Callout> : null}
+      {openRefundCount ? <Callout tone="warning" icon={AlertTriangle} title={`${formatMoney(openRefundCents, payment.currencyCode)} refund owed to the guest`}>{mayRefund ? (card ? 'Refund it in Stripe or decline it below.' : 'Return the money outside the store, then record it below — or decline it.') : undefined}</Callout> : null}
       {openRefundCount || refundable > 0 ? <AccessNotice capabilities={capabilities} allowed={mayRefund} retryHref={paymentPath}>Payment management permission is required to issue or process refunds.</AccessNotice> : null}
       <StatTiles items={[
         settled
@@ -1046,7 +1046,7 @@ export async function PaymentDetailPage({ params, searchParams }: DetailProps) {
               { label: 'Created', value: formatTimestamp(payment.createdAt) },
             ]} />
           </Section>
-          <Section title="Refunds" icon={ReceiptText} count={payment.refundsCount ?? refundRows.length} description={(payment.refundsCount || 0) > refundRows.length ? `${openRefunds.length} open and the ${payment.refunds.length} latest closed of ${payment.refundsCount} refunds.` : card ? 'Card refunds run in Stripe test mode and record Stripe’s refund reference.' : 'Manual refunds are returned outside the store, then recorded here with a reference.'} flush>
+          <Section title="Refunds" icon={ReceiptText} count={payment.refundsCount ?? refundRows.length} description={(payment.refundsCount || 0) > refundRows.length ? `${openRefunds.length} open and the ${payment.refunds.length} latest closed of ${payment.refundsCount} refunds.` : card ? 'Card refunds go back to the guest’s card through Stripe and record Stripe’s refund reference.' : 'Manual refunds are returned outside the store, then recorded here with a reference.'} flush>
             {refundRows.length ? <ul className="divide-y">
               {refundRows.map((refund: any) => <li key={refund.id} className="space-y-3 px-4 py-3.5">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -1065,7 +1065,7 @@ export async function PaymentDetailPage({ params, searchParams }: DetailProps) {
                 <Field label="Amount"><MoneyInput required name="amountCents" currencyCode={payment.currencyCode} /></Field>
                 <Field label="Reason"><Select required name="reason" defaultValue="goodwill"><option value="goodwill">Goodwill</option><option value="stay_issue">Stay issue</option><option value="overpayment">Overpayment</option></Select></Field>
                 <Field label="Note" hint="Saved with the refund." className="sm:col-span-2"><TextInput required minLength={3} maxLength={1000} name="note" /></Field>
-                <div className="sm:col-span-2"><ConfirmSubmitButton destructive={false} title="Issue this refund?" description={card ? 'This sends the refund to Stripe in test mode. Goodwill and stay-issue refunds lower the stay total by the same amount.' : 'This opens a refund to record once you’ve returned the money. Goodwill and stay-issue refunds lower the stay total by the same amount.'} confirmLabel="Issue refund" pendingLabel="Refunding…">Issue refund</ConfirmSubmitButton></div>
+                <div className="sm:col-span-2"><ConfirmSubmitButton destructive={false} title="Issue this refund?" description={card ? 'This sends the refund to the guest’s card through Stripe. Goodwill and stay-issue refunds lower the stay total by the same amount.' : 'This opens a refund to record once you’ve returned the money. Goodwill and stay-issue refunds lower the stay total by the same amount.'} confirmLabel="Issue refund" pendingLabel="Refunding…">Issue refund</ConfirmSubmitButton></div>
               </form>
             </Disclosure></div> : null}
           </Section>
