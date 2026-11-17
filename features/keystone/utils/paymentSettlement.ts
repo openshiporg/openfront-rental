@@ -98,7 +98,9 @@ export async function settleSucceededPayment(tx: any, {
         ? reconciliation.netPaidCents
         : Math.max(reconciliation.netPaidCents - totalAmountCents, 0);
       let liability = { createdCents: 0 };
-      if (targetLiabilityCents > 0) {
+      // On a cancelled stay, a payment that was already settled was accounted for at cancellation
+      // (the policy refund and the amount the policy kept); re-checking it opens nothing new.
+      if (targetLiabilityCents > 0 && !(alreadySettled && cancelled)) {
         const lateSettlement = cancelled;
         const reason = reservation.status === 'no_show'
           ? 'stay_issue'
