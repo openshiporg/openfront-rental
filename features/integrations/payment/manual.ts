@@ -10,7 +10,7 @@ export async function createPaymentFunction({ reservation, amount, currency }: {
       currency: currency.toLowerCase(),
       reservationId: reservation?.id,
       confirmationCode: reservation?.confirmationCode,
-      instructions: 'Record the offline payment. External card providers remain disabled until signed webhook and secret-storage work is complete.',
+      instructions: 'Record the offline payment.',
     },
   };
 }

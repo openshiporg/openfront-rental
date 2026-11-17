@@ -574,7 +574,7 @@ export async function ReservationDetailPage({
   </PlatformPage>;
 }
 
-/** Open refund: card refunds go to Stripe (test); manual refunds are recorded after money is returned. */
+/** Open refund: card refunds go to Stripe; manual refunds are recorded after money is returned. */
 export function RefundActions({ refund, reservationId, returnTo }: { refund: any; reservationId?: string | null; returnTo?: string }) {
   const card = refund.payment?.provider === CARD_PROVIDER;
   const common = <>
@@ -613,7 +613,7 @@ export function RefundActions({ refund, reservationId, returnTo }: { refund: any
       {refund.status === 'failed' ? <p className={`text-xs leading-5 ${toneText.danger}`}>The last attempt didn’t go through. You can try again.</p> : null}
       <Field label="Refund amount" hint="Lower it to keep part under the cancellation policy."><MoneyInput required name="amountCents" currencyCode={refund.currencyCode} defaultCents={refund.amountCents} /></Field>
       <Field label="Reason for a lower amount" optional><TextInput name="note" maxLength={1000} placeholder="Non-refundable cleaning fee kept" /></Field>
-      <ConfirmSubmitButton variant="default" destructive={false} title="Refund this payment in Stripe?" description="Stripe returns the money to the guest’s test card. This can’t be undone from here." confirmLabel="Refund in Stripe" pendingLabel="Refunding…">Refund in Stripe (test)</ConfirmSubmitButton>
+      <ConfirmSubmitButton variant="default" destructive={false} title="Refund this payment in Stripe?" description="Stripe returns the money to the guest’s card. This can’t be undone from here." confirmLabel="Refund in Stripe" pendingLabel="Refunding…">Refund in Stripe</ConfirmSubmitButton>
     </form> : <form action={recordManualRefundAction} className="space-y-2 rounded-lg border p-3">
       {common}
       <input type="hidden" name="operationKey" value={`manual-${refund.id}`} />

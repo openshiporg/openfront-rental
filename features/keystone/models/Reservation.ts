@@ -52,7 +52,7 @@ export const Reservation = list({
       defaultValue: false,
       access: { create: denyAll, update: denyAll },
       ui: {
-        description: 'A test booking the guest explicitly chose at checkout (store permission and Stripe test mode required). It holds no dates, takes only test-card payments, and is kept out of real money, statements and reports.',
+        description: 'Set on bookings made before checkout became card-only. New bookings are never marked; marked ones hold no dates and stay out of statements and reports.',
         itemView: { fieldMode: 'read' }, createView: { fieldMode: 'hidden' },
       },
     }),

@@ -76,7 +76,7 @@ Rates, seasonal rates, fees, taxes, cancellation policies, and house rules defin
 Properties, units, calendar blocks, and property tasks support accommodation operations. Hosts can manage inbox conversations and review moderation. Owner assignments, statements, statement lines, payout records, security deposits, and damage claims keep financial and ownership records linked to stays; these records are not an external payout or deposit-custody service.
 
 ### Payments & Calendar Exchange
-Manual payments are recorded by authorized hosts. The Stripe card adapter is explicitly test-mode only and rejects live-mode payments. Refund review and provider-attempt reconciliation are separate host workflows. Direct and iCalendar adapters support calendar exchange; no native OTA adapter is registered.
+Manual payments are recorded by authorized hosts. Card payments go through Stripe; the mode follows the keys. Refund review and provider-attempt reconciliation are separate host workflows. Direct and iCalendar adapters support calendar exchange; no native OTA adapter is registered.
 
 ## Architecture
 
@@ -97,7 +97,7 @@ openfront-rental/
 │   ├── keystone/           # Models, host access, and stay commands
 │   ├── platform/           # Host workspaces and onboarding
 │   ├── storefront/         # Guest components and screens
-│   └── integrations/       # Manual/test-card payments and calendar adapters
+│   └── integrations/       # Manual and Stripe card payments, calendar adapters
 └── components/             # Shared UI components
 ```
 
@@ -213,7 +213,7 @@ See the [Openfront Rental documentation](https://docs.openship.org/docs/openfron
 - **Reservations & agreements**: Stay lifecycle, amendments, assignment, and agreements.
 - **Guests & inbox**: Guest profiles, conversations, and messages.
 - **Tasks & reviews**: Property work and review moderation.
-- **Payments & owners**: Manual records, test-card attempts, refunds, statements, payouts, and reports.
+- **Payments & owners**: Manual records, card payments, refunds, statements, payouts, and reports.
 
 ### Storefront Experience
 - **Stay discovery**: Search, listing detail, collections, and comparison.

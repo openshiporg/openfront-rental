@@ -6,8 +6,8 @@ import type { PaymentAttemptIdentity } from './errors';
 
 export { ProviderDefiniteRejection, ProviderOutcomeUnknown, type PaymentAttemptIdentity } from './errors';
 
-export type PaymentProviderCode = 'pp_system_default' | 'pp_signed_test' | 'pp_stripe_stripe';
-export type PaymentProviderMode = 'manual' | 'signed_test' | 'stripe';
+export type PaymentProviderCode = 'pp_system_default' | 'pp_stripe_stripe';
+export type PaymentProviderMode = 'manual' | 'stripe';
 export type PaymentCapability =
   | 'createPayment'
   | 'capturePayment'
@@ -104,22 +104,6 @@ const manualAdapter: PaymentAdapter = {
   generatePaymentLink: manual.generatePaymentLinkFunction,
 };
 
-const signedTestAdapter: PaymentAdapter = {
-  code: 'pp_signed_test',
-  mode: 'signed_test',
-  capabilities: ['getPaymentStatus', 'verifyWebhook'],
-  async createPayment() { throw new Error('The signed test provider is webhook-only.'); },
-  async capturePayment() { throw new Error('The signed test provider settles only through verified webhooks.'); },
-  async refundPayment() { throw new Error('The signed test provider does not issue refunds.'); },
-  async getPaymentStatus({ paymentId }) { return { status: 'pending', data: { paymentId } }; },
-  async generatePaymentLink() { return null; },
-  verifyWebhook({ rawBody, headers }) {
-    const secret = process.env.PAYMENT_WEBHOOK_SIGNED_TEST_SECRET || '';
-    const signature = headers.get('x-openfront-signature') || '';
-    return verifySignedWebhook({ rawBody, signature, secret });
-  },
-};
-
 const stripeAdapter: PaymentAdapter = {
   code: 'pp_stripe_stripe',
   mode: 'stripe',
@@ -138,7 +122,6 @@ const stripeAdapter: PaymentAdapter = {
 
 const paymentProviderAdapters = {
   pp_system_default: manualAdapter,
-  pp_signed_test: signedTestAdapter,
   pp_stripe_stripe: stripeAdapter,
 } satisfies Record<PaymentProviderCode, PaymentAdapter>;
 
