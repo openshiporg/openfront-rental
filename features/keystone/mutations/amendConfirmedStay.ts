@@ -5,6 +5,7 @@ import { reconcileReservationPaymentEvidence, reservationPaymentStatus } from '.
 import { findAccommodationUnitCapacityConflict, lockAccommodationUnitCapacity, lockListingCapacity } from '../utils/reservationAllocation';
 import { assertStayNotInPast, calculateStayQuote } from '../utils/stayPricing';
 import { zonedTodayIso } from '../utils/stayBookingRules';
+import { createReservationLineItemsFromQuote } from '../utils/stayBookingSnapshot';
 
 const settledPaymentStatuses = ['succeeded', 'partially_refunded', 'refunded'];
 const pendingMoneyStatuses = ['pending', 'processing'];
@@ -581,6 +582,12 @@ export async function amendConfirmedStayOperation(
         tripTokenExpiresAt,
       },
     });
+    // The itemized charges follow the new dates, so they add up to the amended total.
+    const amendedLines = createReservationLineItemsFromQuote(`${current.id}:${amendment.id}`, pricingQuote as any);
+    await tx.reservationLineItem.deleteMany({ where: { reservationId: current.id } });
+    if (amendedLines.length) {
+      await tx.reservationLineItem.createMany({ data: amendedLines.map((line) => ({ ...line, hostOrganizationId, reservationId: current.id })) });
+    }
     const movedBlock = await tx.calendarBlock.updateMany({
       where: {
         id: capacityBlocks[0].id,
