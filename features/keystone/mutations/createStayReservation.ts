@@ -479,7 +479,8 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
           cancellationPolicyId: lockedQuoteSnapshot.cancellationPolicy?.id || null,
           agreementNumber: `AGR-${code}`,
           signingTokenHash: hashPublicOwnershipToken(agreementToken),
-          signingTokenExpiresAt: publicTokenExpiry(),
+          // The signing link lives as long as the trip link, so a guest who books far ahead can still sign.
+          signingTokenExpiresAt: tripTokenExpiry(checkOutDate),
           status: 'sent',
           title: `Stay terms for ${lockedQuoteSnapshot.listing.title}`,
           signerEmail: guestEmail,
