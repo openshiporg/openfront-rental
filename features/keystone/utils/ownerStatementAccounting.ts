@@ -15,6 +15,8 @@ type StatementReservation = {
   taxTotalCents: number;
   discountTotalCents: number;
   totalAmountCents: number;
+  /** Net money collected on the stay; a confirmed stay counts as revenue only once this covers its total. */
+  amountPaidCents?: number;
   /** Concession credits already inside discountTotalCents; each is recognized once, as its own refund event. */
   concessionCreditCents?: number;
   allocationBasis?: 'booking_snapshot' | 'current_listing';
@@ -232,12 +234,20 @@ export function buildOwnerStatement({
   };
 
   const exceptions: Array<Record<string, unknown>> = [];
+  const unpaidStays: Array<Record<string, unknown>> = [];
   const includedReservations = reservations
     .filter((reservation) => reservation.checkOutDate >= start && reservation.checkOutDate < end)
     .filter((reservation) => recognizedStayStatuses.includes(reservation.status))
     .map((reservation) => ({ reservation, ownershipDate: stayOwnershipDate(reservation) }))
     .map((item) => ({ ...item, assignment: assignmentFor(item.reservation.propertyId, item.ownershipDate) }))
     .filter((item): item is { reservation: StatementReservation; ownershipDate: string; assignment: StatementAssignment } => Boolean(item.assignment))
+    // A confirmed stay past checkout counts only once fully paid; until then the host sees it to collect or mark no-show.
+    .filter(({ reservation }) => {
+      const paid = reservation.amountPaidCents;
+      if (reservation.status !== 'confirmed' || paid === undefined || paid >= reservation.totalAmountCents) return true;
+      unpaidStays.push({ type: 'unpaid_stay', reservationId: reservation.id, confirmationCode: reservation.confirmationCode, balanceCents: reservation.totalAmountCents - paid });
+      return false;
+    })
     .sort((a, b) => a.reservation.checkOutDate.localeCompare(b.reservation.checkOutDate) || a.reservation.id.localeCompare(b.reservation.id));
   for (const { reservation, assignment } of includedReservations) {
     assertCurrency(reservation.currencyCode, 'Reservation');
@@ -431,7 +441,7 @@ export function buildOwnerStatement({
     reservationIds: includedReservations.map(({ reservation }) => reservation.id),
     refundIds: recognizedRefunds.map(({ refund }) => refund.id),
     payoutIds: paidPayouts.map((payout) => payout.id),
-    exceptions,
+    exceptions: [...exceptions, ...unpaidStays],
     /**
      * Owner policy this statement's amounts depend on but no owner has approved: allocation
      * across ownership changes or moved stays, and how a stay refund splits across revenue,

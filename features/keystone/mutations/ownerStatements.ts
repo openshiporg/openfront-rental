@@ -200,7 +200,7 @@ export async function generateOwnerStatement(
         where: { id: { in: stayIds }, hostOrganizationId },
         select: {
           id: true, confirmationCode: true, status: true, source: true, testMode: true, fixtureOrigin: true, checkInDate: true, checkOutDate: true, currencyCode: true,
-          lodgingSubtotalCents: true, feeTotalCents: true, taxTotalCents: true, discountTotalCents: true, totalAmountCents: true,
+          lodgingSubtotalCents: true, feeTotalCents: true, taxTotalCents: true, discountTotalCents: true, totalAmountCents: true, amountPaidCents: true,
         },
       }),
       tx.refund.findMany({
@@ -234,6 +234,7 @@ export async function generateOwnerStatement(
         taxTotalCents: stay.taxTotalCents ?? 0,
         discountTotalCents: stay.discountTotalCents ?? 0,
         totalAmountCents: stay.totalAmountCents ?? 0,
+        amountPaidCents: stay.amountPaidCents ?? 0,
         concessionCreditCents: creditsByStay.get(stay.id) || 0,
         allocationBasis: allocation.basis,
         servicePropertyId: allocation.unitPropertyId && allocation.unitPropertyId !== allocation.propertyId ? allocation.unitPropertyId : null,
@@ -386,7 +387,7 @@ export async function generateOwnerStatement(
           revision,
           supersedes: supersedes ? { id: supersedes.id, statementNumber: supersedes.statementNumber } : null,
           recognition: {
-            stays: 'check_out_in_period; ownership by assignment effective on the last night; booked property from the booking snapshot',
+            stays: 'check_out_in_period; a confirmed stay only once fully paid (unpaid ones are listed for review); ownership by assignment effective on the last night; booked property from the booking snapshot',
             refunds: 'completed refunds dated in the period (property-local), each recognized once',
             refundAllocation: 'concession credits are revenue; amendment and overpayment settlements are owner-neutral; other refunds are split across revenue and tax in proportion to the stay charges',
             payouts: 'paid owner payouts not linked to another statement, dated in the period (UTC)',

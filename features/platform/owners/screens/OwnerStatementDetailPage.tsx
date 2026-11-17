@@ -20,6 +20,7 @@ const exceptionLabels: Record<string, string> = {
   stay_spans_assignment_start: 'Stay began before this owner’s assignment',
   reaccommodated_to_other_property: 'Stay was moved to a unit at another property',
   no_booking_snapshot_property: 'No booked property captured; allocated by the current listing',
+  unpaid_stay: 'Unpaid stay, not counted',
 };
 
 const allocationLabels: Record<string, string> = {
@@ -136,7 +137,7 @@ export async function OwnerStatementDetailPage({ params, searchParams }: { param
       {!capabilities.known ? <Callout live tone="warning" title="Actions are unavailable right now" action={<Button asChild size="sm" variant="outline"><Link href={statementPath(statement.id)}>Try again</Link></Button>}>Your permissions couldn’t be checked.</Callout> : null}
       {latest ? <Callout tone="info" title={laterCount > 1 ? `${laterCount} newer revisions exist` : 'A newer revision exists'}><Link href={statementPath(latest.id)} className="font-medium underline-offset-4 hover:underline">{latest.statementNumber}</Link></Callout> : null}
       {exceptions.length ? <Callout tone="warning" title="Review before approving">
-        <ul className="list-disc space-y-0.5 pl-4">{exceptions.slice(0, 20).map((item, index) => <li key={index}>{item.confirmationCode ? `${item.confirmationCode}: ` : ''}{exceptionLabels[item.type] || sentence(item.type)}</li>)}</ul>
+        <ul className="list-disc space-y-0.5 pl-4">{exceptions.slice(0, 20).map((item, index) => <li key={index}>{item.confirmationCode ? `${item.confirmationCode}: ` : ''}{exceptionLabels[item.type] || sentence(item.type)}{item.type === 'unpaid_stay' ? `, balance ${money(item.balanceCents)}` : ''}</li>)}</ul>
       </Callout> : null}
       <StatTiles items={[
         { label: 'Gross revenue', value: money(statement.grossRevenueCents), hint: 'owner share, before commission', icon: ReceiptText },
