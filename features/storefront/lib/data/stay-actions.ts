@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 
 import { keystoneClient } from '@/features/dashboard/lib/keystoneClient';
 import { searchQuery, privateToken, tripPath } from '../navigation';
-import { publicActionFailureMessage } from '../public-token-copy';
+import { guestQuoteRefusal, publicActionFailureMessage } from '../public-token-copy';
 import { validateStayDateRange } from './stay-input';
 import { receiptPath, rememberCheckoutReceiptKey } from './checkout-receipt';
 import { sendGuestLinkEmail } from '@/features/keystone/lib/guestMail';
@@ -48,7 +48,7 @@ export async function quoteStayAction(formData: FormData) {
     infants: intValue(formData, 'infants'),
     pets: intValue(formData, 'pets'),
   });
-  if (!response.success) redirect(withError(returnPath, publicActionFailureMessage('quote')));
+  if (!response.success) redirect(withError(returnPath, guestQuoteRefusal((response as any).error) || publicActionFailureMessage('quote')));
   redirect(`/checkout/${response.data.quoteStay.token}`);
 }
 

@@ -21,3 +21,26 @@ export function publicTokenUnavailableMessage(surface: PublicTokenSurface) {
 export function publicActionFailureMessage(action: PublicAction) {
   return actionFailureMessages[action];
 }
+
+// Quote refusals the server writes for guests (stay rules, party size, dates). Only these are shown
+// from the URL, so a crafted link cannot put other text in the booking panel.
+const GUEST_QUOTE_REFUSALS = [
+  /^This listing requires a minimum stay of \d+ nights for the selected dates\.$/,
+  /^This listing allows a maximum stay of \d+ nights for the selected dates\.$/,
+  /^This stay exceeds the maximum supported length of \d+ nights\.$/,
+  /^This home needs at least [\w’ ]{1,40} notice before check-in\. Choose a later arrival date\.$/,
+  /^This home takes bookings up to \d+ days? ahead\. Choose an earlier arrival date\.$/,
+  /^This home sleeps up to \d+ guests\.$/,
+  /^Guest party exceeds the listing maximum occupancy of \d+\.$/,
+  /^This stay does not allow pets\.$/,
+  /^This stay is unavailable for the selected dates\.$/,
+  /^This stay is not available for booking\.$/,
+  /^Check-in cannot be in the past\.$/,
+  /^Check-out must be after check-in\.$/,
+  /^New bookings are paused on this storefront\. Existing trips are still available\.$/,
+];
+
+export function guestQuoteRefusal(message: unknown): string | null {
+  const text = typeof message === 'string' ? message.trim() : '';
+  return text && GUEST_QUOTE_REFUSALS.some((pattern) => pattern.test(text)) ? text : null;
+}

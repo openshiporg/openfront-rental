@@ -13,6 +13,7 @@ import { getPublicStay, getPublicStayAvailability } from '../../lib/data/stays';
 import { getPublicMarketplaceSettings } from '../../lib/data/marketplace';
 import { stayArrivalBounds, stayArrivalRules, zonedTodayIso } from '@/features/keystone/utils/stayBookingRules';
 import { stayPaymentSummary } from '../../lib/payment-copy';
+import { guestQuoteRefusal } from '../../lib/public-token-copy';
 import { isIsoDate } from '../../lib/dates';
 import { formatBaths, formatMoney, formatRating, formatType } from '../../lib/format';
 import { countParam, searchQuery, single, type SearchParams } from '../../lib/navigation';
@@ -111,6 +112,7 @@ export async function StayDetailPage({ params, searchParams }: { params: Promise
             initial={{ checkIn: single(query.checkIn), checkOut: single(query.checkOut), adults: Math.max(countParam(query.adults, 2), 1), children: countParam(query.children, 0, 12), infants: countParam(query.infants, 0, 5), pets: countParam(query.pets, 0, 4) }}
             context={context}
             quoteFailed={Boolean(query.error)}
+            quoteError={guestQuoteRefusal(single(query.error))}
             limits={limits}
           />
           <ul className="stay-book-notes">

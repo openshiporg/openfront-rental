@@ -1,4 +1,5 @@
 import { mergeSchemas } from '@graphql-tools/schema';
+import { guestFacing } from '../utils/guestRequestError';
 import type { GraphQLSchema } from 'graphql';
 
 import { captureStayPayment } from './captureStayPayment';
@@ -302,12 +303,12 @@ export function extendGraphqlSchema(baseSchema: GraphQLSchema) {
         hostOperationsReport,
       },
       Mutation: {
-        quoteStay,
-        createStayReservation,
+        quoteStay: guestFacing(quoteStay),
+        createStayReservation: guestFacing(createStayReservation),
         recoverStayCheckout,
         cancelStayQuote,
-        requestStayCancellation,
-        signStayAgreement,
+        requestStayCancellation: guestFacing(requestStayCancellation),
+        signStayAgreement: guestFacing(signStayAgreement),
         transitionStayReservation,
         reassignStayReservation,
         amendConfirmedStay,

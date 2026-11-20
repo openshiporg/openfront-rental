@@ -51,13 +51,14 @@ const MINIMUM_SCAN_NIGHTS = 60;
  * previewed with the canonical calculator, the full range is checked with the
  * public search contract, and `quoteStay` stays the authority on continue.
  */
-export function StayBookingPanel({ stay, pricing, serverToday, initial, context, quoteFailed, limits }: {
+export function StayBookingPanel({ stay, pricing, serverToday, initial, context, quoteFailed, quoteError, limits }: {
   stay: PanelStay;
   pricing: StayPricing | null;
   serverToday: string;
   initial: { checkIn: string; checkOut: string } & GuestParty;
   context: Record<string, string>;
   quoteFailed: boolean;
+  quoteError?: string | null;
   limits?: StayBookingLimits;
 }) {
   const locale = useStorefrontLocale();
@@ -298,7 +299,7 @@ export function StayBookingPanel({ stay, pricing, serverToday, initial, context,
           <GuestPicker variant="compact" value={party} onChange={next => { touched.current = true; setParty(next); }} maxGuests={pricing?.maxGuests ?? stay.maxGuests} petsAllowed={pricing?.petsAllowed ?? true} />
         </div>
 
-        {quoteFailed ? <div className="stay-alert stay-alert-danger" role="alert">This stay could not be quoted for those dates or guests. Review availability and the stay rules, then try again.</div> : null}
+        {quoteFailed ? <div className="stay-alert stay-alert-danger" role="alert">{quoteError || 'This stay could not be quoted for those dates or guests. Review availability and the stay rules, then try again.'}</div> : null}
 
         <StayDateSwitch range={range} onEdit={editField} />
 
