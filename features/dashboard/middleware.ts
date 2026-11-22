@@ -147,10 +147,11 @@ export async function handleDashboardRoutes(
   }
 
   // A platform page the role cannot read does not exist for it: 404, not an empty page or a notice.
+  // The rewrite stays under the dashboard so staff see the dashboard's not-found page, not the storefront's.
   if (user && !isNoAccessRoute) {
     const section = platformPagePermissions.find(([page]) => pathname === `${basePath}/platform/${page}` || pathname.startsWith(`${basePath}/platform/${page}/`));
     if (section && user.role?.[section[1]] !== true) {
-      return NextResponse.rewrite(new URL('/role-has-no-such-page', request.url), { status: 404 });
+      return NextResponse.rewrite(new URL(`${basePath}/role-has-no-such-page`, request.url), { status: 404 });
     }
   }
 

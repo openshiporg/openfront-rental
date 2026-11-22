@@ -715,3 +715,11 @@
   .stay-root .stay-check input { width: 1.5rem; height: 1.5rem; margin-top: 0; }
   .stay-root:has(.stay-mobile-bar) .stay-footer { padding-bottom: calc(6.5rem + env(safe-area-inset-bottom)); }
 }
+@media (max-width: 760px) {
+  .stay-help-toc a { min-height: 2.75rem; }
+  /* Filter chips: the remove control is a full-size tap that keeps its small visible disc. */
+  .stay-chip { min-height: 2.75rem; padding-right: 0; }
+  .stay-chip a { width: 2.75rem; height: 2.75rem; }
+  .stay-chip a:hover { background: transparent; }
+  .stay-book-help a { min-height: 2.75rem; }
+}
