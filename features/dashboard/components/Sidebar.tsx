@@ -41,7 +41,7 @@ import { Logo, LogoIcon } from '@/features/dashboard/components/Logo'
 import { UserProfileClient } from './UserProfileClient'
 import { OnboardingCards } from '@/features/platform/onboarding/components/OnboardingCards'
 import { dismissOnboarding } from '@/features/platform/onboarding/actions/onboarding'
-import { platformNavGroups, platformStandaloneItems, getPlatformNavItemsWithBasePath, type PlatformPermission } from '@/features/platform/lib/navigation'
+import { platformNavGroups, platformStandaloneItems, getPlatformNavItemsWithBasePath, platformNavItemAllowed, type PlatformPermission } from '@/features/platform/lib/navigation'
 import { useDashboard } from '../context/DashboardProvider'
 import { visiblePlatformItems, visibleSidebarLists } from '../lib/sidebarAccess'
 
@@ -114,7 +114,7 @@ export function Sidebar({ adminMeta, user, onOpenDialog }: SidebarProps) {
   })).filter((group) => group.items.length > 0)
 
   // Standalone platform items with proper basePath
-  const standaloneItemsWithBasePath = visiblePlatformItems(platformStandaloneItems.filter((item) => !user?.role || user.role[item.permission] === true), listsArray as any[], user).map(item => ({
+  const standaloneItemsWithBasePath = visiblePlatformItems(platformStandaloneItems.filter((item) => !user?.role || platformNavItemAllowed(item, user.role)), listsArray as any[], user).map(item => ({
     ...item,
     href: `${basePath}${item.href}`,
   }))

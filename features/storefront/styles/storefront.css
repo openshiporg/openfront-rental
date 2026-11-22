@@ -697,8 +697,6 @@
 .stay-wordmark { min-height: 2.75rem; }
 .stay-breadcrumb a { display: inline-flex; align-items: center; min-height: 2.75rem; }
 @media (max-width: 760px) {
-  /* The availability rows already list every home with its photo; the card grid would repeat them. */
-  .stay-home-featured { display: none; }
   .stay-home-availability { margin-block: 2rem; }
   .stay-home-date-picker { width: 100%; padding: .5rem; }
   .stay-home-date-picker table { width: 100%; table-layout: fixed; }

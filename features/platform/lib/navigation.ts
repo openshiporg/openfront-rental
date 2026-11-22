@@ -42,6 +42,8 @@ export interface PlatformNavItem {
   icon: LucideIcon;
   group?: string;
   permission: PlatformPermission;
+  /** Another permission that also opens the page. */
+  orPermission?: PlatformPermission;
 }
 
 export interface PlatformNavGroup {
@@ -52,7 +54,7 @@ export interface PlatformNavGroup {
 }
 
 export const platformNavItems: PlatformNavItem[] = [
-  { title: 'Today', href: '/platform/today', color: 'emerald', description: 'Arrivals, departures, in-house guests, and work waiting on you', icon: LayoutDashboard, group: 'standalone', permission: 'canReadReservations' },
+  { title: 'Today', href: '/platform/today', color: 'emerald', description: 'Arrivals, departures, in-house guests, and work waiting on you', icon: LayoutDashboard, group: 'standalone', permission: 'canReadReservations', orPermission: 'canReadProperties' },
   { title: 'Properties', href: '/platform/properties', color: 'teal', description: 'Homes, addresses, units, bedrooms, and beds', icon: Home, group: 'host-operations', permission: 'canReadProperties' },
   { title: 'Listings', href: '/platform/listings', color: 'cyan', description: 'Public pages, media, amenities, and house rules', icon: Home, group: 'host-operations', permission: 'canReadListings' },
   { title: 'Calendar', href: '/platform/calendar', color: 'blue', description: 'Reservation, owner, preparation, and channel blocks', icon: CalendarDays, group: 'host-operations', permission: 'canReadCalendar' },
@@ -84,13 +86,17 @@ export const platformNavGroups: PlatformNavGroup[] = [
  * listed. The canonical Sidebar calls this without a user (as in E-commerce), so every
  * entry is listed and each platform page and command enforces the operator's access.
  */
+export function platformNavItemAllowed(item: PlatformNavItem, role: Partial<Record<PlatformPermission, boolean>>) {
+  return role[item.permission] === true || (item.orPermission ? role[item.orPermission] === true : false);
+}
+
 export function getPlatformNavItemsWithBasePath(
   basePath: string,
   user?: { role?: Partial<Record<PlatformPermission, boolean>> | null } | null,
 ) {
   const role = user?.role;
   return platformNavItems
-    .filter((item) => !role || role[item.permission] === true)
+    .filter((item) => !role || platformNavItemAllowed(item, role))
     .map((item) => ({ ...item, href: `${basePath}${item.href}` }));
 }
 

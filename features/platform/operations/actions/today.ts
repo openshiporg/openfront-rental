@@ -3,6 +3,7 @@
 import { keystoneClient } from '@/features/dashboard/lib/keystoneClient';
 import { OPERATIONAL_PROPERTY_SELECTION, operationalLocalToday } from '@/features/platform/operations/lib/operationalProperty';
 import { zonedTodayIso } from '@/features/keystone/utils/stayBookingRules';
+import { getPlatformCapabilities } from '@/features/platform/lib/capabilities';
 
 const STAY = `id confirmationCode status paymentStatus testMode fixtureOrigin checkInDate checkOutDate totalAmountCents amountPaidCents currencyCode guest { name } listing { title property { name timezone } } ${OPERATIONAL_PROPERTY_SELECTION}`;
 const PREVIEW = 25;
@@ -20,6 +21,9 @@ const localToday = operationalLocalToday;
  */
 export async function getTodayOverview() {
   const now = new Date();
+  const capabilities = await getPlatformCapabilities();
+  // Roles that work the homes but not the bookings (housekeeping) get today's task list.
+  if (capabilities.known && !capabilities.canReadReservations) return getTaskDay(now);
   const response = await keystoneClient<any>(`
     query TodayOverview($arrivalDay: ReservationWhereInput!, $departureDay: ReservationWhereInput!, $dueBy: DateTime!, $openTasks: [String!]!) {
       firstZone: properties(where: ${LIVE_PROPERTY}, orderBy: [{ timezone: asc }], take: 1) { timezone }
@@ -54,12 +58,13 @@ export async function getTodayOverview() {
     dueBy: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
     openTasks: OPEN_TASK_STATUSES,
   });
-  if (!response.success) return { today: null, timeZone: null, data: null, error: 'Today’s overview couldn’t be loaded.' };
+  if (!response.success) return { kind: 'full' as const, today: null, timeZone: null, data: null, error: 'Today’s overview couldn’t be loaded.' };
   const data = response.data;
   // One shared zone (first and last by name agree) gives the page a single date to show.
   const first = data.firstZone?.[0]?.timezone;
   const timeZone = first && first === data.lastZone?.[0]?.timezone ? String(first) : null;
   return {
+    kind: 'full' as const,
     today: timeZone ? zonedTodayIso(timeZone, now) : null,
     timeZone,
     data: {
@@ -69,4 +74,31 @@ export async function getTodayOverview() {
     },
     error: null,
   };
+}
+
+const TASK_FIELDS = 'id title status taskType priority dueAt property { name timezone } listing { title } assignee { id name }';
+
+/**
+ * Today for roles that read properties and tasks but not reservations: work that is late or
+ * due within a day, what's in progress, and what's blocked. Counts are full; lists are previews.
+ */
+async function getTaskDay(now: Date) {
+  const response = await keystoneClient<any>(`
+    query TodayTasks($dueBy: DateTime!, $now: DateTime!, $open: [String!]!) {
+      firstZone: properties(where: ${LIVE_PROPERTY}, orderBy: [{ timezone: asc }], take: 1) { timezone }
+      lastZone: properties(where: ${LIVE_PROPERTY}, orderBy: [{ timezone: desc }], take: 1) { timezone }
+      due: propertyTasks(where: { status: { in: $open }, dueAt: { lte: $dueBy } }, orderBy: [{ dueAt: asc }, { id: asc }], take: ${PREVIEW}) { ${TASK_FIELDS} }
+      dueCount: propertyTasksCount(where: { status: { in: $open }, dueAt: { lte: $dueBy } })
+      lateCount: propertyTasksCount(where: { status: { in: $open }, dueAt: { lt: $now } })
+      inProgress: propertyTasks(where: { status: { equals: "in_progress" } }, orderBy: [{ dueAt: asc }, { id: asc }], take: ${PREVIEW}) { ${TASK_FIELDS} }
+      inProgressCount: propertyTasksCount(where: { status: { equals: "in_progress" } })
+      blocked: propertyTasks(where: { status: { equals: "blocked" } }, orderBy: [{ dueAt: asc }, { id: asc }], take: ${PREVIEW}) { ${TASK_FIELDS} }
+      blockedCount: propertyTasksCount(where: { status: { equals: "blocked" } })
+    }
+  `, { dueBy: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(), now: now.toISOString(), open: OPEN_TASK_STATUSES });
+  if (!response.success) return { kind: 'tasks' as const, today: null, timeZone: null, data: null, error: 'Today’s work couldn’t be loaded.' };
+  const data = response.data;
+  const first = data.firstZone?.[0]?.timezone;
+  const timeZone = first && first === data.lastZone?.[0]?.timezone ? String(first) : null;
+  return { kind: 'tasks' as const, today: timeZone ? zonedTodayIso(timeZone, now) : null, timeZone, data, error: null };
 }

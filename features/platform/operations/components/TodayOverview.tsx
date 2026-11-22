@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, CircleDollarSign, ClipboardCheck, Inbox, KeyRound, RefreshCcw, UserRoundCheck } from 'lucide-react';
+import { AlertTriangle, ArrowDownLeft, ArrowUpRight, Ban, CircleDollarSign, ClipboardCheck, Clock, Inbox, KeyRound, RefreshCcw, UserRoundCheck } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
@@ -37,6 +37,7 @@ export function todayHeading(today: string) {
 
 /** Today’s arrivals and departures, who is in house, and work waiting on someone. */
 export function TodayOverview({ overview }: { overview: Awaited<ReturnType<typeof getTodayOverview>> }) {
+  if (overview.kind === 'tasks') return <TaskDay overview={overview} />;
   const { data, error } = overview;
 
   if (!data) {
@@ -100,5 +101,40 @@ export function TodayOverview({ overview }: { overview: Awaited<ReturnType<typeo
       <Section title="Needs attention" icon={ClipboardCheck} count={attentionCount} description={truncated.length ? `Preview: showing ${attention.length} of ${attentionCount}${data.conversationsComplete ? '' : '+'}` : undefined} footer={truncated.length ? <span className="flex flex-wrap gap-x-3 gap-y-1">{truncated.map((entry) => <Link key={entry.label} href={entry.href} className="font-medium text-foreground underline-offset-4 hover:underline">Showing {entry.label}</Link>)}</span> : undefined} flush><LinkRows items={attention} empty="Nothing needs attention." /></Section>
     </div>
     {data.inHouse.length ? <Section title="In house" icon={KeyRound} count={data.inHouseCount} footer={previewFooter(data.inHouse.length, data.inHouseCount, queuePath('in_stay'), 'stay')} flush><LinkRows items={stayRows(data.inHouse)} /></Section> : null}
+  </div>;
+}
+
+const TASKS = '/dashboard/platform/tasks';
+
+function taskRows(tasks: any[], href: string) {
+  return tasks.map((task: any) => ({
+    id: task.id,
+    href,
+    title: `${task.title} · ${task.property?.name || 'Property'}`,
+    meta: <>{task.dueAt ? `Due ${formatTimestamp(task.dueAt, task.property?.timezone)}` : 'No due time'}{task.assignee?.name ? ` · ${task.assignee.name}` : ' · Unassigned'}</>,
+    trailing: <StatusBadge status={task.status} />,
+  }));
+}
+
+/** Today for housekeeping and other roles that work the homes: what's late, due, underway and stuck. */
+function TaskDay({ overview }: { overview: Extract<Awaited<ReturnType<typeof getTodayOverview>>, { kind: 'tasks' }> }) {
+  const { data, error } = overview;
+  if (!data) {
+    return <Callout live tone="danger" title={error || 'Today’s work couldn’t be loaded.'} action={<Button asChild size="sm" variant="outline"><Link href={TODAY_PATH}><RefreshCcw aria-hidden="true" />Try again</Link></Button>}>
+      Your tasks are unchanged and still open from Tasks in the menu.
+    </Callout>;
+  }
+  return <div className="space-y-4">
+    <StatTiles label="Today" items={[
+      { label: 'Due in 24h', value: data.dueCount, hint: 'open tasks, including late ones', tone: data.dueCount ? 'warning' : 'success', icon: Clock, href: `${TASKS}?view=due_soon` },
+      { label: 'Late', value: data.lateCount, hint: 'past their due time', tone: data.lateCount ? 'danger' : 'success', icon: AlertTriangle, href: `${TASKS}?view=overdue` },
+      { label: 'In progress', value: data.inProgressCount, hint: 'started, not finished', icon: ClipboardCheck, href: TASKS },
+      { label: 'Blocked', value: data.blockedCount, hint: 'waiting on something', tone: data.blockedCount ? 'warning' : 'success', icon: Ban, href: `${TASKS}?view=blocked` },
+    ]} />
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Section title="Due in the next 24 hours" icon={Clock} count={data.dueCount} footer={previewFooter(data.due.length, data.dueCount, `${TASKS}?view=due_soon`, 'task')} flush><LinkRows items={taskRows(data.due, `${TASKS}?view=due_soon`)} empty="Nothing due in the next 24 hours." /></Section>
+      <Section title="In progress" icon={ClipboardCheck} count={data.inProgressCount} footer={previewFooter(data.inProgress.length, data.inProgressCount, TASKS, 'task')} flush><LinkRows items={taskRows(data.inProgress, TASKS)} empty="Nothing is underway." /></Section>
+    </div>
+    {data.blocked.length ? <Section title="Blocked" icon={Ban} count={data.blockedCount} footer={previewFooter(data.blocked.length, data.blockedCount, `${TASKS}?view=blocked`, 'task')} flush><LinkRows items={taskRows(data.blocked, `${TASKS}?view=blocked`)} /></Section> : null}
   </div>;
 }

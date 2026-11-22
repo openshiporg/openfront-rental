@@ -8,7 +8,7 @@ import { isDashboardRoute, publicSignUpsAllowed } from './lib/authFlow';
 // Platform page -> the role permission that opens it (same pairs as features/platform/lib/navigation.ts;
 // kept here so the middleware does not bundle the navigation icons).
 const platformPagePermissions: Array<[string, string]> = [
-  ['today', 'canReadReservations'], ['properties', 'canReadProperties'], ['listings', 'canReadListings'], ['calendar', 'canReadCalendar'],
+  ['today', 'canReadReservations|canReadProperties'], ['properties', 'canReadProperties'], ['listings', 'canReadListings'], ['calendar', 'canReadCalendar'],
   ['tasks', 'canReadProperties'], ['reservations', 'canReadReservations'], ['agreements', 'canReadReservations'], ['guests', 'canReadGuests'],
   ['inbox', 'canReadMessages'], ['pricing', 'canReadPricing'], ['payments', 'canReadPayments'], ['payouts', 'canReadPayouts'],
   ['reports', 'canReadReports'], ['channels', 'canReadChannels'], ['reviews', 'canReadReviews'], ['store-settings', 'canManageSettings'],
@@ -150,7 +150,8 @@ export async function handleDashboardRoutes(
   // The rewrite stays under the dashboard so staff see the dashboard's not-found page, not the storefront's.
   if (user && !isNoAccessRoute) {
     const section = platformPagePermissions.find(([page]) => pathname === `${basePath}/platform/${page}` || pathname.startsWith(`${basePath}/platform/${page}/`));
-    if (section && user.role?.[section[1]] !== true) {
+    // 'a|b': either permission opens the page (Today serves front desk and housekeeping alike).
+    if (section && !section[1].split('|').some((permission) => user.role?.[permission] === true)) {
       return NextResponse.rewrite(new URL(`${basePath}/role-has-no-such-page`, request.url), { status: 404 });
     }
   }

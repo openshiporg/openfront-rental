@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { SearchForm } from '../../components/SearchForm';
 import { HomeAvailability } from '../../components/HomeAvailability';
 import { addDaysIso, globalEarliestCheckInIso } from '../../lib/dates';
-import { StayCard } from '../../components/StayCard';
 import { StayImage as Image } from '../../components/StayImage';
 import { StorefrontShell } from '../../components/StorefrontShell';
 import { resolveStorefrontBrand } from '../../lib/brand';
@@ -59,7 +58,9 @@ export async function StorefrontLandingPage() {
 
     {results.length ? <HomeAvailability stays={results} initialDay={addDaysIso(globalEarliestCheckInIso(), 7)} /> : null}
 
-    <section className={`stay-shell stay-section${results.length ? ' stay-home-featured' : ''}`} aria-labelledby="featured-stays">
+    {/* Each home is listed once: the availability rows above already show every home with its
+        photo, nightly calendar and price, so the card grid appears only when there's nothing to list. */}
+    {results.length ? null : <section className="stay-shell stay-section" aria-labelledby="featured-stays">
       <header className="stay-section-head">
         <div>
           <p className="stay-overline">A place of your own</p>
@@ -73,9 +74,9 @@ export async function StorefrontLandingPage() {
       {error
         ? <div className="stay-alert stay-alert-warn" role="alert"><div><h3>We couldn’t load the homes.</h3><p>Try again in a moment. <Link href="/search">Retry search</Link></p></div></div>
         : results.length
-          ? <div className="stay-card-grid">{results.slice(0, 5).map((stay, index) => <StayCard locale={locale} key={stay.id} stay={stay} priority={index === 0} size={index < 2 ? 'feature' : 'default'} />)}</div>
+          ? null
           : <div className="stay-empty"><h3>No homes are published yet.</h3><p>Come back soon, or contact us about your plans.</p><Link className="stay-text-link" href="/help">Contact & help</Link></div>}
-    </section>
+    </section>}
 
     {collections.length ? (
       <section className="stay-shell stay-section" aria-labelledby="home-collections">
