@@ -134,7 +134,7 @@ export function RecoverTripForm({ signedIn }: { signedIn: boolean }) {
     <label className="stay-input">Booking email<input required name="email" type="email" maxLength={320} autoComplete="email" inputMode="email" value={fields.email} onChange={event => setFields({ ...fields, email: event.target.value })} /></label>
     {signedIn ? <label className="stay-check"><input type="checkbox" name="addToAccount" defaultChecked /><span>Save this trip to my account</span></label> : null}
     <SubmitButton pendingLabel="Finding your trip…" block>Find my trip<ArrowRight size={16} aria-hidden="true" /></SubmitButton>
-    <p className="stay-form-note">We’ll open your trip with a fresh private link. Older links for this trip stop working.</p>
+    <p className="stay-form-note">We’ll open your trip with its private link, the same one as in your booking email.</p>
   </form>;
 }
 

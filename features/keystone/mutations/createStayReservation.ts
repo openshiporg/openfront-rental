@@ -7,7 +7,7 @@ import {
   isPublicOwnershipTokenActive,
   publicTokenExpiry,
 } from '../utils/publicTokenAccess';
-import { resolveSessionSecret } from '../lib/runtimeSecrets';
+import { stayAgreementToken, stayTripToken } from '../utils/stayLinkTokens';
 import { createReservationTasksForTransition } from '../utils/reservationTaskAutomation';
 import { createReservationLineItemsFromQuote, createStayBookingSnapshot, stayTermsVersion } from '../utils/stayBookingSnapshot';
 import { assertAccommodationUnitAvailable, lockAccommodationUnitCapacity, lockListingCapacity } from '../utils/reservationAllocation';
@@ -48,10 +48,6 @@ class CheckoutReplayError extends Error {}
  * key, the quote and the server secret, so a retry after a lost response can return the
  * same links without rotating them or exposing the consumed quote.
  */
-function derivedOwnershipToken(kind: 'trip' | 'agreement', receiptKey: string, quoteTokenHash: string) {
-  return crypto.createHmac('sha256', resolveSessionSecret()).update(`stay-receipt:${kind}:${quoteTokenHash}:${receiptKey}`).digest('hex').slice(0, 48);
-}
-
 function receiptKeyHash(receiptKey: string) {
   return crypto.createHash('sha256').update(`stay-receipt-key:${receiptKey}`).digest('hex');
 }
@@ -105,11 +101,11 @@ async function recoverConvertedCheckout(
   if (expected.fingerprint && conversion.requestFingerprint !== expected.fingerprint) {
     throw new CheckoutReplayError('This checkout was already submitted with different details. Use Find my trip with your confirmation code and email.');
   }
-  const tripToken = derivedOwnershipToken('trip', receiptKey, quoteTokenHash);
+  const tripToken = stayTripToken(reservation.id);
   // A reissued, revoked or expired trip link is never handed out again from the receipt.
   if (reservation.tripTokenHash !== hashPublicOwnershipToken(tripToken)
     || !isPublicOwnershipTokenActive({ tokenExpiresAt: reservation.tripTokenExpiresAt, tokenRevokedAt: reservation.tripTokenRevokedAt })) return null;
-  const agreementToken = derivedOwnershipToken('agreement', receiptKey, quoteTokenHash);
+  const agreementToken = reservation.agreementId ? stayAgreementToken(reservation.agreementId) : '';
   const agreement = reservation.agreementId
     ? await context.prisma.stayAgreement.findUnique({ where: { id: reservation.agreementId }, select: { signingTokenHash: true, signingTokenExpiresAt: true, signingTokenRevokedAt: true } })
     : null;
@@ -248,11 +244,11 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
   // Notice and booking window are judged at conversion, not only when the quote was issued.
   assertStayArrivalAllowed(quote.checkInDate, listingArrivalContext(originalListingSnapshot, originalRatePlanSnapshot));
 
-  const tripToken = receiptKey ? derivedOwnershipToken('trip', receiptKey, tokenHash) : createPublicOwnershipToken();
-  const agreementToken = receiptKey ? derivedOwnershipToken('agreement', receiptKey, tokenHash) : createPublicOwnershipToken();
   const code = confirmationCode();
   const reservationId = crypto.randomUUID();
   const agreementId = crypto.randomUUID();
+  const tripToken = stayTripToken(reservationId);
+  const agreementToken = stayAgreementToken(agreementId);
   const depositId = quote.securityDepositCents > 0 ? crypto.randomUUID() : null;
   const now = new Date();
 

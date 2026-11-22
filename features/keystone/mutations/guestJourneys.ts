@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 
 import { sendGuestLinkEmail } from '../lib/guestMail';
+import { stayAgreementToken, stayTripToken } from '../utils/stayLinkTokens';
 import { passwordResetEmailConfigured } from '../lib/mailAvailability';
 import {
   appendGuestMessage, cleanGuestMessage, GUEST_THREAD_PAGE_SIZE, guestThreadCursor, guestThreadPage, guestVisibleMessagePrismaWhere, type GuestThreadCursor,
@@ -94,32 +95,47 @@ async function lockOwnedTrip(tx: any, reservationId: string, tripToken: string) 
 }
 
 /**
- * Issue fresh private trip and agreement links inside the caller's reservation-locked
- * transaction. The previous links stop working. Returns null when the host has turned off
- * online access to the trip.
+ * Hand back the stay's own private trip and agreement links inside the caller's
+ * reservation-locked transaction. The links are derived from the record ids, so the link the
+ * guest was emailed keeps working. A stay booked before derived links moves to its derived trip
+ * link once. Expiry is extended to the stay's window.
+ * Returns null when the host has turned off online access to the trip.
  */
 async function rotateTripAccess(tx: any, reservationId: string): Promise<{ tripToken: string; agreementToken: string } | null> {
   const reservation = await tx.reservation.findUnique({
     where: { id: reservationId },
-    select: { id: true, status: true, checkOutDate: true, tripTokenExpiresAt: true, tripTokenRevokedAt: true, agreementId: true },
+    select: { id: true, status: true, checkOutDate: true, tripTokenHash: true, tripTokenExpiresAt: true, tripTokenRevokedAt: true, agreementId: true },
   });
   if (!reservation || reservation.tripTokenRevokedAt) return null;
-  const tripToken = createPublicOwnershipToken();
-  await tx.reservation.update({
-    where: { id: reservation.id },
-    data: { tripTokenHash: hashPublicOwnershipToken(tripToken), tripTokenExpiresAt: tripTokenExpiry(reservation.checkOutDate, reservation.tripTokenExpiresAt) },
-  });
+  const tripToken = stayTripToken(reservation.id);
+  const tripExpiresAt = tripTokenExpiry(reservation.checkOutDate, reservation.tripTokenExpiresAt);
+  if (reservation.tripTokenHash !== hashPublicOwnershipToken(tripToken)
+    || new Date(reservation.tripTokenExpiresAt).getTime() !== tripExpiresAt.getTime()) {
+    await tx.reservation.update({
+      where: { id: reservation.id },
+      data: { tripTokenHash: hashPublicOwnershipToken(tripToken), tripTokenExpiresAt: tripExpiresAt },
+    });
+  }
   let agreementToken = '';
   if (reservation.agreementId) {
-    const agreement = await tx.stayAgreement.findUnique({ where: { id: reservation.agreementId }, select: { id: true, status: true, signingTokenRevokedAt: true } });
+    const agreement = await tx.stayAgreement.findUnique({ where: { id: reservation.agreementId }, select: { id: true, status: true, signingTokenHash: true, signingTokenExpiresAt: true, signingTokenRevokedAt: true } });
     const stopped = ['cancelled', 'no_show'].includes(reservation.status || '');
     const readable = agreement?.status === 'signed' || (agreement?.status === 'sent' && !stopped);
     if (agreement && readable && !agreement.signingTokenRevokedAt) {
-      agreementToken = createPublicOwnershipToken();
-      await tx.stayAgreement.update({
-        where: { id: agreement.id },
-        data: { signingTokenHash: hashPublicOwnershipToken(agreementToken), signingTokenExpiresAt: publicTokenExpiry() },
-      });
+      const derived = stayAgreementToken(agreement.id);
+      const active = isPublicOwnershipTokenActive({ tokenExpiresAt: agreement.signingTokenExpiresAt, tokenRevokedAt: null });
+      if (agreement.signingTokenHash === hashPublicOwnershipToken(derived)) {
+        agreementToken = derived;
+        if (!active) await tx.stayAgreement.update({ where: { id: agreement.id }, data: { signingTokenExpiresAt: publicTokenExpiry() } });
+      } else if (!active) {
+        // An expired older link moves to the agreement's own link. A live link the host
+        // reissued (sent in the guest's messages) is left alone.
+        agreementToken = derived;
+        await tx.stayAgreement.update({
+          where: { id: agreement.id },
+          data: { signingTokenHash: hashPublicOwnershipToken(derived), signingTokenExpiresAt: publicTokenExpiry() },
+        });
+      }
     }
   }
   return { tripToken, agreementToken };
@@ -130,7 +146,7 @@ async function lockReservation(tx: any, reservationId: string) {
   await tx.$queryRawUnsafe('SELECT "id" FROM "Reservation" WHERE "id" = $1 FOR UPDATE', reservationId);
 }
 
-/** Issue fresh private trip and agreement links. The previous links stop working. */
+/** The stay's own private trip and agreement links (see rotateTripAccess); opening a trip never ends the emailed link. */
 async function reissueTripAccess(context: any, reservationId: string): Promise<{ tripToken: string; agreementToken: string } | null> {
   return context.prisma.$transaction(async (tx: any) => {
     await lockReservation(tx, reservationId);
@@ -162,7 +178,7 @@ async function emailTripLink(context: any, reservationId: string, to: string, co
       to,
       subject: `Your trip ${code}`,
       heading: 'Here’s your trip link',
-      body: `Someone asked for the private link to trip ${code}. If it was you, open your trip below. Older links no longer work.`,
+      body: `Someone asked for the private link to trip ${code}. If it was you, open your trip below. It’s the same link as in your booking email.`,
       path: `/trips/${access.tripToken}${access.agreementToken ? `?agreement=${access.agreementToken}` : ''}`,
       cta: 'Open your trip',
     });
