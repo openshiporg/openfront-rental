@@ -58,7 +58,9 @@ export function reservationSourceLabel(value?: string | null) {
 }
 
 export function reservationLabel(value?: string | null) {
-  return statusLabels[value || ''] || (value || 'Unknown').replaceAll('_', ' ');
+  // Statuses without their own wording (payment, agreement) read as a sentence-case phrase: "Paid", "Refund pending".
+  const plain = (value || 'Unknown').replaceAll('_', ' ');
+  return statusLabels[value || ''] || plain.charAt(0).toUpperCase() + plain.slice(1);
 }
 
 export function reservationTransitionLabel(value: ReservationTransition) {

@@ -5,9 +5,9 @@ import { useSidebarWithSide } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
 
 /**
- * Phone-only assistant trigger that sits in the page header. While it is on
- * screen the floating corner button is hidden on phones (see DashboardLayout), so
- * the assistant never covers row actions, prices or statuses.
+ * Assistant trigger that sits in the page header. While it is on screen the
+ * floating corner button is hidden (see DashboardLayout), so the assistant
+ * never covers row actions, prices or statuses at any width.
  */
 export function AssistantHeaderButton({ className }: { className?: string }) {
   const { toggleSidebar } = useSidebarWithSide('right')
@@ -17,7 +17,7 @@ export function AssistantHeaderButton({ className }: { className?: string }) {
       data-assistant-header=""
       onClick={toggleSidebar}
       aria-label="Open assistant"
-      className={cn('inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-foreground text-background shadow-sm transition-colors hover:bg-foreground/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden', className)}
+      className={cn('inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-foreground text-background shadow-sm transition-colors hover:bg-foreground/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', className)}
     >
       <Sparkles className="size-4" aria-hidden="true" />
     </button>

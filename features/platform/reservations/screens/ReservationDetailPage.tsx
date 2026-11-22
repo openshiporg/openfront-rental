@@ -197,7 +197,7 @@ export async function ReservationDetailPage({
       title={guest?.name || 'Guest details pending'}
       badges={<>
         <StatusBadge status={reservation.status} label={reservationLabel(reservation.status)} tone={operationalTone(reservation.status)} />
-        <StatusBadge status={refundedInFull ? 'refunded' : reservation.paymentStatus} label={`${reservationLabel(refundedInFull ? 'refunded' : reservation.paymentStatus)} payment`} tone={balanceDue ? 'warning' : reservation.paymentStatus === 'refund_pending' ? 'warning' : 'success'} />
+        <StatusBadge status={refundedInFull ? 'refunded' : reservation.paymentStatus} label={reservationLabel(refundedInFull ? 'refunded' : reservation.paymentStatus)} tone={balanceDue ? 'warning' : reservation.paymentStatus === 'refund_pending' ? 'warning' : 'success'} />
         {reservation.testMode ? <StatusBadge status="test" label="Holds no dates · not counted in money or reports" tone="warning" /> : null}
         {reservation.fixtureOrigin ? <StatusBadge status="sample" label="Created by setup · not counted in money or reports" tone="warning" /> : null}
       </>}
@@ -301,12 +301,12 @@ export async function ReservationDetailPage({
               getKey={(item: any) => item.id}
               caption="Stay charges"
               footer={<tfoot className="text-sm">
-                <tr><td colSpan={3} className="border-t px-4 pt-3 text-right text-muted-foreground">Stay total</td><td className="border-t px-4 pt-3 text-right font-semibold tabular-nums">{formatMoney(reservation.totalAmountCents, currency)}</td></tr>
-                <tr><td colSpan={3} className="px-4 py-1 text-right text-muted-foreground">Paid</td><td className="px-4 py-1 text-right tabular-nums">−{formatMoney(reservation.amountPaidCents, currency)}</td></tr>
-                <tr><td colSpan={3} className="px-4 pb-3 text-right font-medium">Balance due</td><td className={`px-4 pb-3 text-right font-semibold tabular-nums ${balanceDue ? toneText.warning : ''}`}>{closed && balanceDue ? 'Not assessed' : formatMoney(balanceDue, currency)}</td></tr>
+                <tr><td colSpan={2} className="border-t px-4 pt-3 text-right text-muted-foreground md:hidden">Stay total</td><td colSpan={3} className="border-t px-4 pt-3 text-right text-muted-foreground max-md:hidden">Stay total</td><td className="border-t px-4 pt-3 text-right font-semibold tabular-nums">{formatMoney(reservation.totalAmountCents, currency)}</td></tr>
+                <tr><td colSpan={2} className="px-4 py-1 text-right text-muted-foreground md:hidden">Paid</td><td colSpan={3} className="px-4 py-1 text-right text-muted-foreground max-md:hidden">Paid</td><td className="px-4 py-1 text-right tabular-nums">−{formatMoney(reservation.amountPaidCents, currency)}</td></tr>
+                <tr><td colSpan={2} className="px-4 pb-3 text-right font-medium md:hidden">Balance due</td><td colSpan={3} className="px-4 pb-3 text-right font-medium max-md:hidden">Balance due</td><td className={`px-4 pb-3 text-right font-semibold tabular-nums ${balanceDue ? toneText.warning : ''}`}>{closed && balanceDue ? 'Not assessed' : formatMoney(balanceDue, currency)}</td></tr>
               </tfoot>}
               columns={[
-                { id: 'charge', header: 'Charge', cell: (item: any) => <div className="min-w-0"><span className="font-medium">{item.description}</span><SubLine>{sentence(item.lineType)}<span className="md:hidden">{item.serviceDate ? ` · ${formatDay(item.serviceDate)}` : ''}</span></SubLine></div> },
+                { id: 'charge', header: 'Charge', primary: true, cell: (item: any) => <div className="min-w-0"><span className="font-medium">{item.description}</span><SubLine>{sentence(item.lineType)}<span className="md:hidden">{item.serviceDate ? ` · ${formatDay(item.serviceDate)}` : ''}</span></SubLine></div> },
                 { id: 'date', header: 'Date', hideBelow: 'md', cell: (item: any) => <Muted className="whitespace-nowrap">{item.serviceDate ? formatDay(item.serviceDate, { weekday: 'short', month: 'short', day: 'numeric' }) : '—'}</Muted> },
                 { id: 'qty', header: 'Qty', align: 'right', cell: (item: any) => item.quantity },
                 { id: 'amount', header: 'Amount', align: 'right', cell: (item: any) => <span className="font-medium">{formatMoney(item.totalAmountCents, item.currencyCode)}</span> },
@@ -332,7 +332,7 @@ export async function ReservationDetailPage({
               </Disclosure>
             </div>) : null}
             {canPay ? <OverflowNote shown={pendingPayments.length} total={Number(reservation.pendingPaymentsCount ?? pendingPayments.length)} noun="pending payment attempts" /> : null}
-            <LinkRows empty="No payments recorded." items={payments.map((payment: any) => ({ id: payment.id, href: platformDetailPath('payment', payment.id), title: formatMoney(payment.amountCents, payment.currencyCode), meta: <>{sentence(payment.paymentMethod)} · {payment.provider === CARD_PROVIDER ? 'Stripe' : payment.provider === MANUAL_PROVIDER ? 'Manual' : payment.provider || 'Manual'}{payment.refundedAmountCents ? ` · ${formatMoney(payment.refundedAmountCents, payment.currencyCode)} refunded` : ''}{payment.processedAt ? <> · {formatTimestamp(payment.processedAt, timeZone)}</> : ''}</>, trailing: <StatusBadge status={payment.status} /> }))} />
+            <LinkRows empty={Number(reservation.amountPaidCents) > 0 ? 'Payment records are not visible to your role. The paid amount is shown above.' : 'No payments recorded.'} items={payments.map((payment: any) => ({ id: payment.id, href: platformDetailPath('payment', payment.id), title: formatMoney(payment.amountCents, payment.currencyCode), meta: <>{sentence(payment.paymentMethod)} · {payment.provider === CARD_PROVIDER ? 'Stripe' : payment.provider === MANUAL_PROVIDER ? 'Manual' : payment.provider || 'Manual'}{payment.refundedAmountCents ? ` · ${formatMoney(payment.refundedAmountCents, payment.currencyCode)} refunded` : ''}{payment.processedAt ? <> · {formatTimestamp(payment.processedAt, timeZone)}</> : ''}</>, trailing: <StatusBadge status={payment.status} /> }))} />
             <HistoryPager id={reservation.id} pages={pages} history="payments" total={Number(reservation.paymentsCount ?? 0)} />
             {openRefunds.length ? <ul className="divide-y border-t" aria-label="Open refunds">
               {openRefunds.map((refund: any) => <li key={refund.id} className="space-y-3 px-4 py-3.5">
