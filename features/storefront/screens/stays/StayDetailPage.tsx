@@ -15,7 +15,7 @@ import { stayArrivalBounds, stayArrivalRules, zonedTodayIso } from '@/features/k
 import { stayPaymentSummary } from '../../lib/payment-copy';
 import { guestQuoteRefusal } from '../../lib/public-token-copy';
 import { isIsoDate } from '../../lib/dates';
-import { formatBaths, formatMoney, formatRating, formatType } from '../../lib/format';
+import { formatBaths, formatClock, formatMoney, formatRating, formatType, formatZone } from '../../lib/format';
 import { countParam, searchQuery, single, type SearchParams } from '../../lib/navigation';
 import { stayPricing } from '../../lib/stay-estimate';
 import { getStorefrontLocale } from '../../lib/data/storefront-locale';
@@ -99,7 +99,7 @@ export async function StayDetailPage({ params, searchParams }: { params: Promise
           <p className="stay-long-copy stay-lede">{stay.description || 'Ask the host for more details about this home before reserving.'}</p>
           <ul className="stay-highlights">
             <li><DoorOpen size={18} strokeWidth={1.6} aria-hidden="true" /><div><strong>{stay.instantBook ? 'Instant confirmation' : 'Host approval'}</strong><span>{stay.instantBook ? 'Reserve without waiting for a reply.' : 'The host reviews each request before confirming.'}</span></div></li>
-            <li><Clock size={18} strokeWidth={1.6} aria-hidden="true" /><div><strong>Check-in {property.checkInFrom || 'by arrangement'}{property.checkInUntil ? `–${property.checkInUntil}` : ''}</strong><span>Checkout {property.checkOutBy ? `by ${property.checkOutBy}` : 'by arrangement'}{property.timezone ? ` · ${property.timezone.replaceAll('_', ' ')} time` : ''}</span></div></li>
+            <li><Clock size={18} strokeWidth={1.6} aria-hidden="true" /><div><strong>Check-in {property.checkInFrom ? formatClock(locale, property.checkInFrom) : 'by arrangement'}{property.checkInUntil ? `–${formatClock(locale, property.checkInUntil)}` : ''}</strong><span>Checkout {property.checkOutBy ? `by ${formatClock(locale, property.checkOutBy)}` : 'by arrangement'}{property.timezone ? ` · ${formatZone(locale, property.timezone)}` : ''}</span></div></li>
             <li><Wallet size={18} strokeWidth={1.6} aria-hidden="true" /><div><strong>Clear total pricing</strong><span>Every night, fee, and tax itemized before you commit. {paymentSummary}</span></div></li>
           </ul>
         </section>
@@ -161,7 +161,7 @@ export async function StayDetailPage({ params, searchParams }: { params: Promise
                 <Clock size={18} strokeWidth={1.6} aria-hidden="true" />
                 <h3>Arrival & departure</h3>
                 <p>Check in {property.checkInFrom ? `from ${property.checkInFrom}` : 'at an agreed time'}{property.checkInUntil ? ` until ${property.checkInUntil}` : ''}. Check out {property.checkOutBy ? `by ${property.checkOutBy}` : 'at an agreed time'}.</p>
-                {property.timezone ? <p className="stay-muted">Times are local to the home ({property.timezone.replaceAll('_', ' ')}).</p> : null}
+                {property.timezone ? <p className="stay-muted">Times are local to the home ({formatZone(locale, property.timezone)}).</p> : null}
               </div>
               <div className="stay-know-card">
                 <Moon size={18} strokeWidth={1.6} aria-hidden="true" />

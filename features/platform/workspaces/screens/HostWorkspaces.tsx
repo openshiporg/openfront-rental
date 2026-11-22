@@ -586,7 +586,7 @@ export async function PaymentLifecycleWorkspace({ searchParams }: ListProps = {}
     <PageBody>
       {result.error || !data ? <WorkspaceUnavailable retryHref={PAYMENTS} error={result.error} /> : <>
       <StatTiles items={[
-        { label: 'Recorded net', value: totals?.settledNet ? formatCurrencyTotals(moneyByCurrency(totals.settledNet), 'None') : 'Unavailable', hint: totals?.settledNet ? `${plural(data.settled, 'settled payment')}, less refunds · test bookings excluded` : totals?.error, icon: Banknote, href: listHref(PAYMENTS, { q }), active: view === 'all' },
+        { label: 'Recorded net', value: totals?.settledNet ? formatCurrencyTotals(moneyByCurrency(totals.settledNet), 'None') : 'Unavailable', hint: totals?.settledNet ? `${plural(data.settled, 'settled payment')}, less refunds · stays that hold no dates excluded` : totals?.error, icon: Banknote, href: listHref(PAYMENTS, { q }), active: view === 'all' },
         { label: 'Processing', value: data.processing, hint: 'provider outcome pending', icon: RefreshCcw, href: listHref(PAYMENTS, { view: 'processing', q }), active: view === 'processing' },
         { label: 'Exceptions', value: data.exceptions, hint: refundsOwed.length ? `${formatCurrencyTotals(refundsOwed, '')} in refunds owed` : 'failed, refunded, or refund owed', tone: data.exceptions ? 'warning' : 'success', icon: AlertCircle, href: listHref(PAYMENTS, { view: 'exceptions', q }), active: view === 'exceptions' },
         { label: 'Providers installed', value: data.providersInstalled, hint: `${data.providers} configured`, icon: ShieldCheck },

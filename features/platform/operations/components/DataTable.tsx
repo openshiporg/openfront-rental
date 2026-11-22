@@ -17,6 +17,8 @@ export interface Column<T> {
   header: ReactNode;
   cell: (row: T) => ReactNode;
   align?: 'left' | 'right' | 'center';
+  /** The column that gives way on phones (wraps or truncates). Defaults to the first column. */
+  primary?: boolean;
   /** Hide the column on narrow screens; surface its value in the primary cell with SubLine instead. */
   hideBelow?: Breakpoint;
   className?: string;
@@ -36,6 +38,7 @@ export function DataTable<T>({ rows, columns, getKey, rowClassName, caption, foo
   footer?: ReactNode;
   dense?: boolean;
 }) {
+  const primaryId = (columns.find((column) => column.primary) || columns[0])?.id;
   return <div className="relative min-w-0 overflow-x-auto">
     <table className="w-full border-collapse text-sm [&_tbody_tr:last-child>td]:border-b-0">
       {caption ? <caption className="sr-only">{caption}</caption> : null}
@@ -53,6 +56,8 @@ export function DataTable<T>({ rows, columns, getKey, rowClassName, caption, foo
         {rows.map((row) => <tr key={getKey(row)} className={cn('relative transition-colors hover:bg-muted/40', rowClassName?.(row))}>
           {columns.map((column) => <td key={column.id} className={cn(
             'border-b px-4 align-middle',
+            // Phones: the primary cell takes what is left, so the row never runs past the screen.
+            column.id === primaryId && 'max-sm:w-full max-sm:max-w-0',
             dense ? 'py-2' : 'py-3',
             column.align === 'right' ? 'text-right tabular-nums' : column.align === 'center' ? 'text-center' : 'text-left',
             column.hideBelow && hiddenBelow[column.hideBelow],

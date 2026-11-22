@@ -75,6 +75,23 @@ export function formatHomeCount(count: number) {
   return `${count} ${count === 1 ? 'home' : 'homes'}`;
 }
 
+/** A stored 24-hour "HH:MM" house time in the storefront's own clock style (3:00 PM in en-US). */
+export function formatClock(locale: string, value?: string | null) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec((value || '').trim());
+  if (!match) return value || '';
+  return new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(new Date(Date.UTC(2000, 0, 1, Number(match[1]), Number(match[2]))));
+}
+
+/** "America/New_York" as guests say it: "Eastern Time". Falls back to the city name. */
+export function formatZone(locale: string, timeZone?: string | null) {
+  if (!timeZone) return '';
+  try {
+    const name = new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: 'longGeneric' }).formatToParts(new Date()).find(part => part.type === 'timeZoneName')?.value;
+    if (name) return name;
+  } catch { /* unknown zone id: fall through */ }
+  return (timeZone.split('/').pop() || timeZone).replaceAll('_', ' ');
+}
+
 export function formatStayDate(locale: string, value?: string | null) {
   if (!value) return 'To be confirmed';
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${value}T12:00:00.000Z`));

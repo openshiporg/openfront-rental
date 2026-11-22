@@ -340,11 +340,9 @@ export function StayBookingPanel({ stay, pricing, serverToday, initial, context,
       </div>
 
       <div className={`stay-mobile-bar ${panelVisible ? 'is-hidden' : ''}`} aria-hidden={panelVisible}>
-        <div className="stay-mobile-peek" aria-hidden="true">
-          {shownNights.length
-            ? shownNights.slice(0, 5).map(night => <span key={night.date}>{shortDate(locale, night.date)} <b>{formatMoney(locale, night.amountCents, currencyCode)}</b></span>)
-            : <span>{range.checkIn ? 'Choose checkout to see each night’s price.' : 'Choose your dates to see each night’s price.'}</span>}
-        </div>
+        {shownNights.length ? <div className="stay-mobile-peek" aria-hidden="true">
+          {shownNights.slice(0, 5).map(night => <span key={night.date}>{shortDate(locale, night.date)} <b>{formatMoney(locale, night.amountCents, currencyCode)}</b></span>)}
+        </div> : null}
         <div className="stay-mobile-main">
           <div className="stay-mobile-bar-copy">
             {shown && complete ? (

@@ -60,12 +60,12 @@ export async function ReservationWorkspacePage({ searchParams }: { searchParams?
         </span>
       </div>;
     } },
-    { id: 'guest', header: 'Guest', cell: (reservation) => {
+    { id: 'guest', header: 'Guest', primary: true, cell: (reservation) => {
       const hint = arrivalHint(reservation, propertyToday(operationalTimeZone(reservation)));
       const due = stayBalanceCents(reservation);
       return <div className="min-w-0 max-w-[16rem]">
         <RowLink href={`${RESERVATIONS}/${reservation.id}`}>{reservation.guest?.name || 'Guest pending'}</RowLink>
-        <SubLine>{reservation.confirmationCode} · {reservationSourceLabel(reservation.source)}{reservation.testMode ? <span className={cn('font-medium', toneText.warning)}> · Test booking</span> : null}{reservation.fixtureOrigin ? <span className={cn('font-medium', toneText.warning)}> · Setup sample</span> : null}</SubLine>
+        <SubLine>{reservation.confirmationCode} · {reservationSourceLabel(reservation.source)}{reservation.testMode ? <span className={cn('font-medium', toneText.warning)}> · Holds no dates</span> : null}{reservation.fixtureOrigin ? <span className={cn('font-medium', toneText.warning)}> · Created by setup</span> : null}</SubLine>
         {/* Values from columns hidden on small screens, each shown once per breakpoint. */}
         <SubLine mobileOnly="md">{reservation.listing?.title || 'Listing unavailable'} · {plural(nightsBetween(reservation.checkInDate, reservation.checkOutDate), 'night')}</SubLine>
         <SubLine mobileOnly="sm">
@@ -91,7 +91,7 @@ export async function ReservationWorkspacePage({ searchParams }: { searchParams?
       const due = stayBalanceCents(reservation);
       return <div><span className={cn('font-medium', due ? toneText.warning : 'text-muted-foreground')}>{due ? formatMoney(due, reservation.currencyCode) : 'Paid'}</span><SubLine>of {formatMoney(reservation.totalAmountCents, reservation.currencyCode)}</SubLine></div>;
     } },
-    { id: 'action', header: <span className="sr-only">Next step</span>, align: 'right', cell: (reservation) => {
+    { id: 'action', header: <span className="sr-only">Next step</span>, align: 'right', hideBelow: 'sm', cell: (reservation) => {
       const recommended = recommendedReservationTransition(reservation.status);
       const open = <RowAction><Button asChild size="sm" variant="ghost"><Link href={`${RESERVATIONS}/${reservation.id}`}>Open</Link></Button></RowAction>;
       if (!recommended) return reservation.status === 'completed' ? open : <Muted className="text-xs">Closed</Muted>;

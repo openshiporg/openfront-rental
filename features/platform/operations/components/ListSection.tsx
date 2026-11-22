@@ -31,7 +31,7 @@ export function ViewTabs({ basePath, tabs, view, q, preserve, label = 'Views' }:
         aria-current={active ? 'page' : undefined}
         scroll={false}
         className={cn(
-          'inline-flex h-10 shrink-0 items-center gap-2 rounded-t-md border-b-2 px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+          'inline-flex h-11 shrink-0 items-center gap-2 rounded-t-md border-b-2 px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
           active ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground',
         )}
       >
@@ -73,7 +73,7 @@ export function FilterChips({ label, chips, value, hrefFor }: { label: string; c
         scroll={false}
         aria-current={active ? 'true' : undefined}
         className={cn(
-          'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs max-md:h-11 max-md:px-3.5 max-md:text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           active ? 'border-foreground bg-foreground text-background' : 'bg-background text-muted-foreground hover:border-foreground/30 hover:text-foreground',
         )}
       >
@@ -85,8 +85,8 @@ export function FilterChips({ label, chips, value, hrefFor }: { label: string; c
 }
 
 function PagerLink({ href, label, children }: { href?: string; label: string; children: ReactNode }) {
-  if (!href) return <span aria-disabled="true" className="grid size-7 place-items-center rounded-md border bg-background/50 text-muted-foreground/40">{children}<span className="sr-only">{label}</span></span>;
-  return <Button asChild size="icon" variant="outline" className="size-7"><Link href={href} aria-label={label}>{children}</Link></Button>;
+  if (!href) return <span aria-disabled="true" className="grid size-7 place-items-center rounded-md border bg-background/50 max-md:size-11 text-muted-foreground/40">{children}<span className="sr-only">{label}</span></span>;
+  return <Button asChild size="icon" variant="outline" className="size-7 max-md:size-11"><Link href={href} aria-label={label}>{children}</Link></Button>;
 }
 
 /** `label` names the landmark; give each pager on a page its own (e.g. "Payment pages"). */

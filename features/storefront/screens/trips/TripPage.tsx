@@ -14,7 +14,7 @@ import { StayImage as Image } from '../../components/StayImage';
 import { StorefrontShell } from '../../components/StorefrontShell';
 import { withQuery } from '../../lib/account-navigation';
 import { getPublicTrip } from '../../lib/data/stays';
-import { formatGuestParty, formatMoney, formatStayDate, formatType } from '../../lib/format';
+import { formatClock, formatGuestParty, formatMoney, formatStayDate, formatType, formatZone } from '../../lib/format';
 import { privateToken, single, tripPath, type SearchParams } from '../../lib/navigation';
 import { publicActionFailureMessage } from '../../lib/public-token-copy';
 import { getStorefrontLocale } from '../../lib/data/storefront-locale';
@@ -225,10 +225,10 @@ export async function TripPage({ params, searchParams }: { params: Promise<{ tok
           <h2 id="arrival-title">Arrival & departure</h2>
           <dl className="stay-facts-list">
             {arrival && lines.length ? <div><dt>Address</dt><dd>{lines.map(line => <span key={line} style={{ display: 'block' }}>{line}</span>)}</dd></div> : null}
-            <div><dt>Check-in</dt><dd>{formatStayDate(locale, trip.checkInDate)} · {trip.scheduledCheckInTime || (arrival?.checkInFrom ? `from ${arrival.checkInFrom}${arrival.checkInUntil ? ` until ${arrival.checkInUntil}` : ''}` : trip.listing?.property?.checkInFrom || 'confirm the time with your host')}</dd></div>
-            <div><dt>Checkout</dt><dd>{formatStayDate(locale, trip.checkOutDate)} · {trip.scheduledCheckOutTime || (arrival?.checkOutBy ? `by ${arrival.checkOutBy}` : trip.listing?.property?.checkOutBy || 'confirm the time with your host')}</dd></div>
+            <div><dt>Check-in</dt><dd>{formatStayDate(locale, trip.checkInDate)} · {formatClock(locale, trip.scheduledCheckInTime) || (arrival?.checkInFrom ? `from ${formatClock(locale, arrival.checkInFrom)}${arrival.checkInUntil ? ` until ${formatClock(locale, arrival.checkInUntil)}` : ''}` : formatClock(locale, trip.listing?.property?.checkInFrom) || 'confirm the time with your host')}</dd></div>
+            <div><dt>Checkout</dt><dd>{formatStayDate(locale, trip.checkOutDate)} · {formatClock(locale, trip.scheduledCheckOutTime) || (arrival?.checkOutBy ? `by ${formatClock(locale, arrival.checkOutBy)}` : formatClock(locale, trip.listing?.property?.checkOutBy) || 'confirm the time with your host')}</dd></div>
             {!arrival || !lines.length ? <div><dt>Area</dt><dd>{trip.listing?.property?.location?.publicLocationLabel || 'Shared once your stay is confirmed'}</dd></div> : null}
-            <div><dt>Timezone</dt><dd>{(arrival?.timezone || trip.listing?.property?.timezone)?.replaceAll('_', ' ') || 'Property local time'}</dd></div>
+            <div><dt>Timezone</dt><dd>{formatZone(locale, arrival?.timezone || trip.listing?.property?.timezone) || 'Property local time'}</dd></div>
             <div><dt>Your party</dt><dd>{formatGuestParty({ adults: trip.guestParty?.adults ?? 0, children: trip.guestParty?.children ?? 0, infants: trip.guestParty?.infants ?? 0, pets: trip.guestParty?.pets ?? 0 })}
               {partyChanged ? <small>Booked as {formatGuestParty({ adults: trip.bookedGuestParty?.adults ?? 0, children: trip.bookedGuestParty?.children ?? 0, infants: trip.bookedGuestParty?.infants ?? 0, pets: trip.bookedGuestParty?.pets ?? 0 })}.{lastPartyChange?.at ? ` Changed by your host on ${formatStayDate(locale, String(lastPartyChange.at).slice(0, 10))}.` : ' Changed by your host.'} Your signed agreement and booking record keep the party as booked; no new signature was asked for.</small> : null}</dd></div>
           </dl>

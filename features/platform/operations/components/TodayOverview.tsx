@@ -18,7 +18,7 @@ function stayRows(stays: any[]) {
     id: stay.id,
     href: stayPath(stay.id),
     title: `${stay.guest?.name || 'Guest'} · ${stay.listing?.title || 'Listing unavailable'}`,
-    meta: `${stay.confirmationCode}${stay.testMode ? ' · Test booking' : stay.fixtureOrigin ? ' · Setup sample' : ''} · ${formatDayRange(stay.checkInDate, stay.checkOutDate)}`,
+    meta: `${stay.confirmationCode}${stay.testMode ? ' · Holds no dates' : stay.fixtureOrigin ? ' · Created by setup' : ''} · ${formatDayRange(stay.checkInDate, stay.checkOutDate)}`,
     trailing: <StatusBadge status={stay.status} />,
   }));
 }
@@ -61,7 +61,7 @@ export function TodayOverview({ overview }: { overview: Awaited<ReturnType<typeo
       id: `unpaid-${stay.id}`,
       href: stayPath(stay.id),
       title: `${formatMoney(Math.max((stay.totalAmountCents || 0) - (stay.amountPaidCents || 0), 0), stay.currencyCode)} unpaid · ${stay.guest?.name || stay.confirmationCode}`,
-      meta: `${stay.confirmationCode}${stay.testMode ? ' · Test booking' : stay.fixtureOrigin ? ' · Setup sample' : ''} · ${formatDayRange(stay.checkInDate, stay.checkOutDate)}`,
+      meta: `${stay.confirmationCode}${stay.testMode ? ' · Holds no dates' : stay.fixtureOrigin ? ' · Created by setup' : ''} · ${formatDayRange(stay.checkInDate, stay.checkOutDate)}`,
     })),
     ...(data.tasks || []).map((task: any) => ({
       id: `task-${task.id}`,

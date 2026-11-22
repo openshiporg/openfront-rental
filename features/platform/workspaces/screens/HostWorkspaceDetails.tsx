@@ -644,11 +644,11 @@ function signatureProvenance(agreement: any) {
   const reservation = agreement.reservation || {};
   if (evidence?.via === 'signing_link') {
     return evidence.simulation || reservation.testMode
-      ? { kind: 'test' as const, label: 'Guest, via signing link · test booking', title: 'Signed during a test booking', detail: 'The signature was given through the signing link of a test booking. It isn’t a signed agreement for a real stay.' }
+      ? { kind: 'test' as const, label: 'Guest, via signing link · stay holds no dates', title: 'Signed on a stay that holds no dates', detail: 'The signature was given through the signing link of a stay that holds no dates. It doesn’t bind a booked stay.' }
       : { kind: 'guest' as const, label: 'Guest, via signing link', title: '', detail: '' };
   }
   if (evidence?.provenance === 'onboarding_sample' || reservation.fixtureOrigin) {
-    return { kind: 'sample' as const, label: 'Recorded by setup, not by a guest', title: 'Sample agreement', detail: 'Setup created this signature for a sample stay. No guest agreed to these terms.' };
+    return { kind: 'sample' as const, label: 'Recorded by setup, not by a guest', title: 'Recorded by setup', detail: 'Setup created this signature on a stay it added. No guest agreed to these terms.' };
   }
   return { kind: 'unknown' as const, label: 'Not recorded (older agreement)', title: 'How this was signed isn’t recorded', detail: 'This agreement predates signature evidence. Its name and time are kept as recorded.' };
 }
@@ -1136,7 +1136,7 @@ export async function PayoutDetailPage({ params }: DetailProps) {
     />
     <PageBody>
       <PartialLoad error={result.error} />
-      {sample ? <Callout tone="warning" icon={AlertTriangle} title="Setup sample payout">Recorded against setup sample stays. It isn’t money paid to a real owner.</Callout> : null}
+      {sample ? <Callout tone="warning" icon={AlertTriangle} title="Created by setup">Recorded against stays that setup added. No money was paid to an owner.</Callout> : null}
       {statement?.currencyCode && statement.currencyCode !== payout.currencyCode ? <Callout tone="warning" icon={AlertTriangle} title="Two currencies">This payout is in {payout.currencyCode}; its statement is in {statement.currencyCode}. Amounts are shown in their own currency, unconverted.</Callout> : null}
       <StatTiles items={[
         { label: 'Gross', value: money(payout.grossAmountCents), hint: 'stay revenue allocated', icon: CircleDollarSign },

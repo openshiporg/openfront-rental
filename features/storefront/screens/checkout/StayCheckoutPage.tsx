@@ -14,7 +14,7 @@ import { LegalLinks, legalDocuments } from '../../components/LegalLinks';
 import { checkoutReceiptKeyFor, recoverCheckoutReceipt } from '../../lib/data/checkout-receipt';
 import { getPublicStayQuote } from '../../lib/data/stays';
 import { longDate } from '../../lib/dates';
-import { formatGuestParty, formatStayDate } from '../../lib/format';
+import { formatClock, formatGuestParty, formatStayDate } from '../../lib/format';
 import { searchQuery } from '../../lib/navigation';
 import { getStorefrontLocale } from '../../lib/data/storefront-locale';
 
@@ -65,8 +65,8 @@ export async function StayCheckoutPage({ params }: { params: Promise<{ quoteToke
         <section className="stay-panel" aria-labelledby="itinerary-title">
           <h2 id="itinerary-title"><span className="stay-panel-num">1</span>Your stay</h2>
           <dl className="stay-itinerary">
-            <div><dt>Check-in</dt><dd>{dateLabel(quote.checkInDate)}<small>{property.checkInFrom ? `From ${property.checkInFrom}${property.checkInUntil ? ` until ${property.checkInUntil}` : ''}` : 'Arrival time confirmed with the host'}</small></dd></div>
-            <div><dt>Checkout</dt><dd>{dateLabel(quote.checkOutDate)}<small>{property.checkOutBy ? `By ${property.checkOutBy}` : 'Departure time confirmed with the host'}</small></dd></div>
+            <div><dt>Check-in</dt><dd>{dateLabel(quote.checkInDate)}<small>{property.checkInFrom ? `From ${formatClock(locale, property.checkInFrom)}${property.checkInUntil ? ` until ${formatClock(locale, property.checkInUntil)}` : ''}` : 'Arrival time confirmed with the host'}</small></dd></div>
+            <div><dt>Checkout</dt><dd>{dateLabel(quote.checkOutDate)}<small>{property.checkOutBy ? `By ${formatClock(locale, property.checkOutBy)}` : 'Departure time confirmed with the host'}</small></dd></div>
             <div className="is-wide"><dt>Guests</dt><dd>{formatGuestParty({ adults: quote.adults, children: quote.children || 0, infants: quote.infants || 0, pets: quote.pets || 0 })}{nights ? <small>{nights} {nights === 1 ? 'night' : 'nights'}{property.timezone ? ` · times local to the home (${property.timezone.replaceAll('_', ' ')})` : ''}</small> : null}</dd></div>
           </dl>
           <div className="stay-panel-foot">

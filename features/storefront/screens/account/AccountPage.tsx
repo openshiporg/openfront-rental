@@ -7,7 +7,7 @@ import { StorefrontShell } from '../../components/StorefrontShell';
 import { signOutGuestAction } from '../../lib/data/account-actions';
 import { openAccountTripAction } from '../../lib/data/guest-actions';
 import { getGuestAccount, getPasswordResetAvailable } from '../../lib/data/guest';
-import { formatMoney, formatStayDate, formatType } from '../../lib/format';
+import { formatClock, formatMoney, formatStayDate, formatType, formatZone } from '../../lib/format';
 import { single, type SearchParams } from '../../lib/navigation';
 import { getStorefrontLocale } from '../../lib/data/storefront-locale';
 
@@ -62,7 +62,7 @@ export async function AccountPage({ searchParams }: { searchParams?: Promise<Sea
   const pageEnd = account.tripsOffset + account.trips.length;
   const tripList = (trips: typeof account.trips) => <ul className="stay-records">
     {trips.map(trip => <li key={trip.confirmationCode}>
-      <span><strong>{trip.listing?.title || 'Your stay'}</strong><span className="stay-muted"> · {formatStayDate(locale, trip.checkInDate)} — {formatStayDate(locale, trip.checkOutDate)}{trip.checkOutBy ? `, checkout by ${trip.checkOutBy}` : ''}{trip.timeZone ? ` (${trip.timeZone.replaceAll('_', ' ')} time)` : active.includes(trip.status) ? ' (home’s time zone not shown)' : ''}</span></span>
+      <span><strong>{trip.listing?.title || 'Your stay'}</strong><span className="stay-muted"> · {formatStayDate(locale, trip.checkInDate)} — {formatStayDate(locale, trip.checkOutDate)}{trip.checkOutBy ? `, checkout by ${formatClock(locale, trip.checkOutBy)}` : ''}{trip.timeZone ? ` (${formatZone(locale, trip.timeZone)})` : active.includes(trip.status) ? ' (home’s time zone not shown)' : ''}</span></span>
       <span className={`stay-status is-${trip.status}`}>{formatType(trip.status)}</span>
       <p>{trip.confirmationCode} · {formatMoney(locale, trip.totalAmountCents, trip.currencyCode)} · payment {formatType(trip.paymentStatus).toLowerCase()}</p>
       <div className="stay-actions">

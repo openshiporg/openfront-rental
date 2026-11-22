@@ -9,7 +9,8 @@ import { PlusIcon, Database } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageContainer } from '../../components/PageContainer'
-import { getAdminMetaAction, getListCounts } from '../../actions'
+import { getAdminMetaAction, getAuthenticatedUser, getListCounts } from '../../actions'
+import { getPlatformNavItemsWithBasePath } from '@/features/platform/lib/navigation'
 import { cn } from '@/lib/utils'
 
 interface ListCardProps {
@@ -50,7 +51,7 @@ function ListCard({ list, count, hideCreate = false }: ListCardProps) {
           <Button
             variant="outline" 
             size="icon"
-            className="h-7 w-7"
+            className="h-7 w-7 max-md:h-11 max-md:w-11"
             title={`Add ${list.singular?.toLowerCase() || 'item'}`}
           >
             <PlusIcon className="h-4 w-4" />
@@ -92,6 +93,10 @@ export async function HomePage() {
   }
 
   const adminMeta = adminMetaResponse.data
+  // The pages this role works in come first; the raw record lists follow.
+  const userResponse = await getAuthenticatedUser()
+  const user = userResponse.success ? userResponse.data?.authenticatedItem : null
+  const workPages = user?.role ? getPlatformNavItemsWithBasePath('/dashboard', user) : []
   const lists = adminMeta?.lists || []
   // Lists are already enhanced with gqlNames from getAdminMetaAction
   const enhancedLists = lists.filter((list: any) => !list.isHidden)
@@ -108,9 +113,7 @@ export async function HomePage() {
   const header = (
     <div className="flex flex-col">
       <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
-      {enhancedLists.length > 0 && (
-        <p className="text-muted-foreground">{enhancedLists.length} Models</p>
-      )}
+      {user?.name ? <p className="text-muted-foreground">Signed in as {user.name}</p> : null}
     </div>
   )
 
@@ -129,9 +132,31 @@ export async function HomePage() {
   return (
     <PageContainer title="Dashboard" header={header} breadcrumbs={breadcrumbs}>
       <div className="w-full max-w-4xl p-4 md:p-6 flex flex-col gap-4">
+        {workPages.length > 0 && (
+          <div className="mb-4">
+            <h2 className="tracking-wide uppercase font-medium mb-2 text-muted-foreground text-sm">
+              Your work
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 md:gap-4">
+              {workPages.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex min-h-11 items-start gap-3 rounded-xl border bg-card p-4 shadow-xs transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <item.icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-foreground">{item.title}</span>
+                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">{item.description}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="mb-4">
           <h2 className="tracking-wide uppercase font-medium mb-2 text-muted-foreground text-sm">
-            Data Models
+            All records
           </h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 md:gap-4">

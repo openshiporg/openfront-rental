@@ -59,7 +59,7 @@ export async function StorefrontLandingPage() {
 
     {results.length ? <HomeAvailability stays={results} initialDay={addDaysIso(globalEarliestCheckInIso(), 7)} /> : null}
 
-    <section className="stay-shell stay-section" aria-labelledby="featured-stays">
+    <section className={`stay-shell stay-section${results.length ? ' stay-home-featured' : ''}`} aria-labelledby="featured-stays">
       <header className="stay-section-head">
         <div>
           <p className="stay-overline">A place of your own</p>

@@ -32,8 +32,8 @@ export function TextArea({ className, ...props }: ComponentProps<'textarea'>) {
 }
 
 export function Checkbox({ label, hint, className, ...props }: Omit<ComponentProps<'input'>, 'type'> & { label: ReactNode; hint?: ReactNode }) {
-  return <label className={cn('flex items-start gap-2.5 text-sm', className)}>
-    <input type="checkbox" className="mt-0.5 size-4 shrink-0 rounded border-input accent-primary" {...props} />
+  return <label className={cn('flex items-start gap-2.5 text-sm max-md:min-h-11 max-md:py-2', className)}>
+    <input type="checkbox" className="mt-0.5 size-4 shrink-0 rounded border-input accent-primary max-md:size-5" {...props} />
     <span className="min-w-0"><span className="block font-medium">{label}</span>{hint ? <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{hint}</span> : null}</span>
   </label>;
 }
@@ -73,7 +73,7 @@ export function Disclosure({ summary, description, icon: Icon, children, default
 /** Compact disclosure for table cells and cards. */
 export function InlineDisclosure({ summary, children, className, align = 'left' }: { summary: ReactNode; children: ReactNode; className?: string; align?: 'left' | 'right' }) {
   return <details className={cn('group/inline relative z-10 min-w-0', className)}>
-    <summary className={cn('inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs font-medium shadow-xs transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden', align === 'right' && 'ml-auto')}>
+    <summary className={cn('inline-flex h-8 cursor-pointer list-none max-md:h-11 max-md:px-3.5 max-md:text-sm items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs font-medium shadow-xs transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden', align === 'right' && 'ml-auto')}>
       {summary}
       <ChevronDown aria-hidden="true" className="size-3.5 text-muted-foreground transition-transform group-open/inline:rotate-180" />
     </summary>

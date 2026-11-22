@@ -692,3 +692,26 @@
  .stay-home-row-price { grid-column: 1; grid-row: 3; }
  .stay-home-availability-row > .stay-icon-button { grid-column: 2; grid-row: 1; }
 }
+
+/* Phones: one list of homes on the landing page, calm in-page navigation, full-size taps. */
+.stay-wordmark { min-height: 2.75rem; }
+.stay-breadcrumb a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+@media (max-width: 760px) {
+  /* The availability rows already list every home with its photo; the card grid would repeat them. */
+  .stay-home-featured { display: none; }
+  .stay-home-availability { margin-block: 2rem; }
+  .stay-home-date-picker { width: 100%; padding: .5rem; }
+  .stay-home-date-picker table { width: 100%; table-layout: fixed; }
+  .stay-home-date-picker :is(th, td) { width: auto; height: 2.75rem; }
+  .stay-home-date-picker td > button { width: 100%; height: 2.75rem; }
+  .stay-home-date-picker nav button { width: 2.75rem; height: 2.75rem; }
+  .stay-home-date-picker [class*="mx-10"] { height: 2.75rem; }
+  /* In-page links wrap instead of scrolling sideways, and stop pinning a second bar under the header. */
+  .stay-section-nav-sticky { position: static; margin-inline: 0; padding: .25rem 0 .75rem; }
+  .stay-section-nav-track, .stay-help-toc .stay-section-nav-track { flex-wrap: wrap; overflow: visible; gap: .4rem; }
+  .stay-help-toc { overflow: visible; }
+  .stay-section-nav a { border: 1px solid var(--stay-line); background: var(--stay-surface); }
+  .stay-root .stay-compare-toggle { min-height: 2.75rem; padding: 0 .9rem; }
+  .stay-root .stay-check input { width: 1.5rem; height: 1.5rem; margin-top: 0; }
+  .stay-root:has(.stay-mobile-bar) .stay-footer { padding-bottom: calc(6.5rem + env(safe-area-inset-bottom)); }
+}

@@ -247,3 +247,9 @@
 .stay-root .stay-select-list button:hover, .stay-root .stay-select-list button:focus-visible { background: var(--stay-paper-2); outline: none; }
 .stay-root .stay-date-popover { width: fit-content; padding: .5rem; }
 .stay-root .stay-picker-clear { display: block; margin: .25rem 0 0 auto; min-height: 2.5rem; padding: 0 .6rem; border: 0; background: transparent; color: var(--stay-muted); font: inherit; font-size: .85rem; cursor: pointer; }
+
+/* Phones: 16px inputs (no zoom on focus in iOS) and 44px steppers. */
+@media (max-width: 900px) {
+  .stay-root .stay-field-input input, .stay-root :is(input:not([type=checkbox], [type=radio]), select, textarea) { font-size: 1rem; }
+  .stay-root .stay-stepper-controls button { width: 2.75rem; height: 2.75rem; }
+}

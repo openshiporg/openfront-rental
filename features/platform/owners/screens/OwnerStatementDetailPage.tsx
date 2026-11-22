@@ -115,8 +115,8 @@ export async function OwnerStatementDetailPage({ params, searchParams }: { param
     excluded.alreadyRecognizedRefunds ? `${excluded.alreadyRecognizedRefunds} refunds already on another statement` : null,
     excluded.alreadyRecognizedPayouts ? `${excluded.alreadyRecognizedPayouts} payouts already on another statement` : null,
     excluded.otherCurrencyStays || excluded.otherCurrencyRefunds || excluded.otherCurrencyPayouts ? `${(excluded.otherCurrencyStays || 0) + (excluded.otherCurrencyRefunds || 0) + (excluded.otherCurrencyPayouts || 0)} items in other currencies` : null,
-    excluded.testModeStays ? `${excluded.testModeStays} test bookings` : null,
-    excluded.testTenderRefunds ? `${excluded.testTenderRefunds} refunds of Stripe test-mode payments` : null,
+    excluded.testModeStays ? `${excluded.testModeStays} stays that hold no dates` : null,
+    excluded.testTenderRefunds ? `${excluded.testTenderRefunds} refunds of Stripe test-key payments` : null,
     Array.isArray(excluded.unrecognizedStatusStays) && excluded.unrecognizedStatusStays.length ? `Unconfirmed stays: ${excluded.unrecognizedStatusStays.join(', ')}` : null,
     excluded.refundsOnUnrecognizedStays ? `${excluded.refundsOnUnrecognizedStays} refunds on cancelled or unconfirmed stays` : null,
   ].filter(Boolean) as string[];

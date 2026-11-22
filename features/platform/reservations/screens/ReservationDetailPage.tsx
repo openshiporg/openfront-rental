@@ -198,8 +198,8 @@ export async function ReservationDetailPage({
       badges={<>
         <StatusBadge status={reservation.status} label={reservationLabel(reservation.status)} tone={operationalTone(reservation.status)} />
         <StatusBadge status={refundedInFull ? 'refunded' : reservation.paymentStatus} label={`${reservationLabel(refundedInFull ? 'refunded' : reservation.paymentStatus)} payment`} tone={balanceDue ? 'warning' : reservation.paymentStatus === 'refund_pending' ? 'warning' : 'success'} />
-        {reservation.testMode ? <StatusBadge status="test" label="Test booking · no dates held, test money only" tone="warning" /> : null}
-        {reservation.fixtureOrigin ? <StatusBadge status="sample" label="Setup sample · not a real stay, money or signature" tone="warning" /> : null}
+        {reservation.testMode ? <StatusBadge status="test" label="Holds no dates · not counted in money or reports" tone="warning" /> : null}
+        {reservation.fixtureOrigin ? <StatusBadge status="sample" label="Created by setup · not counted in money or reports" tone="warning" /> : null}
       </>}
       meta={<>
         <MetaItem icon={ReceiptText}>{reservation.confirmationCode}</MetaItem>
