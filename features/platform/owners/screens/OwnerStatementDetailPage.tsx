@@ -179,7 +179,7 @@ export async function OwnerStatementDetailPage({ params, searchParams }: { param
               id: payout.id,
               href: platformDetailPath('payout', payout.id),
               title: `${payout.payoutNumber} · ${formatMoney(payout.netAmountCents, payout.currencyCode)}`,
-              meta: [payout.paidAt ? <>Paid {formatTimestamp(payout.paidAt)}</> : sentence(payout.status), payout.providerPayoutId ? payout.providerPayoutId : record(payout.data).kind === 'operator_attestation' ? `Recorded by operator${record(payout.data).reference ? ` · ${record(payout.data).reference}` : ''}` : null].filter(Boolean).join(' · '),
+              meta: <>{payout.paidAt ? <>Paid {formatTimestamp(payout.paidAt)}</> : sentence(payout.status)}{payout.providerPayoutId ? ` · ${payout.providerPayoutId}` : record(payout.data).kind === 'operator_attestation' ? ` · Recorded by operator${record(payout.data).reference ? ` · ${record(payout.data).reference}` : ''}` : ''}</>,
             }))} />
           </Section>
           {detail.revisionsCount > 1 || supersedes.id ? <Section title="Revisions" icon={History} count={detail.revisionsCount} description={detail.revisionsCount > detail.revisions.length ? `Newest ${detail.revisions.length} of ${detail.revisionsCount}.` : undefined} flush>

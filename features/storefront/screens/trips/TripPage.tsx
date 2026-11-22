@@ -251,7 +251,7 @@ export async function TripPage({ params, searchParams }: { params: Promise<{ tok
 
         <section id="payment" className="stay-panel stay-trip-section" aria-labelledby="payment-title">
           <h2 id="payment-title">Payment & records</h2>
-          <p className="stay-muted">Status: <strong>{formatType(trip.paymentStatus)}</strong>. {cardEnabled ? 'Card payments appear here once Stripe confirms them; ' : ''}payments arranged with your host are recorded by the host.</p>
+          <p className="stay-muted">Status: <strong>{formatType(trip.paymentStatus)}</strong></p>
           <div className="stay-money-grid">
             <div className="stay-money"><span>Stay total</span><strong>{formatMoney(locale, trip.totalAmountCents, trip.currencyCode)}</strong></div>
             <div className="stay-money"><span>Paid</span><strong>{formatMoney(locale, trip.amountPaidCents, trip.currencyCode)}</strong></div>

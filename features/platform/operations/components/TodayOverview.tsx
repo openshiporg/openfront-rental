@@ -87,12 +87,12 @@ export function TodayOverview({ overview }: { overview: Awaited<ReturnType<typeo
 
   return <div className="space-y-4">
     <StatTiles label="Today" items={[
-      { label: 'Arrivals', value: data.arrivalsCount, hint: 'confirmed, checking in today', icon: ArrowDownLeft, href: queuePath('arriving_today') },
-      { label: 'Departures', value: data.departuresCount, hint: 'in house, checking out today', icon: ArrowUpRight, href: queuePath('departing_today') },
-      { label: 'In house', value: data.inHouseCount, hint: 'guests mid-stay', icon: KeyRound, href: queuePath('in_stay') },
-      { label: 'Requests', value: data.requestsCount, hint: 'awaiting your approval', tone: data.requestsCount ? 'warning' : 'success', icon: UserRoundCheck, href: queuePath('pending') },
+      { label: 'Arrivals', value: data.arrivalsCount, icon: ArrowDownLeft, href: queuePath('arriving_today') },
+      { label: 'Departures', value: data.departuresCount, icon: ArrowUpRight, href: queuePath('departing_today') },
+      { label: 'In house', value: data.inHouseCount, icon: KeyRound, href: queuePath('in_stay') },
+      { label: 'Requests', value: data.requestsCount, tone: data.requestsCount ? 'warning' : 'success', icon: UserRoundCheck, href: queuePath('pending') },
       { label: 'Refunds owed', value: refundValue, hint: refundHint, tone: data.refundsCount ? 'danger' : 'success', icon: CircleDollarSign, href: '/dashboard/platform/payments?view=exceptions' },
-      { label: 'Awaiting reply', value: data.conversationsComplete ? awaitingReply.length : `${awaitingReply.length}+`, hint: data.conversationsComplete ? 'guest messages' : `in the latest ${(data.conversations || []).length} threads`, tone: awaitingReply.length ? 'warning' : 'success', icon: Inbox, href: '/dashboard/platform/inbox' },
+      { label: 'Awaiting reply', value: data.conversationsComplete ? awaitingReply.length : `${awaitingReply.length}+`, hint: data.conversationsComplete ? undefined : `in the latest ${(data.conversations || []).length} threads`, tone: awaitingReply.length ? 'warning' : 'success', icon: Inbox, href: '/dashboard/platform/inbox' },
     ]} />
     <div className="grid gap-4 lg:grid-cols-2">
       <Section title="Arriving today" icon={ArrowDownLeft} count={data.arrivalsCount} footer={previewFooter(data.arrivals.length, data.arrivalsCount, queuePath('arriving_today'), 'arrival')} flush><LinkRows items={stayRows(data.arrivals)} empty="No arrivals today." /></Section>
@@ -127,10 +127,10 @@ function TaskDay({ overview }: { overview: Extract<Awaited<ReturnType<typeof get
   }
   return <div className="space-y-4">
     <StatTiles label="Today" items={[
-      { label: 'Due in 24h', value: data.dueCount, hint: 'open tasks, including late ones', tone: data.dueCount ? 'warning' : 'success', icon: Clock, href: `${TASKS}?view=due_soon` },
-      { label: 'Late', value: data.lateCount, hint: 'past their due time', tone: data.lateCount ? 'danger' : 'success', icon: AlertTriangle, href: `${TASKS}?view=overdue` },
-      { label: 'In progress', value: data.inProgressCount, hint: 'started, not finished', icon: ClipboardCheck, href: TASKS },
-      { label: 'Blocked', value: data.blockedCount, hint: 'waiting on something', tone: data.blockedCount ? 'warning' : 'success', icon: Ban, href: `${TASKS}?view=blocked` },
+      { label: 'Due in 24h', value: data.dueCount, tone: data.dueCount ? 'warning' : 'success', icon: Clock, href: `${TASKS}?view=due_soon` },
+      { label: 'Late', value: data.lateCount, tone: data.lateCount ? 'danger' : 'success', icon: AlertTriangle, href: `${TASKS}?view=overdue` },
+      { label: 'In progress', value: data.inProgressCount, icon: ClipboardCheck, href: TASKS },
+      { label: 'Blocked', value: data.blockedCount, tone: data.blockedCount ? 'warning' : 'success', icon: Ban, href: `${TASKS}?view=blocked` },
     ]} />
     <div className="grid gap-4 lg:grid-cols-2">
       <Section title="Due in the next 24 hours" icon={Clock} count={data.dueCount} footer={previewFooter(data.due.length, data.dueCount, `${TASKS}?view=due_soon`, 'task')} flush><LinkRows items={taskRows(data.due, `${TASKS}?view=due_soon`)} empty="Nothing due in the next 24 hours." /></Section>
