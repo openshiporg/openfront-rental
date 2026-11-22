@@ -16,7 +16,7 @@
 .stay-field-button:has(.stay-field-chevron) { padding-right: 2.4rem; }
 .stay-field-input { display: flex; align-items: center; gap: .45rem; min-width: 0; }
 .stay-field-input svg { flex: none; color: var(--stay-muted); }
-.stay-root .stay-field-input input { width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--stay-ink); font-size: .95rem; font-weight: 500; outline: none; }
+.stay-root .stay-field-input input { width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--stay-ink); font-size: 1rem; font-weight: 500; outline: none; }
 .stay-root .stay-field-input input::placeholder { color: var(--stay-faint); font-weight: 400; opacity: 1; }
 .stay-root .stay-field:focus-within:not(.stay-field-button) { border-color: var(--stay-accent); box-shadow: 0 0 0 3px var(--stay-accent-soft); }
 
