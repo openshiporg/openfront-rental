@@ -41,7 +41,7 @@ function and(...filters: Array<Record<string, unknown> | null>) {
 }
 
 export async function getOperationsTasks({ q = '', view = 'all', type = 'all', page = 1 }: { q?: string; view?: TaskView; type?: string; page?: number } = {}) {
-  const actor = q ? await keystoneClient<any>(`query TaskSearchScope { authenticatedItem { ... on User { id role { canReadListings canReadReservations canSeeOtherPeople canManagePeople } } } }`) : null;
+  const actor = await keystoneClient<any>(`query TaskSearchScope { authenticatedItem { ... on User { id role { canReadListings canReadReservations canSeeOtherPeople canManagePeople } } } }`);
   const role = actor?.success ? actor.data?.authenticatedItem?.role : null;
   const search = taskSearchWhere(q, {
     listings: role?.canReadListings === true,
@@ -49,9 +49,11 @@ export async function getOperationsTasks({ q = '', view = 'all', type = 'all', p
     people: role?.canSeeOtherPeople === true || role?.canManagePeople === true,
   });
   const group = taskGroupWhere(type);
+  // The assignee is a person: a role that can't see teammates can't filter on it, so it gets no Unassigned count.
+  const seesPeople = role?.canSeeOtherPeople === true || role?.canManagePeople === true;
   const now = new Date();
   const filtered = (viewWhere: Record<string, unknown>) => and(search, group, viewWhere);
-  const viewWhere = taskViewWhere(view, now);
+  const viewWhere = taskViewWhere(view === 'unassigned' && !seesPeople ? 'all' : view, now);
   const skip = (Math.max(page, 1) - 1) * TASK_PAGE_SIZE;
   // Completed and cancelled work are paged history views: every past task stays reachable.
   const historyView = view === 'cancelled' || view === 'completed';
@@ -95,7 +97,7 @@ export async function getOperationsTasks({ q = '', view = 'all', type = 'all', p
     all: filtered(taskViewWhere('all', now)),
     overdue: filtered(taskViewWhere('overdue', now)),
     dueSoon: filtered(taskViewWhere('due_soon', now)),
-    unassigned: filtered(taskViewWhere('unassigned', now)),
+    unassigned: seesPeople ? filtered(taskViewWhere('unassigned', now)) : { id: { in: [] } },
     blocked: filtered(taskViewWhere('blocked', now)),
     cancelled: filtered(taskViewWhere('cancelled', now)),
     chipAll: and(search, taskViewWhere('all', now)),
@@ -125,7 +127,7 @@ export async function getOperationsTasks({ q = '', view = 'all', type = 'all', p
         all: data.all || 0,
         overdue: data.overdue || 0,
         due_soon: data.dueSoon || 0,
-        unassigned: data.unassigned || 0,
+        unassigned: seesPeople ? data.unassigned || 0 : null,
         blocked: data.blocked || 0,
         cancelled: data.cancelled || 0,
         openTurnovers: data.openTurnovers || 0,

@@ -7,7 +7,7 @@ import { propertyTaskChecklist } from '@/features/keystone/utils/propertyTaskLif
 import { getPlatformCapabilities } from '@/features/platform/lib/capabilities';
 import { FilterChips, Pager, SearchField, ViewTabs } from '@/features/platform/operations/components/ListSection';
 import { Disclosure, Select } from '@/features/platform/operations/components/FormControls';
-import { Avatar, Callout, Dot, EmptyState, LinkRows, PageBody, PageHeader, Pill, PlatformPage, StatTiles, StatusBadge, toneText } from '@/features/platform/operations/components/PlatformUI';
+import { Avatar, Callout, Dot, EmptyState, LinkRows, PageBody, PageHeader, Pill, PlatformPage, StatTiles, type StatTile, StatusBadge, toneText } from '@/features/platform/operations/components/PlatformUI';
 import { SubmitButton } from '@/features/platform/operations/components/SubmitButton';
 import { listHref, pickView, readSearchParams, type PlatformSearchParams } from '@/features/platform/operations/lib/listParams';
 import { formatDayRange, formatTimestamp, isPast, plural, sentence, type OperationalTone } from '@/features/platform/operations/lib/operations';
@@ -198,12 +198,12 @@ export async function OperationsTasksPage({ searchParams }: { searchParams?: Pla
       {board.error ? <Callout live tone="warning" title="Tasks couldn’t be loaded" action={<Button asChild size="sm" variant="outline"><Link href={returnTo}><RefreshCcw aria-hidden="true" />Try again</Link></Button>}>{board.error} Counts and lanes below are unavailable, not empty.</Callout> : null}
       {!capabilities.known ? <Callout tone="warning" title="Task controls are unavailable">Your permissions couldn’t be checked. Refresh to try again.</Callout> : null}
       {capabilities.known && !capabilities.canManageProperties ? <Callout title="View only">Your role can see tasks but not create or change them.</Callout> : null}
-      <StatTiles items={[
+      <StatTiles items={([
         { label: 'Open', value: tile(counts ? counts.all - counts.completed : undefined), hint: counts ? `${plural(counts.openTurnovers, 'turnover')} · ${counts.all} total` : 'Unavailable', icon: ClipboardCheck, href: listHref(TASKS, { type, q }), active: view === 'all' },
         { label: 'Overdue', value: tile(counts?.overdue), hint: counts ? 'past due time' : 'Unavailable', tone: counts ? (counts.overdue ? 'danger' : 'success') : undefined, icon: AlertTriangle, href: listHref(TASKS, { view: 'overdue', type, q }), active: view === 'overdue' },
-        { label: 'Unassigned', value: tile(counts?.unassigned), hint: counts ? 'needs an owner' : 'Unavailable', tone: counts ? (counts.unassigned ? 'warning' : 'success') : undefined, icon: UserRoundCheck, href: listHref(TASKS, { view: 'unassigned', type, q }), active: view === 'unassigned' },
+        counts?.unassigned !== null && { label: 'Unassigned', value: tile(counts?.unassigned), hint: counts ? 'needs an owner' : 'Unavailable', tone: counts ? (counts.unassigned ? 'warning' : 'success') : undefined, icon: UserRoundCheck, href: listHref(TASKS, { view: 'unassigned', type, q }), active: view === 'unassigned' },
         { label: 'Blocked', value: tile(counts?.blocked), hint: counts ? `${counts.completed} completed` : 'Unavailable', tone: counts?.blocked ? 'warning' : undefined, icon: Ban, href: listHref(TASKS, { view: 'blocked', type, q }), active: view === 'blocked' },
-      ]} />
+      ] as Array<StatTile | false>).filter((tile): tile is StatTile => Boolean(tile))} />
 
       {canManage ? <Disclosure id="new-task" icon={ClipboardPlus} summary="New task" description="Create work for a property, optionally tied to a listing, stay and teammate." defaultOpen={Boolean(get('taskQ'))}>
         {(options.data?.propertiesCount || 0) > (options.data?.properties || []).length || (options.data?.reservationsCount || 0) > (options.data?.reservations || []).length || get('taskQ') ? <form action={TASKS} className="mb-4 flex flex-wrap items-center gap-2">
@@ -234,7 +234,7 @@ export async function OperationsTasksPage({ searchParams }: { searchParams?: Pla
               { id: 'all', label: 'All work', count: counts?.all },
               { id: 'overdue', label: 'Overdue', count: counts?.overdue, tone: 'danger' },
               { id: 'due_soon', label: 'Due in 24h', count: counts?.due_soon, tone: 'warning' },
-              { id: 'unassigned', label: 'Unassigned', count: counts?.unassigned, tone: 'warning' },
+              ...(counts?.unassigned === null ? [] : [{ id: 'unassigned' as const, label: 'Unassigned', count: counts?.unassigned, tone: 'warning' as const }]),
               { id: 'blocked', label: 'Blocked', count: counts?.blocked, tone: 'warning' },
               { id: 'completed', label: 'Completed', count: counts?.completed },
               { id: 'cancelled', label: 'Cancelled', count: counts?.cancelled },
