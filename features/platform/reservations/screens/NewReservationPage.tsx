@@ -20,7 +20,6 @@ export async function NewReservationPage({ searchParams }: { searchParams: Platf
   return <PlatformPage section="Reservations" sectionHref="/dashboard/platform/reservations" current="New reservation">
     <PageHeader
       title="New reservation"
-      description="Book a stay for a guest. It uses the home’s live rates and availability, is confirmed right away, and the guest is emailed their trip link to pay and sign the agreement."
       back={{ href: '/dashboard/platform/reservations', label: 'Reservations' }}
     />
     <PageBody>
@@ -45,7 +44,7 @@ export async function NewReservationPage({ searchParams }: { searchParams: Platf
                 <Field label="Pets"><TextInput required type="number" inputMode="numeric" name="pets" min={0} max={50} step={1} defaultValue={get('pets') || '0'} /></Field>
               </div>
               <Field label="Guest name"><TextInput required name="guestName" autoComplete="off" maxLength={200} defaultValue={get('guestName')} /></Field>
-              <Field label="Guest email" hint="Their trip link goes here."><TextInput required type="email" name="guestEmail" autoComplete="off" maxLength={320} defaultValue={get('guestEmail')} /></Field>
+              <Field label="Guest email"><TextInput required type="email" name="guestEmail" autoComplete="off" maxLength={320} defaultValue={get('guestEmail')} /></Field>
               <Field label="Guest phone" optional><TextInput type="tel" name="guestPhone" autoComplete="off" maxLength={64} defaultValue={get('guestPhone')} /></Field>
               <Field label="Arrival notes" optional className="sm:col-span-2"><TextArea name="guestNotes" maxLength={2000} defaultValue={get('guestNotes')} /></Field>
               <FormActions className="sm:col-span-2">
