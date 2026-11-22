@@ -18,6 +18,8 @@ import { STRIPE_PROVIDER_CODE } from '../../integrations/payment/stripe';
 import { lockAccommodationUnitCapacity, lockListingCapacity } from '../utils/reservationAllocation';
 import { transitionCatalogRecord } from './catalogLifecycle';
 import { reconcileProviderAttempt } from './paymentAttemptReconciliation';
+import { quoteStay } from './quoteStay';
+import { createStayReservation } from './createStayReservation';
 
 export const hostLifecycleTypeDefs = String.raw`
   type Mutation {
@@ -531,7 +533,60 @@ async function amendParty(context: any, input: Input) {
   });
 }
 
+/**
+ * Staff book a stay for a guest (phone, email or walk-in). It is the storefront's own booking:
+ * the same quote and price, availability check under the capacity locks, guest record, calendar
+ * block, agreement and tasks, confirmed because the host made it. The guest gets the trip link
+ * by email to pay and sign; staff can also record money already received on the stay page.
+ */
+async function createStayForGuest(context: any, input: Input) {
+  const listingId = text(input.listingId);
+  const listings = await context.sudo().query.Listing.findMany({ where: { id: { equals: listingId } }, take: 1, query: 'id hostOrganization { id }' });
+  const hostOrganizationId = listings[0]?.hostOrganization?.id;
+  if (!hostOrganizationId) throw new Error('Choose a home to book.');
+  await assertHostOrganizationAccess({ context, hostOrganizationId, permission: 'canManageReservations' });
+  const count = (value: unknown, min: number) => {
+    const parsed = typeof value === 'number' ? value : Number(value);
+    if (!Number.isSafeInteger(parsed) || parsed < min || parsed > 50) throw new Error('Enter valid guest and pet counts.');
+    return parsed;
+  };
+  const quote = await quoteStay(null, {
+    listingId,
+    checkIn: text(input.checkIn),
+    checkOut: text(input.checkOut),
+    adults: count(input.adults ?? 1, 1),
+    children: count(input.children ?? 0, 0),
+    infants: count(input.infants ?? 0, 0),
+    pets: count(input.pets ?? 0, 0),
+  }, context);
+  const booked = await createStayReservation(null, {
+    quoteToken: quote.token,
+    guestName: text(input.guestName),
+    guestEmail: text(input.guestEmail),
+    guestPhone: text(input.guestPhone) || null,
+    guestNotes: text(input.guestNotes) || null,
+  }, context, undefined, { userId: String(context.session.itemId) });
+  let emailed = false;
+  if (passwordResetEmailConfigured()) {
+    try {
+      await sendGuestLinkEmail({
+        to: text(input.guestEmail).toLowerCase(),
+        subject: `Your stay ${booked.confirmationCode}`,
+        heading: 'Your stay is booked',
+        body: `${booked.listing?.title ? `${booked.listing.title}. ` : ''}Confirmation code ${booked.confirmationCode}. Open your private trip page to pay, sign the stay agreement, and see arrival details and messages.`,
+        path: `/trips/${booked.tripToken}${booked.agreementToken ? `?agreement=${booked.agreementToken}` : ''}`,
+        cta: 'Open your trip',
+      });
+      emailed = true;
+    } catch {
+      emailed = false;
+    }
+  }
+  return { reservationId: booked.id, confirmationCode: booked.confirmationCode, totalAmountCents: booked.totalAmountCents, currencyCode: booked.currencyCode, emailed };
+}
+
 const commands: Record<string, (context: any, input: Input) => Promise<unknown>> = {
+  stay_create: createStayForGuest,
   party_amend: amendParty,
   party_invites_amend: amendPartyInvitations,
   listing_allocate: allocateListing,

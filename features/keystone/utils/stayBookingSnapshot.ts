@@ -32,8 +32,12 @@ export type StayConversionEvidence = { version: number; receiptKeyHash: string; 
 /** Recorded when the guest chose a test booking: no dates held, test-card payments only. */
 export type StaySimulationEvidence = { kind: 'test_booking'; chosenBy: 'guest'; statement: string };
 
+/** Recorded when staff booked the stay for the guest from the dashboard. */
+export type StayOperatorBookingEvidence = { userId: string; at: string; statement: string };
+
 export type StayBookingSnapshotInput = {
   capturedAt?: Date;
+  operatorBooking?: StayOperatorBookingEvidence;
   listing: JsonObject;
   guestParty: JsonObject;
   cancellationPolicy: JsonObject;
@@ -53,6 +57,7 @@ export type StayBookingSnapshot = {
   consent?: StayConsentEvidence;
   conversion?: StayConversionEvidence;
   simulation?: StaySimulationEvidence;
+  operatorBooking?: StayOperatorBookingEvidence;
 };
 
 /**
@@ -86,6 +91,7 @@ export function createStayBookingSnapshot(input: StayBookingSnapshotInput): Stay
     cancellationPolicy: structuredClone(input.cancellationPolicy),
     quote: structuredClone(input.quote),
     ...(input.consent ? { consent: structuredClone(input.consent) } : {}),
+    ...(input.operatorBooking ? { operatorBooking: { ...input.operatorBooking } } : {}),
     ...(input.conversion ? { conversion: { ...input.conversion } } : {}),
     ...(input.simulation ? { simulation: { ...input.simulation } } : {}),
   };

@@ -177,7 +177,10 @@ async function withSerializableRetry<T>(operation: () => Promise<T>, attempts = 
   throw lastError;
 }
 
-export async function createStayReservation(_root: unknown, args: CreateStayReservationArgs, context: any) {
+/** Set when a staff member books for a guest from the dashboard (see hostCreateStay). */
+type OperatorBooking = { userId: string };
+
+export async function createStayReservation(_root: unknown, args: CreateStayReservationArgs, context: any, _info?: unknown, operator?: OperatorBooking) {
   const guestName = cleanRequired(args.guestName, 'Guest name');
   const guestEmail = cleanRequired(args.guestEmail, 'Guest email').toLowerCase();
   const guestPhone = args.guestPhone?.trim() || '';
@@ -187,7 +190,8 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
   if (guestPhone.length > 64) throw new Error('Guest phone is too long.');
   if (guestNotes.length > 2000) throw new Error('Arrival notes are too long.');
   const acceptedTermsVersion = typeof args.acceptedTermsVersion === 'string' ? args.acceptedTermsVersion.trim() : '';
-  if (!acceptedTermsVersion) throw new Error('Review and accept the stay terms before reserving.');
+  // A staff booking records no guest acceptance: the guest signs the stay agreement from the trip link.
+  if (!acceptedTermsVersion && !operator) throw new Error('Review and accept the stay terms before reserving.');
   const acceptedStoreTermsVersion = typeof args.acceptedStoreTermsVersion === 'string' ? args.acceptedStoreTermsVersion.trim().slice(0, 60) : '';
   const privacyNoticeVersion = typeof args.privacyNoticeVersion === 'string' ? args.privacyNoticeVersion.trim().slice(0, 60) : '';
   const receiptKey = validReceiptKey(args.receiptKey);
@@ -289,7 +293,7 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
 
       const { listing: lockedListingSnapshot } = assertStayQuoteMatchesSnapshot(lockedQuote);
       assertStayListingMatchesSnapshot(lockedListing, lockedListingSnapshot);
-      if (acceptedTermsVersion !== stayTermsVersion(lockedQuote.quoteSnapshot)) {
+      if (!operator && acceptedTermsVersion !== stayTermsVersion(lockedQuote.quoteSnapshot)) {
         throw new Error('The stay terms changed. Review them again before reserving.');
       }
       // An earlier quote never outlives a sale pause or a parent taken off sale: the storefront,
@@ -309,19 +313,20 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
       if (sellability) throw new Error(sellability);
       // The store's own documents: its published terms need acceptance of the exact version
       // shown; its privacy policy is a notice, recorded as shown (not as consent).
-      if (sales.termsOfUse && acceptedStoreTermsVersion !== sales.termsOfUse.version) {
+      if (!operator && sales.termsOfUse && acceptedStoreTermsVersion !== sales.termsOfUse.version) {
         throw new Error('The store’s terms of use changed. Review them again before reserving.');
       }
-      if (sales.privacyPolicy && privacyNoticeVersion !== sales.privacyPolicy.version) {
+      if (!operator && sales.privacyPolicy && privacyNoticeVersion !== sales.privacyPolicy.version) {
         throw new Error('The store’s privacy policy changed. Review it again before reserving.');
       }
       // A signed-in, active guest owns the booking from the same commit; nobody else can be named.
-      const bookedBy = sessionUserId
+      const bookedBy = sessionUserId && !operator
         ? await tx.user.findUnique({ where: { id: sessionUserId }, select: { id: true, isActive: true } })
         : null;
       const bookedById = bookedBy?.isActive === true ? bookedBy.id : null;
       // Both flags must agree before a booking skips the host's decision.
-      const instant = lockedListing.bookingMode === 'instant' && lockedListing.instantBook === true;
+      // Both flags must agree before a booking skips the host's decision; a staff booking is the host's decision.
+      const instant = Boolean(operator) || (lockedListing.bookingMode === 'instant' && lockedListing.instantBook === true);
 
       const hostOrganizationId = lockedQuote.hostOrganizationId;
       const accommodationUnitId = lockedListing.accommodationUnitId;
@@ -367,7 +372,10 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
         cancellationPolicy: lockedQuoteSnapshot.cancellationPolicy,
         quote: lockedQuoteSnapshot.quote,
         capturedAt: now,
-        consent: {
+        ...(operator ? {
+          operatorBooking: { userId: operator.userId, at: now.toISOString(), statement: 'Booked by staff for the guest. The guest accepts the stay terms by signing the agreement.' },
+        } : {}),
+        consent: operator ? undefined : {
           termsVersion: acceptedTermsVersion,
           acceptedAt: now.toISOString(),
           acceptedBy: { kind: 'guest', email: guestEmail, userId: bookedById },
@@ -414,7 +422,7 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
           // Public bookings are always real.
           testMode: false,
           ...(bookedById ? { bookedById } : {}),
-          source: 'direct',
+          source: operator ? 'operator' : 'direct',
           checkInDate,
           checkOutDate,
           currencyCode: lockedQuote.currencyCode,
@@ -460,8 +468,8 @@ export async function createStayReservation(_root: unknown, args: CreateStayRese
             endDate: checkOutDate,
             reason: 'reservation',
             status: 'active',
-            source: 'direct',
-            notes: `Direct booking ${code}`,
+            source: operator ? 'operator' : 'direct',
+            notes: operator ? `Staff booking ${code}` : `Direct booking ${code}`,
           },
         });
         if (!createdBlock?.id) throw retryableTransactionError('Calendar capacity transaction did not commit.');

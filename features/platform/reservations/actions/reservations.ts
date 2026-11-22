@@ -476,3 +476,23 @@ export async function recordManualPaymentAction(formData: FormData) {
   }
   await finish(reservationId, result, 'Payment recorded against the stay.');
 }
+
+/** Staff book a stay for a guest; on success the new reservation opens. */
+export async function createReservationForGuestAction(formData: FormData) {
+  const form = ['listingId', 'checkIn', 'checkOut', 'adults', 'children', 'infants', 'pets', 'guestName', 'guestEmail', 'guestPhone', 'guestNotes'];
+  const fields = Object.fromEntries(form.map((key) => [key, value(formData, key)]));
+  const result = await runHostStayCommand('stay_create', {
+    ...fields,
+    adults: Number(fields.adults || 1),
+    children: Number(fields.children || 0),
+    infants: Number(fields.infants || 0),
+    pets: Number(fields.pets || 0),
+  });
+  if (!result.ok) {
+    const keep = new URLSearchParams({ ...fields, error: result.message || reservationTransitionMessages.staleState });
+    redirect(`/dashboard/platform/reservations/new?${keep.toString()}`);
+  }
+  const data = result.data as { reservationId: string; emailed?: boolean };
+  refreshStay(data.reservationId);
+  redirect(stayPath(data.reservationId, { notice: data.emailed ? 'Reservation created. The guest was emailed their trip link to pay and sign.' : 'Reservation created. The trip link email didn’t go out; the guest can open the trip with Find my trip, using the confirmation code and their email.' }));
+}

@@ -1,4 +1,4 @@
-import { AlertTriangle, CalendarCheck2, CalendarDays, CircleDollarSign, DoorOpen, Lock } from 'lucide-react';
+import { AlertTriangle, CalendarCheck2, CalendarDays, CircleDollarSign, DoorOpen, Lock, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -119,7 +119,10 @@ export async function ReservationWorkspacePage({ searchParams }: { searchParams?
     <PageHeader
       title="Reservations"
       description="Every stay in check-in order, with payment, agreement, and verification at a glance."
-      actions={<Button asChild size="sm" variant="outline"><Link href="/dashboard/platform/calendar"><CalendarDays aria-hidden="true" />Calendar</Link></Button>}
+      actions={<>
+        <Button asChild size="sm" variant="outline"><Link href="/dashboard/platform/calendar"><CalendarDays aria-hidden="true" />Calendar</Link></Button>
+        {canManage ? <Button asChild size="sm"><Link href="/dashboard/platform/reservations/new"><Plus aria-hidden="true" />New reservation</Link></Button> : null}
+      </>}
     />
     <PageBody>
       {actionError ? <Callout live tone="warning" title="That action wasn’t applied">{actionError}</Callout> : null}
