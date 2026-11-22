@@ -534,7 +534,7 @@ export async function transitionOwnerStatement(
     // never approved, sent or paid.
     if (args.transition !== 'void') {
       const sample = await tx.ownerStatementLine.findFirst({ where: { statementId: locked.id, reservation: { fixtureOrigin: { not: null } } }, select: { id: true } });
-      if (sample) throw financeError('CONFLICT', 'This statement includes setup sample stays, so it isn’t real owner money. Void it; real statements leave samples out.');
+      if (sample) throw financeError('CONFLICT', 'This statement includes stays that came with the store setup, so it isn’t owner money. Void it; statements leave those stays out.');
     }
     const now = new Date();
     const data: Record<string, unknown> = { status: transition.to };

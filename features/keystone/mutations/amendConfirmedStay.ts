@@ -345,7 +345,7 @@ export async function amendConfirmedStayOperation(
       || current.status !== 'confirmed') {
       throw new Error('Reservation allocation or dates changed; reload the stay before submitting an amendment.');
     }
-    if (current.testMode) throw new Error('This is a test booking: it holds no dates, so it can’t be amended. Cancel it and make a new test booking.');
+    if (current.testMode) throw new Error('This stay holds no dates, so it can’t be changed. Cancel it and book the new dates.');
     // The purchased listing prices the change (from the booking snapshot); the allocated unit,
     // which can differ after a re-accommodation, is what must hold the new dates.
     if (!listing || listing.hostOrganizationId !== hostOrganizationId

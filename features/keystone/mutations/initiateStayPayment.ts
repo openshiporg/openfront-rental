@@ -55,9 +55,9 @@ export async function initiateStayPayment(
       return replay;
     }
     // A test booking is simulated: real money is never recorded against it.
-    if (locked.testMode) throw new Error('This is a test booking. Real payments can’t be recorded against it.');
+    if (locked.testMode) throw new Error('This stay holds no dates, so payments can’t be recorded against it.');
     // A setup sample isn't a real stay either: real money for a real guest belongs on a real booking.
-    if (locked.fixtureOrigin) throw new Error('This is a setup sample stay. Real payments can’t be recorded against it; book the guest as a real stay.');
+    if (locked.fixtureOrigin) throw new Error('This stay came with the store setup, so payments can’t be recorded against it. Book the guest from New reservation.');
     if (!['pending', 'confirmed', 'in_stay', 'completed'].includes(locked.status || '')) {
       throw new Error('Manual payment cannot be initiated for a cancelled or no-show reservation.');
     }
