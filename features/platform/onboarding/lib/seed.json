@@ -4,7 +4,7 @@
     "tagline": "Remarkable homes, locally hosted",
     "homepageHeadline": "Stay somewhere considered.",
     "publicDescription": "Independent stays with thoughtful details, clear total pricing, and direct relationships with the people who care for each home.",
-    "supportEmail": "hello@housekind.example",
+    "supportEmail": "hello@openship.org",
     "supportPhone": "+1 (518) 555-0142",
     "supportHours": "Replace with your support hours, for example: Messages answered daily, 8am–8pm Eastern.",
     "officeAddress": "Replace with your business mailing address.",
@@ -15,6 +15,7 @@
     "defaultMapLongitude": -78.4,
     "accentHue": 155,
     "logoColor": "266",
+    "logoIcon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\" width=\"100%\" height=\"100%\" fill=\"none\"><rect width=\"48\" height=\"48\" rx=\"13\" fill=\"#423399\"/><path d=\"M13.5 35V22.6L24 13.5l10.5 9.1V35z\" stroke=\"#FBF8F2\" stroke-width=\"3.4\" stroke-linejoin=\"round\"/><path d=\"M20.6 35v-5.2a3.4 3.4 0 0 1 6.8 0V35\" stroke=\"#FBF8F2\" stroke-width=\"3.4\" stroke-linejoin=\"round\"/></svg>",
     "isPublished": true
   },
   "hostOrganization": {
@@ -24,7 +25,7 @@
     "organizationType": "property_manager",
     "status": "active",
     "publicBio": "A small team partnering with independent owners to host design-led homes across the Northeast and California.",
-    "publicEmail": "hello@housekind.example",
+    "publicEmail": "hello@openship.org",
     "publicPhone": "+1 (518) 555-0142",
     "website": "https://housekind.example",
     "canonicalUrl": "https://housekind.example",

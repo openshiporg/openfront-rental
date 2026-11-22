@@ -42,11 +42,12 @@ function configuredStorefrontOrigin() {
 
 /** Store identity saved through the same SVG sanitizer and colour normalizer as Store Settings. */
 function onboardingMarketplaceSettings(seed: AccommodationSeed) {
-  const { logoColor, ...settings } = seed.settings as AccommodationSeed['settings'] & { logoColor?: string };
+  const { logoColor, logoIcon, ...settings } = seed.settings as AccommodationSeed['settings'] & { logoColor?: string; logoIcon?: string };
   return {
     id: 1,
     ...settings,
-    logoIcon: sanitizeStoreLogoSvg(DEFAULT_STORE_LOGO_ICON),
+    // The template's own mark (Housekind's gable), falling back to the library default.
+    logoIcon: sanitizeStoreLogoSvg(logoIcon || '') || sanitizeStoreLogoSvg(DEFAULT_STORE_LOGO_ICON),
     logoColor: normalizeStoreLogoColor(logoColor ?? DEFAULT_LIBRARY_LOGO_COLOR),
   };
 }

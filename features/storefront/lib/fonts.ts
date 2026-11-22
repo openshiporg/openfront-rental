@@ -1,10 +1,13 @@
-import { Newsreader } from 'next/font/google';
+import { Fraunces } from 'next/font/google';
 
-/** Editorial display face for customer surfaces only; the dashboard keeps Geist. */
-const display = Newsreader({
+/**
+ * Brand display face for customer surfaces only (wordmark and headings); the dashboard keeps Geist.
+ * Fraunces' soft optical sizes read warm and settled at headline size and stay crisp in the 1.4rem wordmark.
+ */
+const display = Fraunces({
   subsets: ['latin'],
   style: ['normal', 'italic'],
-  axes: ['opsz'],
+  axes: ['opsz', 'SOFT'],
   variable: '--font-stay-display',
   display: 'swap',
 });
