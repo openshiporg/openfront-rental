@@ -108,7 +108,9 @@ export function authorizeHostMembershipMutation({
 async function membershipsForSession(context: any): Promise<MembershipGrant[]> {
   const userId = context.session?.itemId;
   if (!userId || isPlatformAdministrator(context.session)) return [];
-  const memberships = await context.query.HostMembership.findMany({
+  // The session's own memberships, read with sudo: staff roles cannot filter HostMembership by user (that would
+  // let them look through the User list), and this lookup is fixed to the signed-in user's id.
+  const memberships = await context.sudo().query.HostMembership.findMany({
     where: { user: { id: { equals: userId } }, status: { equals: 'active' } },
     take: 100,
     query: 'id membershipRole status hostOrganization { id }',
