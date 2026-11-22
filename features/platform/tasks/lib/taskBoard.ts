@@ -60,7 +60,8 @@ const open = { status: { in: OPEN_TASK_STATUSES } };
 
 export function taskViewWhere(view: TaskView, now: Date) {
   if (view === 'overdue') return { AND: [open, { dueAt: { lt: now.toISOString() } }] };
-  if (view === 'due_soon') return { AND: [open, { dueAt: { lte: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString() } }] };
+  // Due soon is the next 24 hours only; anything already past is Overdue.
+  if (view === 'due_soon') return { AND: [open, { dueAt: { gte: now.toISOString(), lte: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString() } }] };
   if (view === 'unassigned') return { AND: [open, { assignee: null }] };
   if (view === 'blocked') return { status: { equals: 'blocked' } };
   if (view === 'cancelled') return { status: { equals: 'cancelled' } };

@@ -106,13 +106,21 @@ export function TodayOverview({ overview }: { overview: Awaited<ReturnType<typeo
 
 const TASKS = '/dashboard/platform/tasks';
 
-function taskRows(tasks: any[], href: string) {
+/** "3 days late", "5 hours late": how far past its due time a task is. */
+function lateBy(dueAt: string, now: string) {
+  const hours = Math.max(0, Math.floor((Date.parse(now) - Date.parse(dueAt)) / 3_600_000));
+  if (hours < 1) return 'Under an hour late';
+  if (hours < 48) return `${plural(hours, 'hour')} late`;
+  return `${plural(Math.floor(hours / 24), 'day')} late`;
+}
+
+function taskRows(tasks: any[], href: string, now?: string) {
   return tasks.map((task: any) => ({
     id: task.id,
     href,
     title: `${task.title} · ${task.property?.name || 'Property'}`,
     // The assignee shows when this role can read teammates; an unreadable one is not called unassigned.
-    meta: <>{task.dueAt ? <>Due {formatTimestamp(task.dueAt, task.property?.timezone)}</> : 'No due time'}{task.assignee?.name ? ` · ${task.assignee.name}` : task.status === 'queued' ? ' · Unassigned' : ''}</>,
+    meta: <>{task.dueAt && now ? <>{lateBy(task.dueAt, now)} · due {formatTimestamp(task.dueAt, task.property?.timezone)}</> : task.dueAt ? <>Due {formatTimestamp(task.dueAt, task.property?.timezone)}</> : 'No due time'}{task.assignee?.name ? ` · ${task.assignee.name}` : task.status === 'queued' ? ' · Unassigned' : ''}</>,
     trailing: <StatusBadge status={task.status} />,
   }));
 }
@@ -132,6 +140,7 @@ function TaskDay({ overview }: { overview: Extract<Awaited<ReturnType<typeof get
       { label: 'In progress', value: data.inProgressCount, icon: ClipboardCheck, href: TASKS },
       { label: 'Blocked', value: data.blockedCount, tone: data.blockedCount ? 'warning' : 'success', icon: Ban, href: `${TASKS}?view=blocked` },
     ]} />
+    {data.late.length ? <Section title="Late" icon={AlertTriangle} count={data.lateCount} footer={previewFooter(data.late.length, data.lateCount, `${TASKS}?view=overdue`, 'task')} flush><LinkRows items={taskRows(data.late, `${TASKS}?view=overdue`, data.now)} /></Section> : null}
     <div className="grid gap-4 lg:grid-cols-2">
       <Section title="Due in the next 24 hours" icon={Clock} count={data.dueCount} footer={previewFooter(data.due.length, data.dueCount, `${TASKS}?view=due_soon`, 'task')} flush><LinkRows items={taskRows(data.due, `${TASKS}?view=due_soon`)} empty="Nothing due in the next 24 hours." /></Section>
       <Section title="In progress" icon={ClipboardCheck} count={data.inProgressCount} footer={previewFooter(data.inProgress.length, data.inProgressCount, TASKS, 'task')} flush><LinkRows items={taskRows(data.inProgress, TASKS)} empty="Nothing is underway." /></Section>

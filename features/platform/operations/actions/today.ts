@@ -87,8 +87,9 @@ async function getTaskDay(now: Date) {
     query TodayTasks($dueBy: DateTime!, $now: DateTime!, $open: [String!]!) {
       firstZone: properties(where: ${LIVE_PROPERTY}, orderBy: [{ timezone: asc }], take: 1) { timezone }
       lastZone: properties(where: ${LIVE_PROPERTY}, orderBy: [{ timezone: desc }], take: 1) { timezone }
-      due: propertyTasks(where: { status: { in: $open }, dueAt: { lte: $dueBy } }, orderBy: [{ dueAt: asc }, { id: asc }], take: ${PREVIEW}) { ${TASK_FIELDS} }
-      dueCount: propertyTasksCount(where: { status: { in: $open }, dueAt: { lte: $dueBy } })
+      due: propertyTasks(where: { status: { in: $open }, dueAt: { gte: $now, lte: $dueBy } }, orderBy: [{ dueAt: asc }, { id: asc }], take: ${PREVIEW}) { ${TASK_FIELDS} }
+      dueCount: propertyTasksCount(where: { status: { in: $open }, dueAt: { gte: $now, lte: $dueBy } })
+      late: propertyTasks(where: { status: { in: $open }, dueAt: { lt: $now } }, orderBy: [{ dueAt: asc }, { id: asc }], take: ${PREVIEW}) { ${TASK_FIELDS} }
       lateCount: propertyTasksCount(where: { status: { in: $open }, dueAt: { lt: $now } })
       inProgress: propertyTasks(where: { status: { equals: "in_progress" } }, orderBy: [{ dueAt: asc }, { id: asc }], take: ${PREVIEW}) { ${TASK_FIELDS} }
       inProgressCount: propertyTasksCount(where: { status: { equals: "in_progress" } })
@@ -100,5 +101,5 @@ async function getTaskDay(now: Date) {
   const data = response.data;
   const first = data.firstZone?.[0]?.timezone;
   const timeZone = first && first === data.lastZone?.[0]?.timezone ? String(first) : null;
-  return { kind: 'tasks' as const, today: timeZone ? zonedTodayIso(timeZone, now) : null, timeZone, data, error: null };
+  return { kind: 'tasks' as const, today: timeZone ? zonedTodayIso(timeZone, now) : null, timeZone, data: { ...data, now: now.toISOString() }, error: null };
 }
