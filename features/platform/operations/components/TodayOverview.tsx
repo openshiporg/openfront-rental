@@ -111,7 +111,8 @@ function taskRows(tasks: any[], href: string) {
     id: task.id,
     href,
     title: `${task.title} · ${task.property?.name || 'Property'}`,
-    meta: <>{task.dueAt ? `Due ${formatTimestamp(task.dueAt, task.property?.timezone)}` : 'No due time'}{task.assignee?.name ? ` · ${task.assignee.name}` : ' · Unassigned'}</>,
+    // The assignee shows when this role can read teammates; an unreadable one is not called unassigned.
+    meta: <>{task.dueAt ? <>Due {formatTimestamp(task.dueAt, task.property?.timezone)}</> : 'No due time'}{task.assignee?.name ? ` · ${task.assignee.name}` : task.status === 'queued' ? ' · Unassigned' : ''}</>,
     trailing: <StatusBadge status={task.status} />,
   }));
 }
